@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.mcntech.onyxvidmixer;
+package com.mcntech.ezavmixer;
 
 import android.os.Bundle;
 import android.app.Activity;

@@ -1,0 +1,162 @@
+﻿Build started 8/20/2014 4:43:06 PM.
+     1>Project "C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\libzmq.vcxproj" on node 2 (build target(s)).
+     1>PrepareForBuild:
+         Creating directory "C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../bin/Win32/".
+       InitializeBuildStatus:
+         Creating "C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/libzmq.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       PreBuildEvent:
+         copy ..\platform.hpp ..\..\..\src
+         :VCEnd
+                 1 file(s) copied.
+       ClCompile:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /MP /Od /Oy- /D _DEBUG /D WIN32 /D _CRT_SECURE_NO_WARNINGS /D DLL_EXPORT /D FD_SETSIZE=1024 /D _WINDOWS /D _USRDLL /D _BIND_TO_CURRENT_VCLIBS_VERSION=1 /D _WINDLL /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yc"precompiled.hpp" /Fp"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/libzmq_d.pch" /Fo"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/" /Fd"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/vc100.pdb" /Gd /TP /FIprecompiled.hpp /analyze- /errorReport:prompt ..\..\..\src\precompiled.cpp
+         precompiled.cpp
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /MP /Od /Oy- /D _DEBUG /D WIN32 /D _CRT_SECURE_NO_WARNINGS /D DLL_EXPORT /D FD_SETSIZE=1024 /D _WINDOWS /D _USRDLL /D _BIND_TO_CURRENT_VCLIBS_VERSION=1 /D _WINDLL /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"precompiled.hpp" /Fp"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/libzmq_d.pch" /Fo"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/" /Fd"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/vc100.pdb" /Gd /TP /FIprecompiled.hpp /analyze- /errorReport:prompt ..\..\..\src\address.cpp ..\..\..\src\clock.cpp ..\..\..\src\ctx.cpp ..\..\..\src\dealer.cpp ..\..\..\src\devpoll.cpp ..\..\..\src\dist.cpp ..\..\..\src\epoll.cpp ..\..\..\src\err.cpp ..\..\..\src\fq.cpp ..\..\..\src\io_object.cpp ..\..\..\src\io_thread.cpp ..\..\..\src\ip.cpp ..\..\..\src\ipc_address.cpp ..\..\..\src\ipc_connecter.cpp ..\..\..\src\ipc_listener.cpp ..\..\..\src\kqueue.cpp ..\..\..\src\lb.cpp ..\..\..\src\mailbox.cpp ..\..\..\src\mechanism.cpp ..\..\..\src\msg.cpp ..\..\..\src\mtrie.cpp ..\..\..\src\null_mechanism.cpp ..\..\..\src\object.cpp ..\..\..\src\options.cpp ..\..\..\src\own.cpp ..\..\..\src\pair.cpp ..\..\..\src\pgm_receiver.cpp ..\..\..\src\pgm_sender.cpp ..\..\..\src\pgm_socket.cpp ..\..\..\src\pipe.cpp ..\..\..\src\plain_mechanism.cpp ..\..\..\src\poll.cpp ..\..\..\src\poller_base.cpp ..\..\..\src\proxy.cpp ..\..\..\src\pub.cpp ..\..\..\src\pull.cpp ..\..\..\src\push.cpp ..\..\..\src\random.cpp ..\..\..\src\raw_decoder.cpp ..\..\..\src\raw_encoder.cpp ..\..\..\src\reaper.cpp ..\..\..\src\rep.cpp ..\..\..\src\req.cpp ..\..\..\src\router.cpp ..\..\..\src\select.cpp ..\..\..\src\session_base.cpp ..\..\..\src\signaler.cpp ..\..\..\src\socket_base.cpp ..\..\..\src\stream.cpp ..\..\..\src\stream_engine.cpp ..\..\..\src\sub.cpp ..\..\..\src\tcp.cpp ..\..\..\src\tcp_address.cpp ..\..\..\src\tcp_connecter.cpp ..\..\..\src\tcp_listener.cpp ..\..\..\src\thread.cpp ..\..\..\src\trie.cpp ..\..\..\src\v1_decoder.cpp ..\..\..\src\v1_encoder.cpp ..\..\..\src\v2_decoder.cpp ..\..\..\src\v2_encoder.cpp ..\..\..\src\xpub.cpp ..\..\..\src\xsub.cpp ..\..\..\src\zmq.cpp ..\..\..\src\zmq_utils.cpp
+         address.cpp
+         clock.cpp
+         ctx.cpp
+         dealer.cpp
+         devpoll.cpp
+         dist.cpp
+         epoll.cpp
+         err.cpp
+         fq.cpp
+         io_object.cpp
+         io_thread.cpp
+         ip.cpp
+         ipc_address.cpp
+         ipc_connecter.cpp
+         ipc_listener.cpp
+         kqueue.cpp
+         lb.cpp
+         mailbox.cpp
+         mechanism.cpp
+         msg.cpp
+         mtrie.cpp
+         null_mechanism.cpp
+         object.cpp
+         options.cpp
+         own.cpp
+         pair.cpp
+         pgm_receiver.cpp
+         pgm_sender.cpp
+         pgm_socket.cpp
+         pipe.cpp
+         plain_mechanism.cpp
+         poll.cpp
+         poller_base.cpp
+         proxy.cpp
+         pub.cpp
+         pull.cpp
+         push.cpp
+         random.cpp
+         raw_decoder.cpp
+         raw_encoder.cpp
+     1>..\..\..\src\raw_decoder.cpp(37): warning C4244: 'argument' : conversion from 'const int64_t' to 'size_t', possible loss of data
+     1>..\..\..\src\raw_decoder.cpp(52): warning C4244: '=' : conversion from 'const int64_t' to 'size_t', possible loss of data
+         reaper.cpp
+         rep.cpp
+         req.cpp
+         router.cpp
+         select.cpp
+         session_base.cpp
+         signaler.cpp
+         socket_base.cpp
+         stream.cpp
+         stream_engine.cpp
+         sub.cpp
+         tcp.cpp
+         tcp_address.cpp
+         tcp_connecter.cpp
+         tcp_listener.cpp
+         thread.cpp
+         trie.cpp
+         v1_decoder.cpp
+         v1_encoder.cpp
+         v2_decoder.cpp
+         v2_encoder.cpp
+         xpub.cpp
+         xsub.cpp
+         zmq.cpp
+         zmq_utils.cpp
+       MakeDirsForLink:
+         Creating directory "C:\Projects\onyx\onyx_em\onyx_libs\zeromq\lib\Win32\".
+       Link:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../bin/Win32/libzmq_d.dll" /INCREMENTAL:NO /NOLOGO /LIBPATH:C:\Projects\onyx\onyx_em\onyx_libs\zeromq\bin\Win32\../../lib/Win32 Ws2_32.lib Rpcrt4.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/libzmq_d.dll.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\bin\Win32\libzmq_d.pdb" /SUBSYSTEM:WINDOWS /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\bin\Win32\../../lib/Win32/libzmq_d.lib" /MACHINE:X86 /DLL C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/address.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/clock.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/ctx.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/dealer.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/devpoll.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/dist.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/epoll.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/err.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/fq.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/io_object.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/io_thread.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/ip.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/ipc_address.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/ipc_connecter.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/ipc_listener.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/kqueue.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/lb.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/mailbox.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/mechanism.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/msg.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/mtrie.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/null_mechanism.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/object.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/options.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/own.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/pair.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/pgm_receiver.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/pgm_sender.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/pgm_socket.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/pipe.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/plain_mechanism.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/poll.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/poller_base.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/precompiled.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/proxy.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/pub.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/pull.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/push.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/random.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/raw_decoder.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/raw_encoder.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/reaper.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/rep.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/req.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/router.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/select.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/session_base.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/signaler.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/socket_base.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/stream.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/stream_engine.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/sub.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/tcp.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/tcp_address.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/tcp_connecter.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/tcp_listener.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/thread.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/trie.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/v1_decoder.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/v1_encoder.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/v2_decoder.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/v2_encoder.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/xpub.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/xsub.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/zmq.obj
+         C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/zmq_utils.obj
+            Creating library C:\Projects\onyx\onyx_em\onyx_libs\zeromq\bin\Win32\../../lib/Win32/libzmq_d.lib and object C:\Projects\onyx\onyx_em\onyx_libs\zeromq\bin\Win32\../../lib/Win32/libzmq_d.exp
+         libzmq.vcxproj -> C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../bin/Win32/libzmq_d.dll
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../bin/Win32/libzmq_d.dll;#2" /manifest C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/libzmq_d.dll.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/libzmq.unsuccessfulbuild".
+         Touching "C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\../../../obj/Win32/Debug/libzmq/libzmq.lastbuildstate".
+     1>Done Building Project "C:\Projects\onyx\onyx_em\onyx_libs\zeromq\builds\msvc\libzmq\libzmq.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:02.60

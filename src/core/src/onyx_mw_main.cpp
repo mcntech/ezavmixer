@@ -16,18 +16,27 @@
 
 #ifdef WIN32
 #include <winsock2.h>
-#else
+#else // Linux
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#ifndef PLATFORM_ANDROID
 #include <execinfo.h>
+#endif
+
 #endif
 #include <assert.h>
 #include "minini.h"
-#include "onyx_omxext_api.h"
+
+#ifdef HAS_PLUGIN_RTSPSRV
 #include "JdRtspSrv.h"
+#endif
+
+#ifdef HAS_PLUGIN_RTSPCLTNREC
 #include "JdRtspClntRec.h"
-#include "JdRfc3984.h"
+#endif
+
 #include "JdDbg.h"
 #include "strmconn.h"
 #include "strmconn_ipc.h"
@@ -39,37 +48,68 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include <signal.h> 
+#include <signal.h>
+
+#ifdef HAS_PLUGIN_OMX
 #include "OpenMAXAL/OpenMAXAL.h"
 #include  "onyx_omxext_api.h"
-#include "h264parser.h"
-#include "TsDemuxIf.h"
-#include "TsPsiIf.h"
-#include "tsfilter.h"
+#include "OmxIf.h"
+#endif
+
+//#include "h264parser.h"
+//#include "TsDemuxIf.h"
+//#include "TsPsiIf.h"
+//#include "tsfilter.h"
 
 #include "StrmOutBridgeBase.h"
+
+#ifdef HAS_PLUGIN_RTSPCLNT
 #include "RtspClntBridge.h"
+#endif
+
+#ifdef HAS_PLUGIN_HLSCLNT
 #include "HlsClntBridge.h"
+#endif
+
+#ifdef HAS_PLUGIN_RTSPPUBLISH
 #include "RtspPublishBridge.h"
+#endif
+
+#ifdef HAS_PLUGIN_RTMPPUBLISH
 #include "RtmpPublishBridge.h"
+#endif
+
+#ifdef HAS_PLUGIN_UDPSRV
 #include "UdpSrvBridge.h"
+#endif
+
+#ifdef HAS_PLUGIN_RTPSRV
 #include "RtpSrvBridge.h"
+#endif
+
+#ifdef HAS_PLUGIN_HLSSRV
 #include "HlsSrvBridge.h"
+#endif
+
+#ifdef HAS_PLUGIN_MDPSRV
 #include "MpdSrvBridge.h"
+#endif
+
 #include "Mpd.h"
 
 #include "MediaSwitch.h"
 #include "onyx_mw_util.h"
 
-#define EN_HTTP_LIVE_SRV
 
-#ifdef EN_HTTP_LIVE_SRV
+
+#ifdef HAS_PLUGIN_HLSSRV
 #include "JdHttpSrv.h"
 #include "AccessUnit.h"
 #include "SimpleTsMux.h"
 #include "JdHttpLiveSgmt.h"
 #endif
-#include "OmxIf.h"
+
+#include "AvMixure.h"
 
 #define MAX_PATH                256
 #define MAX_CODEC_NAME_SIZE		128
@@ -427,52 +467,7 @@ private:
 	ConnCtxT *m_pAudConn;
 };
 
-class CAvMixer
-{
-public:
-	std::vector <CAvmixInputStrm *> m_listAvmixInputs;
-	CAvMixer()
-	{
-		m_pVidCompOut = NULL;
-		m_pAudMixerOut = NULL;
-	}
 
-	// CStrmInBridgeBase
-	int StartStreaming(void) { return 0;}
-	int StopStreaming(void){ return 0;}
-
-	int Start(const char *pszConfFile, const char *pszAvMixerId, int nLayoutOption)
-	{
-		StartCodec(pszConfFile, nLayoutOption);
-		StartInputStreams(pszConfFile, pszAvMixerId, nLayoutOption);
-		return 0;
-	}
-	void Stop()
-	{
-		StopInputStreams();
-		StopEncodeSubsystem(0);
-	}
-	int StopInputStreams();
-	int StopEncodeSubsystem(int nSwitchId);
-	int StartCodec(const char *pszConfFile, int nLayoutOption);
-	int StartInputStreams(const char *pszConfFile, const char *pszAvmexerId, int nLayoutOption);
-	CStrmInBridgeBase *GetOutputConn()
-	{
-		int result = 0;
-		CStrmConnWrapper *pOutput = new CStrmConnWrapper(m_pAudMixerOut != NULL, m_pVidCompOut != NULL, m_pAudMixerOut, m_pVidCompOut, &result);
-		return pOutput;
-	}
-public:
-	ENGINE_T            *m_pEngine;
-	ConnCtxT            *m_pVidCompOut;
-	ConnCtxT            *m_pAudMixerOut;
-	int                 m_nLayoutId;
-
-	char               m_szInputSessionName[64];
-	char               m_szInputUri[MAX_FILE_NAME_SIZE];
-	//char               szOutputSection[MAX_FILE_NAME_SIZE];
-	//COutputStream      *m_pOutputStream;
-};
 
 #define MAX_PUBLISH_SWICTHES           2
 #define MAX_PUBLISH_SWICTH_INPUTS      2
@@ -1224,51 +1219,6 @@ int COnyxMw::StopAvMixers()
 	return res;
 }
 
-int CAvMixer::StartCodec(const char *pszConfFile, int nLayoutOption)
-{
-	int res = 0;
-	int i;
-	int fEnableAudio;
-	AUD_CHAN_LIST    *pAChanList = NULL;
-	DISP_WINDOW_LIST *pWndList = NULL;
-
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
-	if(nLayoutOption > 0) {
-		m_nLayoutId = nLayoutOption;
-	} else {
-		m_nLayoutId = 1;
-	}
-
-	fEnableAudio =  ini_getl(ONYX_MW_SECTION, ENABLE_AUDIO, 1, ONYX_PUBLISH_FILE_NAME);
-
-	GetVidMixerConfig(pszConfFile, m_nLayoutId, &pWndList);
-
-	if(fEnableAudio) {
-		GetAudMixerConfig(pszConfFile, m_nLayoutId, &pAChanList);
-	}
-	m_pEngine = omxalInit(pszConfFile,  pWndList, pAChanList);
-
-#if defined(EN_IPC_STRM_CONN)
-	m_pVidCompOut = CreateIpcStrmConn(VID_ENC_RX, VID_ENC_TX, 1024*1024);
-#else
-	m_pVidCompOut = CreateStrmConn(MAX_VID_FRAME_SIZE, 4);
-#endif
-
-	if(fEnableAudio) {
-#if defined(EN_IPC_STRM_CONN)
-		m_pAudMixerOut = CreateIpcStrmConn(AUD_ENC_RX, AUD_ENC_TX, 16*1024);
-#else
-		m_pAudMixerOut = CreateStrmConn(MAX_AUD_FRAME_SIZE, 4);
-#endif
-	}
-#if defined(EN_IPC_STRM_CONN)
-	omxalCreateRecorder(m_pEngine, NULL, NULL);
-#else
-	omxalCreateRecorder(m_pEngine, m_pVidCompOut, m_pAudMixerOut);
-#endif	
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));	
-	return res;
-}
 
 
 int CStreamUtil::InitInputStrm(CInputStrmBase *pInputStream, int nSessionId)
@@ -1373,54 +1323,7 @@ void CStreamUtil::DeinitInputStrm(CInputStrmBase *pInputStream)
 }
 
 
-int CAvMixer::StartInputStreams(const char *pszConfFile, const char *pszAvmexerId, int nLayoutOption)
-{
-	int res = 0;
-	int i;
-	int fEnableAudio;
-	int nNumInputs = 0;
-	char szInputId[16];
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
-	if(nLayoutOption > 0) {
-		m_nLayoutId = nLayoutOption;
-	} else {
-		m_nLayoutId = 1;
-	}
-	
-	JDBG_LOG(CJdDbg::LVL_SETUP,("LaoutId=%d\n", m_nLayoutId));
-	fEnableAudio =  ini_getl(ONYX_MW_SECTION, ENABLE_AUDIO, 1, ONYX_PUBLISH_FILE_NAME);	
-	nNumInputs = ini_getl(pszAvmexerId, AVMIXER_INPUT_COUNT, 0, pszConfFile);	
-	
-	for (i=0; i < nNumInputs; i++) {
-		INPUT_TYPE_T nInputType;
-		sprintf(szInputId, "%s%d",AVMIXER_INPUT_PREFIX, i);
-		ini_gets(pszAvmexerId, szInputId, "",m_szInputSessionName, 64, pszConfFile);
-		CAvmixInputStrm *pInputStream = CStreamUtil::GetStreamParamsFromCfgDb(m_szInputSessionName, pszConfFile);
-		nInputType = pInputStream->nInputType;
-		JDBG_LOG(CJdDbg::LVL_SETUP,("InputSection=%s resource=%s\n", m_szInputSessionName,m_szInputUri));
 
-		if(nInputType != INPUT_TYPE_UNKNOWN) {
-			m_listAvmixInputs.push_back(pInputStream);
-			JDBG_LOG(CJdDbg::LVL_SETUP,("Opening %s input=%s\n", m_szInputSessionName, m_szInputUri));
-			GetPlayerSessionUserOverrides(pInputStream, pszConfFile, m_szInputSessionName, fEnableAudio);
-			ini_gets(m_szInputSessionName, "vid_codec", "h264", pInputStream->vid_codec_name, MAX_CODEC_NAME_SIZE, pszConfFile);
-			if(CStreamUtil::InitInputStrm(pInputStream, i) == 0) {
-				res = omxalPlayStream(m_pEngine, pInputStream, pInputStream->mpInputBridge->GetDataSource1(), pInputStream->mpInputBridge->GetDataSource2());
-				if(pInputStream->mpInputBridge) {
-					pInputStream->mpInputBridge->StartStreaming();
-				}
-
-			} else {
-				delete pInputStream;
-				JDBG_LOG(CJdDbg::LVL_ERR,("!!! Can not careate session %s or %s !!!\n", m_szInputSessionName,pszConfFile));
-			}
-		} else {
-			JDBG_LOG(CJdDbg::LVL_ERR,("!!! Can not find %s or %s !!!\n", m_szInputSessionName,pszConfFile));
-		}
-	}
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));	
-	return res;
-}
 
 int COnyxMw::CloseSession()
 {
@@ -1433,24 +1336,7 @@ int COnyxMw::CloseSession()
 	return 0;
 }
 
-int CAvMixer::StopInputStreams()
-{
 
-	int i;
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
-	for (std::vector<CAvmixInputStrm *>::iterator it = m_listAvmixInputs.begin(); it != m_listAvmixInputs.end(); it++) {
-		CAvmixInputStrm *pInputStream = *it;
-		JDBG_LOG(CJdDbg::LVL_TRACE,("Stopping Playback Seesion %d", i));
-		if(pInputStream) {
-			CStreamUtil::DeinitInputStrm(pInputStream);
-			omxalStopStream(pInputStream);
-			delete pInputStream;
-		}
-	}
-	m_listAvmixInputs.clear();
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
-	return 0;
-}
 int COnyxMw::StopPublishStreams()
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
@@ -1526,27 +1412,7 @@ int COnyxMw::StopPublishStreams()
 	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
 	return 0;
 }
-int CAvMixer::StopEncodeSubsystem(int nSwitchId)
-{
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
 
-	JDBG_LOG(CJdDbg::LVL_TRACE,("DeleteEngine"));
-	if(m_pEngine) {
-		omxalDeinit(m_pEngine);
-	}
-
-	//if(m_pOutputStream) {
-	//	delete m_pOutputStream;
-	//	m_pOutputStream = NULL;
-	//}
-	if(m_pVidCompOut) {
-		delete m_pVidCompOut;
-		m_pVidCompOut = NULL;
-	}
-
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
-	return 0;
-}
 
 void COnyxMw::SetModuleDbgLvl(int ModuleId, int nDbgLevel)
 {	

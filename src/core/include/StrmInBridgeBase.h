@@ -3,6 +3,7 @@
 
 #include "OpenMAXAL/OpenMAXAL.h"
 #define MAX_NAME_SIZE	256
+
 class CStrmInBridgeBase
 {
 public:

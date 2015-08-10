@@ -1,0 +1,24 @@
+OMXALDIR = OpenMAXAL
+
+CFLAGS += -g -DEXCLUDE_OMX -DEXCLUDE_OMX_DEF_PATH -I../include -I../common -I$(OMXALDIR)
+#LFLAGS += 
+
+DVM_DEC_DISP =  dvm_dec_disp
+DVM_DEC_DISP_OBJECTS = dvm_dec_omxal.o OpenMAXAL/OpenMAXAL_IID.o
+
+#DVM_DEC_DISP_OBJECTS = main.o ilclient.o  ilclient_utils.o es_parser.o xport.o filesrc.o clock.o fakedec.o
+
+.SUFFIXES: .o .c
+EXT_LIBS = -lpthread
+
+$(DVM_DEC_DISP): $(DVM_DEC_DISP_OBJECTS)
+	$(CC) -o $@ $^ $(EXT_LIBS) $(LFLAGS)
+
+.c.o:
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+
+all: Makefile $(DVM_DEC_DISP)
+
+clean:
+	rm -f *.o 

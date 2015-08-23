@@ -1,0 +1,10 @@
+#!/bin/sh
+
+ONYX_MW="/usr/bin/onyx_mw"
+
+stop_onyx()
+{
+	start-stop-daemon --stop  --exec $ONYX_MW
+}
+
+stop_onyx

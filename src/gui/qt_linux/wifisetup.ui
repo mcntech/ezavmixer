@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CWifiSetup</class>
+ <widget class="QDialog" name="CWifiSetup">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>640</width>
+    <height>642</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>16</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>43</x>
+     <y>12</y>
+     <width>551</width>
+     <height>748</height>
+    </rect>
+   </property>
+   <layout class="QFormLayout" name="formLayout">
+    <property name="fieldGrowthPolicy">
+     <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+    </property>
+    <item row="0" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Networks</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>SSID</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QLineEdit" name="m_Ssid"/>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Password</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QLineEdit" name="m_Password"/>
+    </item>
+    <item row="5" column="1">
+     <widget class="QCheckBox" name="m_fDhcp">
+      <property name="text">
+       <string>DHCP</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0">
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>IP Address</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="1">
+     <widget class="QLineEdit" name="m_IpAddress"/>
+    </item>
+    <item row="7" column="0">
+     <widget class="QLabel" name="label_5">
+      <property name="text">
+       <string>Mask</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="1">
+     <widget class="QLineEdit" name="m_NetworkMask"/>
+    </item>
+    <item row="8" column="0">
+     <widget class="QLabel" name="label_6">
+      <property name="text">
+       <string>Gateway</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="1">
+     <widget class="QLineEdit" name="m_Gateway"/>
+    </item>
+    <item row="12" column="0">
+     <widget class="QLabel" name="label_8">
+      <property name="text">
+       <string>Status</string>
+      </property>
+     </widget>
+    </item>
+    <item row="12" column="1">
+     <widget class="QLabel" name="m_Status">
+      <property name="frameShape">
+       <enum>QFrame::WinPanel</enum>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+      <property name="margin">
+       <number>0</number>
+      </property>
+     </widget>
+    </item>
+    <item row="14" column="1">
+     <widget class="Line" name="line_3">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="15" column="1">
+     <widget class="QDialogButtonBox" name="buttonBox">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="standardButtons">
+       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QPushButton" name="m_BtnScan">
+      <property name="text">
+       <string>Scan</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QTreeWidget" name="m_Networks">
+      <column>
+       <property name="text">
+        <string>SSID</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>BSSID</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Freq</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Signal</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Flags</string>
+       </property>
+      </column>
+     </widget>
+    </item>
+    <item row="4" column="1">
+     <widget class="QComboBox" name="m_AuthSelect">
+      <item>
+       <property name="text">
+        <string>Plaintext (open)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Static WEP (no authentication)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Static WEP (Shared Key authentication)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>IEEE 802.1X</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>WPA-Personal (PSK)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>WPA-Enterprise (EAP)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>WPA2-Personal (PSK)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>WPA2-Enterprise (EAP)</string>
+       </property>
+      </item>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="label_7">
+      <property name="text">
+       <string>Auth</string>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="1">
+     <widget class="QPushButton" name="m_BtnConnect">
+      <property name="text">
+       <string>Connect</string>
+      </property>
+     </widget>
+    </item>
+    <item row="11" column="1">
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>CWifiSetup</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>CWifiSetup</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

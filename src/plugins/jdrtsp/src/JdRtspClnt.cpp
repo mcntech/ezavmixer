@@ -67,12 +67,12 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 		if(!m_pszUrl.empty()) {
 			snprintf(pBuff, nMaxLen, 
 					"DESCRIBE %s RTSP/%s\r\n" \
-					"CSeq: %d\r\n" \
+					"CSeq: %ld\r\n" \
 					"User-Agent: %s\r\n" \
 					"Accept: application/sdp\r\n" \
 					"\r\n",
 					m_pszUrl.c_str(), RTSP_VERSION, 
-				++m_ulSeq,
+					++m_ulSeq,
 					RTSP_CLIENT_NAME);
 
 			return strlen(pBuff);
@@ -86,7 +86,7 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 			if(!m_pszUrl.empty()){
 				snprintf(pBuff, nMaxLen,
 					"PLAY %s RTSP/%s\r\n" \
-					"CSeq: %d\r\n" \
+					"CSeq: %ld\r\n" \
 					"User-Agent: %s\r\n" \
 					"Session: %u\r\n" \
 					"\r\n",
@@ -106,7 +106,7 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 			if(!m_pszUrl.empty()) {
 				snprintf(pBuff, nMaxLen,
 					"TEARDOWN %s RTSP/%s\r\n" \
-					"CSeq: %d\r\n" \
+					"CSeq: %ld\r\n" \
 					"User-Agent: %s\r\n" \
 					"Session: %u\r\n" \
 					"\r\n",
@@ -142,7 +142,7 @@ int CJdRtspClntSession::CreateSetupHeader(
 	{
 		snprintf(pBuff, nMaxLen, 
 			"SETUP %s RTSP/%s\r\n" \
-			"CSeq: %d\r\n" \
+			"CSeq: %ld\r\n" \
 			"User-Agent: %s\r\n" \
 			"Transport: RTP/AVP;unicast;client_port=%u-%u\r\n" \
 			"\r\n",

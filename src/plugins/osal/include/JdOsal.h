@@ -63,4 +63,6 @@ private:
 typedef void *(*jdoalThrdFunction_t) (void *);
 int jdoalThreadCreate(void **pthrdHandle, jdoalThrdFunction_t thrdFunction, void *thrdCrx);
 int jdoalThreadJoin(void *pthrdHandle, int nTimeOutms);
+void jdoalThreadCancel(void *pthrdHandle);
+//pthread_cancel(m_thrdHandle);
 #endif

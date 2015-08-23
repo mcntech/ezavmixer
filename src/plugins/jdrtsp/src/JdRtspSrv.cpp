@@ -55,24 +55,24 @@ int CJdRtspSrvSession::CreateSetupRepy(char *pBuff, int nMaxLen, CRtspRequest *c
 	if(pTrans->mMulticast) {
 		snprintf(pBuff, nMaxLen, 
 				"RTSP/%s 200 OK\r\n" \
-				"CSeq: %d\r\n" \
+				"CSeq: %ld\r\n" \
 				"%s\r\n"
-				"Session: %u\r\n" \
-				"Transport: RTP/AVP;multicast;destination=%s;port=%u-%u;ttl=16\r\n" \
+				"Session: %lu\r\n" \
+				"Transport: RTP/AVP;multicast;destination=%s;port=%hu-%hu;ttl=16\r\n" \
 				"\r\n",
 				RTSP_VERSION, 
 				clntReq->mCSeq,
 				szTime,
 				m_ulSessionId,
-				pTrans->mDestination,
+				pTrans->mDestination.c_str(),
 				pTrans->mServerRtpPort, pTrans->mServerRtcpPort);
 	} else {
 		snprintf(pBuff, nMaxLen, 
 				"RTSP/%s 200 OK\r\n" \
-				"CSeq: %d\r\n" \
+				"CSeq: %ld\r\n" \
 				"%s\r\n"
-				"Session: %u\r\n" \
-				"Transport: RTP/AVP;unicast;client_port=%u-%u;server_port=%u-%u\r\n" \
+				"Session: %lu\r\n" \
+				"Transport: RTP/AVP;unicast;client_port=%u-%u;server_port=%hu-%hu\r\n" \
 				"\r\n",
 				RTSP_VERSION, 
 				clntReq->mCSeq,
@@ -88,8 +88,8 @@ int CJdRtspSrvSession::CreatePlayReply(char *pBuff, int nMaxLen, CRtspRequest *c
 {
 	snprintf(pBuff, nMaxLen, 
 			"RTSP/%s 200 OK\r\n" \
-			"CSeq: %d\r\n" \
-			"Session: %u\r\n" \
+			"CSeq: %lu\r\n" \
+			"Session: %lu\r\n" \
 			"\r\n",
 			RTSP_VERSION, 
 			clntReq->mCSeq,
@@ -102,7 +102,7 @@ int CJdRtspSrvSession::CreateTearDownreply(char *pBuff, int nMaxLen, CRtspReques
 {
 	snprintf(pBuff, nMaxLen, 
 			"RTSP/%s 200 OK\r\n" \
-			"CSeq: %d\r\n" \
+			"CSeq: %lu\r\n" \
 			"\r\n",
 			RTSP_VERSION, 
 			clntReq->mCSeq);
@@ -111,7 +111,7 @@ int CJdRtspSrvSession::CreateTearDownreply(char *pBuff, int nMaxLen, CRtspReques
 }
 struct RTSP_STATUS_T {
 	int		nStstusId;
-	char	*pszStatus;
+	const char	*pszStatus;
 } RTSP_STATUS_LIST[] =
 {
 	{100, "Continue"},
@@ -500,7 +500,7 @@ void CJdRtspSrvSession::HandleOptions(CRtspRequest &clntReq)
 
 	snprintf(pData, HEADER_BUF_SIZE, 
 			"RTSP/%s 200 OK\r\n" \
-			"CSeq: %d\r\n" \
+			"CSeq: %lu\r\n" \
 			"Public: DESCRIBE,SETUP,TEARDOWN,PLAY\r\n" \
 			"\r\n",
 			RTSP_VERSION, 
@@ -692,7 +692,7 @@ int CJdRtspSrv::Stop(int id)
 
 #ifdef WIN32
 #else
-	pthread_cancel(m_thrdHandle);
+	//jdoalThreadCancel(m_thrdHandle);
 #endif
 	return 0;
 }

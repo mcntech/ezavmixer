@@ -354,13 +354,13 @@ static bool ParseClientRequest(
 	const char *pIndex = strstr(pszRequest, "CSeq: ");
 	if(pIndex) {
 		pIndex += strlen("CSeq: ");
-		sscanf(pIndex, "%d",&clntReq.mCSeq);
+		sscanf(pIndex, "%ld",&clntReq.mCSeq);
 	}
 	if(clntReq.mMethod == RTSP_METHOD_PLAY || clntReq.mMethod == RTSP_METHOD_TEARDOWN){
 		pIndex = strstr(pszRequest, "Session: ");
 		if(pIndex) {
 			pIndex += strlen("Session: ");
-			sscanf(pIndex, "%d",&clntReq.mSession);
+			sscanf(pIndex, "%ld",&clntReq.mSession);
 		}
 	}
 
@@ -427,7 +427,7 @@ public:
             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 		
 		snprintf(szTime, nMaxLen,
-				"Date", "%s, %02u %s %04u %02u:%02u:%02u GMT",
+				"Date%s, %02u %s %04u %02u:%02u:%02u GMT",
 				szDays[ut->tm_wday], ut->tm_mday, szMonths[ut->tm_mon],
 				1900 + ut->tm_year, ut->tm_hour, ut->tm_min, ut->tm_sec);
 	}
@@ -447,7 +447,7 @@ public:
 		const char *pIndex = strstr(szRqBuff, "CSeq: ");
 		if(pIndex) {
 			pIndex += strlen("CSeq: ");
-			sscanf(pIndex, "%d",pulSeq);
+			sscanf(pIndex, "%ld",pulSeq);
 		}
 	}
 

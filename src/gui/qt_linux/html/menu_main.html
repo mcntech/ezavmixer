@@ -1,0 +1,100 @@
+<!--                                                                           -->
+<!--                                                                           -->
+<!-- {module name} HTML top menu view                                          -->
+<!--                                                                           -->
+<!-- {module description} Template for QT GUI interface                        -->
+<!--                                                                           -->
+<!-- Copyright (C) {YEAR} Texas Instruments Incorporated - http://www.ti.com/  -->
+<!--                                                                           -->
+<!--                                                                           -->
+<!--  Redistribution and use in source and binary forms, with or without       -->
+<!--  modification, are permitted provided that the following conditions       -->
+<!--  are met:                                                                 -->
+<!--                                                                           -->
+<!--    Redistributions of source code must retain the above copyright         -->
+<!--    notice, this list of conditions and the following disclaimer.          -->
+<!--                                                                           -->
+<!--    Redistributions in binary form must reproduce the above copyright      -->
+<!--    notice, this list of conditions and the following disclaimer in the    -->
+<!--    documentation and/or other materials provided with the                 -->
+<!--    distribution.                                                          -->
+<!--                                                                           -->
+<!--    Neither the name of Texas Instruments Incorporated nor the names of    -->
+<!--    its contributors may be used to endorse or promote products derived    -->
+<!--    from this software without specific prior written permission.          -->
+<!--                                                                           -->
+<!--  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS      -->
+<!--  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT        -->
+<!--  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR    -->
+<!--  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT     -->
+<!--  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,    -->
+<!--  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT         -->
+<!--  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,    -->
+<!--  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY    -->
+<!--  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT      -->
+<!--  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE    -->
+<!--  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.     -->
+<!--                                                                           -->
+<!--                                                                           -->
+<html>
+<head>
+  <title>Onyx Application Launcher</title>
+  <link rel="stylesheet" href="C:/Projects\onyx/onyx_em\onyx_gui/html/matrix.css" />
+  <link rel="stylesheet" href="matrix.css" />
+
+</head>
+
+<body>
+<div style="width=1260px;height=700px;">
+<div id="menu">
+ <div id="header">Onyx</div>
+
+ <div class="object">
+  <object type="application/x-matrix" >
+    <param name="iconName" value="run-icon.gif" />
+    <param name="appName" value="runscript" />
+    <param name="appParameters" value="/usr/share/onyx_gui/scripts/startOnyx" />
+  </object>
+  <div class="desc">Start</div>
+ </div>
+
+  <div class="object">
+   <object type="application/x-matrix" >
+    <param name="iconName" value="stop-icon.gif" />
+    <param name="appName" value="runscript" />
+    <param name="appParameters" value="/usr/share/onyx_gui/scripts/stopOnyx" />
+   </object>
+   <div class="desc">Stop</div>
+  </div>
+
+  <div class="object">
+    <object type="application/x-matrix" >
+      <param name="iconName" value="layout_1.gif" />
+      <param name="appName" value="Submenu" />
+      <param name="appParameters" value="layout_settings.html" />
+    </object>
+    <div class="desc">Vid Mixer</div>
+  </div>
+  <div class="horobjgap">
+  </div>
+
+  <div class="object">
+    <object type="application/x-matrix" >
+      <param name="iconName" value="settings-icon.gif" />
+      <param name="appName" value="Submenu" />
+      <param name="appParameters" value="menu_settings.html" />
+    </object>
+    <div class="desc">Settings</div>
+  </div>
+  </div>
+
+
+  <div class="statusobject">
+   <object type="application/x-matrix" >
+     <param name="iconName" value="statusarea.gif" />
+     <param name="appName" value="SwitchesStatus" />
+   </object>
+  </div>
+
+</body>
+</html>

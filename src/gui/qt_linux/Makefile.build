@@ -1,0 +1,42 @@
+-include $(EZSDK)/Rules.make
+
+ENV_SETUP ?= $(EZSDK)/linux-devkit/environment-setup
+DESTDIR ?= /home/rampenke/dm8148fs_5_05
+PLATFORM ?=
+PLATFORM_DEFINE ?= "Platform_${PLATFORM}"
+
+SOURCES = main.cpp mainwindow.cpp mainwindow.h onyx_gui.pro
+
+INC_PATH_KERNEL = $(LINUXKERNEL_INSTALL_DIR)/include 
+INC_PATH_ARCH = $(LINUXKERNEL_INSTALL_DIR)/arch/arm/include
+INC_PATH_PLAT = $(LINUXKERNEL_INSTALL_DIR)/arch/arm/plat-omap/include
+
+all: debug release
+
+qmake : onyx_gui.pro
+	@. ${ENV_SETUP}; \
+	qmake2 CONFIG+=debug_and_release QMAKE_CXXFLAGS_DEBUG+=-D${PLATFORM_DEFINE} QMAKE_CXXFLAGS_RELEASE+=-D${PLATFORM_DEFINE}  QMAKE_INCDIR+=${INC_PATH_KERNEL} QMAKE_INCDIR+=${INC_PATH_ARCH} QMAKE_INCDIR+=${INC_PATH_PLAT} onyx_gui.pro
+
+debug : ${SOURCES} qmake
+	@. ${ENV_SETUP}; \
+	make -f Makefile debug
+
+release : ${SOURCES} qmake
+	@. ${ENV_SETUP}; \
+	make -f Makefile release
+
+clean : ${SOURCES} qmake
+	@. ${ENV_SETUP}; \
+	make -f Makefile distclean
+
+install:
+	@install -d ${DESTDIR}/usr/bin
+	@install onyx_gui ${DESTDIR}/usr/bin/onyx_gui; \
+	echo "onyx_gui release version installed."
+	@install -d ${DESTDIR}/usr/share/onyx_gui/html
+	cp -ar html/*.html ${DESTDIR}/usr/share/onyx_gui/html
+	cp -ar html/*.css ${DESTDIR}/usr/share/onyx_gui/html
+	@install -d ${DESTDIR}/usr/share/onyx_gui/images
+	@install images/* ${DESTDIR}/usr/share/onyx_gui/images
+	@install -d ${DESTDIR}/usr/share/onyx_gui/scripts
+	@install scripts/* ${DESTDIR}/usr/share/onyx_gui/scripts

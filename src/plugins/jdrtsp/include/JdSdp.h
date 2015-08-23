@@ -119,7 +119,7 @@ public:
 		char *pOut = pData;
 		int len = 0;
 		if(m_pszUserName) {
-			sprintf(pOut,"o=%s %u %u IN IP4 %s\r\n",m_pszUserName, m_ulSessId, m_ulSessVersion,  m_pszAddr);
+			sprintf(pOut,"o=%s %lu %lu IN IP4 %s\r\n",m_pszUserName, m_ulSessId, m_ulSessVersion,  m_pszAddr);
 			len = strlen(pOut);
 			pOut += len;
 		}
@@ -214,7 +214,7 @@ public:
 		char *pOut = pData;
 		int len = 0;
 		if(m_pszType) {
-			sprintf(pOut,"b=%s:%d\r\n",m_pszType, m_lValue);
+			sprintf(pOut,"b=%s:%ld\r\n",m_pszType, m_lValue);
 			len = strlen(pOut);
 			pOut += len;
 		}
@@ -231,7 +231,7 @@ public:
 			strncpy(m_pszType, pIn, nLen);
 			m_pszType[nLen] = 0;
 			pIn += nLen;
-			sscanf(pIn,":%d",&m_lValue);
+			sscanf(pIn,":%ld",&m_lValue);
 		}
 		return 0;
 	}
@@ -413,7 +413,7 @@ public:
 		const char *pIn = pData;
 		int nLen = CSdpParse::GetFieldLen(pIn);
 		m_pszMedia = (char *)malloc(nLen);
-		nElems = sscanf(pIn,"m=%s %u RTP/AVP %u",m_pszMedia, &m_usPort, &m_ucPl);
+		nElems = sscanf(pIn,"m=%s %hu RTP/AVP %hhu",m_pszMedia, &m_usPort, &m_ucPl);
 		if(nElems != 3)
 			goto Exit;
 
@@ -720,7 +720,7 @@ public:
 				Add(pMediaDescription);
 			}
 		}
-		fprintf(stderr, "%s : Leave\n",__FUNCTION__,__LINE__);
+		fprintf(stderr, "%s : %d Leave\n",__FUNCTION__,__LINE__);
 		return 0;
 	}
 
@@ -802,7 +802,7 @@ public:
 		len = strlen(pOut);
 		pOut += len;
 
-		fprintf(stderr, "%s : Leave\n",__FUNCTION__,__LINE__);
+		fprintf(stderr, "%s : %d Leave\n",__FUNCTION__,__LINE__);
 		return pOut - pData;
 	}
 	void Add(CMediaDescription *pDescript)

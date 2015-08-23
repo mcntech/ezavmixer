@@ -1,0 +1,12 @@
+#!/bin/sh
+
+ONYX_MW="/usr/bin/onyx_mw"
+#APP_OPTIONS="-c /etc/onyx_user.conf -m 1"
+
+start_onyx()
+{
+#	start-stop-daemon --start  --background --exec $ONYX_MW -- $APP_OPTIONS
+        start-stop-daemon --start  --background --exec $ONYX_MW
+}
+
+start_onyx

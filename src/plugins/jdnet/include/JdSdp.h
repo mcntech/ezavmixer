@@ -314,10 +314,10 @@ class CMediaDescription
 {
 public:
 	CMediaDescription(
-		char				*pszMedia,
+		const char			*pszMedia,
 		unsigned short		usPort,
 		unsigned char		ucPl,
-		char				*pszInformation
+		const char			*pszInformation
 		)
 	{
 		Reset();

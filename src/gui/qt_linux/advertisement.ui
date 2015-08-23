@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CAdvertisement</class>
+ <widget class="QDialog" name="CAdvertisement">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>670</width>
+    <height>545</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>20</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="5" column="1" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonOkCancel">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Advt Server</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QPushButton" name="file_browse">
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Advt File</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QLineEdit" name="lineEdit_AdvtServer"/>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="lineEdit_AdvtFile"/>
+   </item>
+   <item row="0" column="0" colspan="3">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Select Advertisement Source</string>
+     </property>
+     <widget class="QRadioButton" name="advt_file">
+      <property name="geometry">
+       <rect>
+        <x>271</x>
+        <y>177</y>
+        <width>162</width>
+        <height>44</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>From File</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="advt_server">
+      <property name="geometry">
+       <rect>
+        <x>12</x>
+        <y>177</y>
+        <width>252</width>
+        <height>44</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>From Ad Server</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="advt_none">
+      <property name="geometry">
+       <rect>
+        <x>457</x>
+        <y>177</y>
+        <width>142</width>
+        <height>44</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>No Advt</string>
+      </property>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonOkCancel</sender>
+   <signal>accepted()</signal>
+   <receiver>CAdvertisement</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonOkCancel</sender>
+   <signal>rejected()</signal>
+   <receiver>CAdvertisement</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

@@ -26,7 +26,6 @@
 #include "strmconn_ipc.h"
 #include "strmconn_zmq.h"
 #include "sock_ipc.h"
-#include "uimsg.h"
 
 #include <stdio.h>
 #include <stdlib.h>

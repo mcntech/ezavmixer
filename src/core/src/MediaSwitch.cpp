@@ -256,7 +256,7 @@ void CMediaSwitch::ShowStats()
 {
 	unsigned long clk = ClockGet();
 	if(clk > PrevClk + TIME_SECOND) {
-		DBG_PRINT("EncOut %s: vid=%d aud=%d NumOutputs=%d\n", m_pszName, vid_frames, aud_frames, m_Outputs.size());
+		DBG_PRINT("EncOut %s: vid=%ld aud=%ld NumOutputs=%d\n", m_pszName, vid_frames, aud_frames, m_Outputs.size());
 		PrevClk = clk;
 	}
 }

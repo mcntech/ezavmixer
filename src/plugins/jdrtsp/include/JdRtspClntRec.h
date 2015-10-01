@@ -36,7 +36,8 @@ public:
 	void HandleAnswerRecord(){}
 	int SendAnnounce(const char *szMedia);
 	int GenerateSdp(CSdp *pSdp, CMediaResMgr *pMediaResMgr, const char *pszMedia);
-	void HandleAnswerAnnounce(char *szStrmType, char *headerBuf);
+	//void HandleAnswerAnnounce(char *szStrmType, char *headerBuf);
+
 	bool PlayTrack(CMediaTrack *pTrack);
 	int StartPublish(const char *nameAggregate, const char *nameTrack);
 

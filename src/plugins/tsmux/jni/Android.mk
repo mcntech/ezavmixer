@@ -1,0 +1,15 @@
+LOCAL_PATH := $(call my-dir)
+include $(CLEAR_VARS)
+LOCAL_MODULE := tsmux
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)
+
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/.. 
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../logutil/include
+MY_SRCS := $(LOCAL_PATH)/../src
+
+LOCAL_CFLAGS += -DPLATFORM_ANDROID
+
+LOCAL_SRC_FILES := $(MY_SRCS)/SimpleTsMux.cpp
+
+include $(BUILD_STATIC_LIBRARY)

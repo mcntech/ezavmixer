@@ -8,7 +8,7 @@
 #include "AccessUnit.h"
 #include "SimpleTsMux.h"
 #include <JdOsal.h>
-
+#include "RtspConfigure.h"
 class CStrmClock
 {
 public:

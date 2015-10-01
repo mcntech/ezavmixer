@@ -22,7 +22,11 @@
 class COutputStream
 {
 public:
-	COutputStream(const char *pszConfFile,  const char *pszOutputSection);
+	COutputStream(const char *pszConfFile, const char *pszOutputSection)
+	{
+		// TODO ini_gets(pszOutputSection, "stream_name", "", m_szStreamName, 128, pszConfFile);
+	}
+	COutputStream(const char *szStreamName){strncpy(m_szStreamName, szStreamName,128);}
 
 public:
 	char m_szStreamName[128];
@@ -33,27 +37,22 @@ class CRtspPublishConfig
 {
 public:
 	CRtspPublishConfig(const char *pszConfFile);
-
+	CRtspPublishConfig(const char *_szRtspServerAddr, const char *_szApplicationName, unsigned short _usRtpLocalPort, unsigned short _usRtpRemotePort,unsigned short _usServerRtspPort)
+	{
+		strncpy(szRtspServerAddr,_szRtspServerAddr,256);
+		strncpy(szApplicationName,_szApplicationName,256);
+		usRtpLocalPort = _usRtpLocalPort;
+		usRtpRemotePort = _usRtpRemotePort;
+		usServerRtspPort = _usServerRtspPort;
+	}
 public:
-	char szRtspServerAddr[64];
-	char szApplicationName[128];
+	char szRtspServerAddr[256];
+	char szApplicationName[256];
 	unsigned short usRtpLocalPort;
 	unsigned short usRtpRemotePort;
 	unsigned short usServerRtspPort;
 };
 
-class CRtspCommonConfig
-{
-public:
-	CRtspCommonConfig(const char *pszConfFile);
-
-public:
-	char szStreamName[128];
-	char m_szInput0[128];
-	int            m_fEnableAud;
-	int            m_fEnableVid;
-	int            m_fEnableMux;
-};
 
 class CRtspSrvConfig
 {

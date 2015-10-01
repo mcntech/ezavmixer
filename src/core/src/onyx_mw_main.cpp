@@ -162,10 +162,7 @@ public:
 	static void DeinitInputStrm(CInputStrmBase *pInputStream);
 };
 
-COutputStream::COutputStream(const char *pszConfFile, const char *pszOutputSection)
-{
-	ini_gets(pszOutputSection, "stream_name", "", m_szStreamName, 128, pszConfFile);
-}
+
 
 CRtspPublishConfig::CRtspPublishConfig(const char *pszConfFile)
 {
@@ -194,14 +191,7 @@ CRtmpPublishConfig::CRtmpPublishConfig(const char *pszConfFile)
 
 }
 
-CRtspCommonConfig::CRtspCommonConfig(const char *pszConfFile)
-{
-	m_fEnableMux =  ini_getl(SECTION_RTSP_COMMON, KEY_RTSP_COMMON_ENABLE_MUX,   0, pszConfFile);
-	m_fEnableVid =  ini_getl(SECTION_RTSP_COMMON, KEY_RTSP_COMMON_ENABLE_VID,   1, pszConfFile);
-	m_fEnableAud =  ini_getl(SECTION_RTSP_COMMON, KEY_RTSP_COMMON_ENABLE_AUD,   1, pszConfFile);
-	ini_gets(SECTION_RTSP_COMMON, KEY_RTSP_COMMON_INPUT0, "", m_szInput0, 64, pszConfFile);
 
-}
 
 CRtspSrvConfig::CRtspSrvConfig(const char *pszConfFile)
 {

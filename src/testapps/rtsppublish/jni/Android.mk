@@ -1,7 +1,9 @@
 APP_LOCAL_PATH := $(call my-dir)
 
-include ../../plugins/jdrtsp/jni/Android.mk
-include ../../plugins/osal/jni/Android.mk
+include ../../../plugins/jdrtsp/jni/Android.mk
+include ../../../plugins/tsmux/jni/Android.mk
+include ../../../plugins/osal/jni/Android.mk
+include ../../../core/jni/Android.mk
 
 include $(CLEAR_VARS)
 LOCAL_PATH := $(APP_LOCAL_PATH)
@@ -24,5 +26,5 @@ LOCAL_CFLAGS += -DPLATFORM_ANDROID
 
 LOCAL_SRC_FILES := TestRtspPublish.cpp
 LOCAL_SHARED_LIBRARIES := liblog libcutils
-LOCAL_STATIC_LIBRARIES := jdrtsp jdosal
+LOCAL_STATIC_LIBRARIES := onyxcore jdrtsp tsmux jdosal
 include $(BUILD_SHARED_LIBRARY)

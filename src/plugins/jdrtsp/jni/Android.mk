@@ -21,5 +21,7 @@ LOCAL_SRC_FILES += $(MY_SRCS)/JdRtpSnd.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/JdRtspClnt.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/JdRtspClntRec.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/JdRtspSrv.cpp
+LOCAL_SRC_FILES += $(MY_SRCS)/JdMediaResMgr.cpp
+LOCAL_SRC_FILES += $(MY_SRCS)/JdNetUtil.cpp
 
 include $(BUILD_STATIC_LIBRARY)

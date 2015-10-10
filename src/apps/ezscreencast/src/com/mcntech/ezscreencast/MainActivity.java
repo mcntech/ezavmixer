@@ -30,7 +30,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 public class MainActivity extends Activity implements View.OnClickListener {
-	private static final String TAG = "FcAvCap";
+	private static final String TAG = "ezscreencast";
     private static final int MEDIAPROJECTION_REQUEST_CODE = 1;
     private static final int SETTING_DIALOG_CODE = 2;
     
@@ -42,18 +42,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
     
     RemoteNodeHandler mDeviceHandler;
 	public static ListView mRemoteNodeList = null;
-	public static ArrayList<OnyxRemoteNode> mDeviceList = null;
+	public static ArrayList<OnyxRemoteNode> mOnyxRemoteList = null;
 	ArrayAdapter<OnyxRemoteNode> mListAdapter;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: ");
-        /*
-        setContentView(R.layout.activity_main);
-        mBtnStart = (Button) findViewById(R.id.button);
-        mBtnStart.setOnClickListener(this);
-        */
 		boolean isSystemApp = (getApplicationInfo().flags
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
 		
@@ -67,29 +62,28 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		mBtnStart =  new Button(mediaLayout.getContext());
 		mBtnStart.setTag(BTN_ID_START);
 		mBtnStart.setOnClickListener(this);
-		mBtnStart.setText("Start Firecast");
+		mBtnStart.setText("Start Broadcast");
 		mBtnStart.setLayoutParams(btnParams);
 		mediaLayout.addView(mBtnStart);		
 
 		LinearLayout.LayoutParams lableParams = new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, 
                 LayoutParams.WRAP_CONTENT);
 		TextView label =  new TextView(mediaLayout.getContext());
-		label.setText("Discovered Speakers and Screens");
+		label.setText("Publishing Servers");
 		lableParams.setMargins(40, 40, 40, 40);
 		label.setLayoutParams(lableParams);
 		mediaLayout.addView(label);
-        //noinspection ResourceType
+
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
-
-		mDeviceList = new ArrayList<OnyxRemoteNode>();
-
+		
+        mOnyxRemoteList = new ArrayList<OnyxRemoteNode>();
 	    mRemoteNodeList =  new ListView(mediaLayout.getContext());
 	    mRemoteNodeList.setLayoutParams(new
 				LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
 						ViewGroup.LayoutParams.WRAP_CONTENT)); 
 	    mListAdapter = new ArrayAdapter<OnyxRemoteNode>(mediaLayout.getContext(), 
-						android.R.layout.simple_list_item_checked, mDeviceList); 
-		mRemoteNodeList.setAdapter(mListAdapter ); //this needs to be set first
+						android.R.layout.simple_list_item_checked, mOnyxRemoteList); 
+		mRemoteNodeList.setAdapter(mListAdapter ); 
 		mRemoteNodeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 		mRemoteNodeList.setOnItemClickListener(new AdapterView.OnItemClickListener()
         {
@@ -98,8 +92,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     int position, long id)
             {
             	boolean checked = false;
-            	OnyxRemoteNode device = (OnyxRemoteNode)mListAdapter.getItem(position); 
-            	if(mRemoteNodeList.isItemChecked(position)){//seems to be the opposite
+            	OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(position); 
+            	if(mRemoteNodeList.isItemChecked(position)){
         			mRemoteNodeList.setItemChecked(position, checked);
             	}else{
         			mRemoteNodeList.setItemChecked(position, !checked);
@@ -113,20 +107,20 @@ public class MainActivity extends Activity implements View.OnClickListener {
     		@Override
     		public void onConnectRemoteNode(final OnyxRemoteNode device, boolean updated) {
     			boolean newDevice = true;
-    			if(mDeviceList == null)
+    			if(mOnyxRemoteList == null)
     				return;
     	    }
 
     		@Override
     		public void onRemoveRemoteNode(String deviceid) {
     			final String url = deviceid;
-    			if(mDeviceList == null)
+    			if(mOnyxRemoteList == null)
     				return;
     			runOnUiThread(new Runnable() {
                     public void run(){
-                		for(int i=0;i<mDeviceList.size();i++){
-                			if(mDeviceList.get(i).url == url)
-                				mDeviceList.remove(i);
+                		for(int i=0;i<mOnyxRemoteList.size();i++){
+                			if(mOnyxRemoteList.get(i).url == url)
+                				mOnyxRemoteList.remove(i);
                 		}
                     }
                 });    			
@@ -140,8 +134,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
     		@Override
     		public void onRemoteNodeError(final String url,final String message) {
-    			// TODO Auto-generated method stub
-    			
+    			// TODO Auto-generated method stub			
     		}
     	};        
     	ConfigDatabase.loadSavedPreferences(this, isSystemApp);
@@ -171,17 +164,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }
   
     public void doSettings() {
-        // populate the share intent with data
         Intent intent = new Intent(this, ConfigDialog.class);
-        //startActivityForResult(intent, SETTING_DIALOG_CODE);
         startActivity(intent);
     } 
     
-    public void doDevices() {
-        // populate the share intent with data
-        Intent intent = new Intent(Intent.ACTION_SEND);
+    public void doOnyxRemoteNodes() {
+        Intent intent = new Intent(this, RemoteNodeDialog.class);
         intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_TEXT, "This is a message for you");
+        intent.putExtra(Intent.EXTRA_TEXT, "Edit Onyx remotenode list");
     }  
     
     

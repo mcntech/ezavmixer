@@ -19,6 +19,8 @@ public class ConfigDatabase {
 	public static boolean mSystemApp;
 	
 	final static String KEY_LATENCY = "latency";
+	final static String KEY_PUBLISH_URL_1 = "rtsp:192.168.1.20:554/test";
+
 	final static String KEY_AUDIO_SOURCE = "audio_source";
 	final static String KEY_ENABLE_AUDIO = "enable_audio";
 	final static String KEY_ENABLE_VIDEO = "enable_video";

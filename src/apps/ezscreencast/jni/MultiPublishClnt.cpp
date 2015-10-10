@@ -1,18 +1,5 @@
 #include "MultiPublishClnt.h"
 
-
-void CServerNode::start(COutputStream *pOutputStream)
-{
-	m_pRtspPublishBridge->Init(pOutputStream);
-	m_pRtspPublishBridge->SetPublishServerCfg(&m_Config);
-	m_pRtspPublishBridge->ConnectToPublishServer();
-}
-
-void CServerNode::stop()
-{
-	//m_pRtspPublishBridge->deinit();
-}
-
 CMultiPublish::CMultiPublish()
 {
 
@@ -51,26 +38,35 @@ int CMultiPublish::start()
 		pServerNode = it->second;
 		if(pServerNode) {
 			CRtspPublishBridge *pRtspSrvBridge = pServerNode->m_pRtspPublishBridge;
-			// TODO pRtspSrvBridge->Prepare(m_pOutputStream);
+			pRtspSrvBridge->Init(m_pOutputStream);
 			pPublishSwitch->AddOutput(pRtspSrvBridge);
 		}
 	}
+	ConnCtxT   *m_pVidConnSrc = CreateStrmConn(1024*1024,3);
+	ConnCtxT   *m_pAudConnSrc = CreateStrmConn(16*1024, 3);
+
+	pPublishSwitch->SetSource(m_pVidConnSrc, m_pAudConnSrc);
+	m_pPublishSwitch = pPublishSwitch;
+	pPublishSwitch->Run();
 }
 
 int CMultiPublish::sendAudioData(const char *pData, int numBytes, long Pts, int Flags)
 {
-	// TODO
+	long long llPts = Pts;
+	m_pAudConnSrc->Write(m_pAudConnSrc, (char *)pData, numBytes, (unsigned int)Flags, llPts);
 	return 0;
 }
 
 int CMultiPublish::sendVideoData(const char *pData, int numBytes, long Pts, int Flags)
 {
-	// TODO
+	long long llPts = Pts;
+	m_pVidConnSrc->Write(m_pAudConnSrc, (char *)pData, numBytes, (unsigned int)Flags, llPts);
 	return 0;
 }
 
 int CMultiPublish::stop()
 {
+	m_pPublishSwitch->Stop();
 	for(ServerNodeMap::iterator it = m_PublishServerList.begin(); it != m_PublishServerList.end(); it++){
 		CServerNode *pServerNode = it->second;
 		CRtspPublishBridge *pRtspPublishBridge = pServerNode->m_pRtspPublishBridge;
@@ -79,6 +75,7 @@ int CMultiPublish::stop()
 		}
 		m_PublishServerList.erase(it);
 	}
+	delete m_pPublishSwitch;
 }
 
 CMultiPublish *CMultiPublish::getInstance()

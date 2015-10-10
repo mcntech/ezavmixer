@@ -58,6 +58,8 @@ public:
 	CMediaSwitch       *m_pPublishSwitch;
 	COutputStream      *m_pOutputStream;
 	ServerNodeMap      m_PublishServerList;
+	ConnCtxT           *m_pAudConnSrc;
+	ConnCtxT           *m_pVidConnSrc;
 };
 
 #endif

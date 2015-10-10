@@ -11,7 +11,7 @@
 #endif
 
 #include "strmconn.h"
-#include "dbglog.h"
+//#include "dbglog.h"
 
 /* Circular buffer object */
 typedef struct 
@@ -29,12 +29,12 @@ static OMX_BUFFERHEADERTYPE_M *AllocateElemBuffers(int nBufferSize, int nBufferC
 	char *pBuffer;
 	OMX_BUFFERHEADERTYPE_M *pElemBuff = (OMX_BUFFERHEADERTYPE_M *)malloc(sizeof(OMX_BUFFERHEADERTYPE_M) * nBufferCount);
 	if(pElemBuff == NULL){
-		ERROR("Failure allocating buffer");
+		//ERROR("Failure allocating buffer");
 	}
 	memset(pElemBuff, 0x00, sizeof(OMX_BUFFERHEADERTYPE_M) * nBufferCount);
 	pBuffer = (char *)malloc(nBufferSize * nBufferCount);
 	if(pBuffer == NULL){
-		ERROR("Failure allocating buffe");
+		//ERROR("Failure allocating buffe");
 	}
 
 	for (i = 0; i < nBufferCount; i++) {
@@ -116,7 +116,7 @@ int dpRead (ConnCtxT *pConn, char *pData, int lenData, unsigned long *pulFlags, 
 		memcpy(pData, pBuffer->pBuffer,pBuffer->nFilledLen);
 		ret = pBuffer->nFilledLen;
 	} else {
-		DBG_LOG(DBGLVL_ERROR, ("Error: Insufficient buffer fill=%d buf=%d!!",pBuffer->nFilledLen, lenData));
+		//DBG_LOG(DBGLVL_ERROR, ("Error: Insufficient buffer fill=%d buf=%d!!",pBuffer->nFilledLen, lenData));
 	}
 	*pulFlags = pBuffer->nFlags;
 	cbAdvanceReadPtr(dp);

@@ -3,4 +3,7 @@
     
     <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" android:showAsAction="always" />
+    <item android:id="@+id/action_nodelist" android:title="@string/action_nodelist"
+        android:orderInCategory="100" android:showAsAction="always" />
+    
 </menu>

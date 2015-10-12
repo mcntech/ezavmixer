@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mcntech.ezvidcast"
+    package="com.mcntech.ezscreencast"
     android:versionCode="23"
     android:versionName="2.3 build 2d4420f" >
 
@@ -35,6 +35,11 @@
             android:label="@string/settings_title" >
             android:theme="@android:style/Theme.Dialog" />
         </activity>        
+      <activity
+            android:name="com.mcntech.ezscreencast.RemoteNodeDialog"
+            android:label="@string/server_list" >
+            android:theme="@android:style/Theme.Dialog" />
+        </activity>                
     </application>
 
 </manifest>

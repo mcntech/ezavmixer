@@ -1,5 +1,7 @@
 package com.mcntech.ezscreencast;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,6 +9,8 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.preference.PreferenceManager;
 import android.widget.AdapterView.OnItemSelectedListener;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class ConfigDatabase {
 
@@ -32,6 +36,7 @@ public class ConfigDatabase {
 	final static String VID_RES_720P = "1280x720@60fps";
 	final static String VID_RES_1080P = "1920x1080@60fps";
 	final static String VID_RES_4K = "3840x2160@30fps";
+	public static ArrayList<OnyxRemoteNode> mOnyxRemoteNodeList = null;
 	
 	public static void loadSavedPreferences(Context context, boolean isSytemApp) {
 		SharedPreferences sharedPreferences = PreferenceManager
@@ -47,6 +52,18 @@ public class ConfigDatabase {
 		}
 		mVideoResolution = sharedPreferences.getString(KEY_VIDEO_RESOLUTION, VID_RES_720P);
 		mSystemApp = isSytemApp;
+		
+		SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+		String value = prefs.getString("RemoteNodeList", null);
+		GsonBuilder gsonb = new GsonBuilder();
+		Gson gson = gsonb.create();
+		OnyxRemoteNode[] list = gson.fromJson(value, OnyxRemoteNode[].class);
+		mOnyxRemoteNodeList = new ArrayList<OnyxRemoteNode>();
+		if(list != null) {
+			for (OnyxRemoteNode item:list){
+				mOnyxRemoteNodeList.add(item);
+			}
+		}
 	}
 
 	public static int getVideoWidth() {

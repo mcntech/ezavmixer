@@ -119,7 +119,7 @@ public class OnyxApi {
 	
 
 	static {
-		System.loadLibrary("onyxcore");
+		System.loadLibrary("OnyxApi");
 		mSelf = new OnyxApi();
 	}
 	

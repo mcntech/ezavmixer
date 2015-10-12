@@ -16,7 +16,7 @@ import android.widget.Spinner;
 import java.util.ArrayList;
 import java.util.List;
 import android.view.View.OnClickListener;
-import com.mcntech.ezvidcast.R;
+import com.mcntech.ezscreencast.R;
 
 public class ConfigDialog extends Activity implements OnItemSelectedListener {
 	

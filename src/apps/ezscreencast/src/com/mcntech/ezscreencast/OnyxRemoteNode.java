@@ -7,17 +7,18 @@ import java.net.UnknownHostException;
 public class OnyxRemoteNode {
 	public int protocol = 0;
 	public int codecc = 0;
-	public String url = ""; 
+	public String mUrl = ""; 
 	public OnyxRemoteNode(){
 
 	}
-	public OnyxRemoteNode(OnyxRemoteNode dev){
+	public OnyxRemoteNode(String url){
+		mUrl = url;
 	}
 
 	@Override 
 	public String toString(){
 		String ret; 
-		ret = url;	
+		ret = mUrl;	
 		return ret; 
 	}
 

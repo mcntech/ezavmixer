@@ -45,6 +45,7 @@ public class RemoteNodeDialog extends Activity {
             {
             	OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(position); 
             	ConfigDatabase.mOnyxRemoteNodeList.remove(position);
+            	ConfigDatabase.saveRemoteNodeList(getApplicationContext());
             	mListAdapter.notifyDataSetChanged();
             }
         });
@@ -54,6 +55,7 @@ public class RemoteNodeDialog extends Activity {
     public void onAddRemoteNode(View v) {
 		OnyxRemoteNode node = new OnyxRemoteNode(mNodeUrl.getText().toString());
 		ConfigDatabase.mOnyxRemoteNodeList.add(node);
+		ConfigDatabase.saveRemoteNodeList(getApplicationContext());
 		mListAdapter.notifyDataSetChanged();
     }
     public void onClearAllNodes(View v) {

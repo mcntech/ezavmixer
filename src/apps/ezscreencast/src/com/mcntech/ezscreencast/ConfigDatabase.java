@@ -1,6 +1,7 @@
 package com.mcntech.ezscreencast;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
@@ -127,4 +128,25 @@ public class ConfigDatabase {
 		editor.putInt(key, value);
 		editor.commit();
 	}	
+	
+	public static void saveRemoteNodeList(Context ctx) {
+		
+		SharedPreferences sharedPreferences = PreferenceManager
+				.getDefaultSharedPreferences(ctx);
+	
+		GsonBuilder gsonb = new GsonBuilder();
+		Gson gson = gsonb.create();
+		List<String> list = new ArrayList<String>();
+
+		if(mOnyxRemoteNodeList != null) {
+			for (OnyxRemoteNode item:mOnyxRemoteNodeList){
+				list.add(item.mUrl);
+			}
+		}
+		String value = gson.toJson(list);
+		Editor editor = sharedPreferences.edit();
+		editor.putString("RemoteNodeList", value);
+		editor.commit();
+	}
+	
 }

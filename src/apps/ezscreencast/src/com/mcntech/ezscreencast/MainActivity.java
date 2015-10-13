@@ -42,7 +42,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private Button mBtnStart;
     
     RemoteNodeHandler mDeviceHandler;
-	public static ListView mRemoteNodeList = null;
+	public static ListView mRemoteNodeListView = null;
 	public static ArrayList<OnyxRemoteNode> mOnyxRemoteNodeList = null;
 	ArrayAdapter<OnyxRemoteNode> mListAdapter;
 	
@@ -78,15 +78,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		
         mOnyxRemoteNodeList = ConfigDatabase.mOnyxRemoteNodeList;
-	    mRemoteNodeList =  new ListView(mediaLayout.getContext());
-	    mRemoteNodeList.setLayoutParams(new
+	    mRemoteNodeListView =  new ListView(mediaLayout.getContext());
+	    mRemoteNodeListView.setLayoutParams(new
 				LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
 						ViewGroup.LayoutParams.WRAP_CONTENT)); 
 	    mListAdapter = new ArrayAdapter<OnyxRemoteNode>(mediaLayout.getContext(), 
 						android.R.layout.simple_list_item_checked, mOnyxRemoteNodeList); 
-		mRemoteNodeList.setAdapter(mListAdapter ); 
-		mRemoteNodeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-		mRemoteNodeList.setOnItemClickListener(new AdapterView.OnItemClickListener()
+		mRemoteNodeListView.setAdapter(mListAdapter ); 
+		mRemoteNodeListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+		mRemoteNodeListView.setOnItemClickListener(new AdapterView.OnItemClickListener()
         {
             @Override
             public void onItemClick(AdapterView<?> parent, View item,
@@ -94,15 +94,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
             {
             	boolean checked = false;
             	OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(position); 
-            	if(mRemoteNodeList.isItemChecked(position)){
-        			mRemoteNodeList.setItemChecked(position, checked);
+            	if(mRemoteNodeListView.isItemChecked(position)){
+        			mRemoteNodeListView.setItemChecked(position, checked);
             	}else{
-        			mRemoteNodeList.setItemChecked(position, !checked);
+        			mRemoteNodeListView.setItemChecked(position, !checked);
             	}
             }
         });
 		
-		mediaLayout.addView(mRemoteNodeList);	        
+		mediaLayout.addView(mRemoteNodeListView);	        
         
         mDeviceHandler = new RemoteNodeHandler(){
     		@Override
@@ -234,14 +234,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }   
 	
 	public void refreshDeviceView(int i){
-		if(mRemoteNodeList == null)
+		if(mRemoteNodeListView == null)
 			return;
-		OnyxRemoteNode device = (OnyxRemoteNode) mRemoteNodeList.getItemAtPosition(i);
+		OnyxRemoteNode device = (OnyxRemoteNode) mRemoteNodeListView.getItemAtPosition(i);
 		final int deviceIndex = i;
 		final boolean checked = OnyxApi.isRemoteNodeActive(device.mUrl);
 		runOnUiThread(new Runnable() {
 			public void run() {	
-				mRemoteNodeList.setItemChecked(deviceIndex, checked);
+				mRemoteNodeListView.setItemChecked(deviceIndex, checked);
 			}
 		});
 	} 

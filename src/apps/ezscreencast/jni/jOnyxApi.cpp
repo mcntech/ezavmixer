@@ -3,11 +3,11 @@
 #include <android/log.h>
 //#include "jEventHandler.h"
 #include "MultiPublishClnt.h"
-
+#include "jOnyxApiHandler.h"
 #define DBGLOG
 
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
-CMultiPublish *g_pMultiPublish;
+COnyxEventHandler *g_pMultiPublish;
 
 extern "C" {
 
@@ -21,7 +21,7 @@ jlong Java_com_mcntech_ezscreencast_OnyxApi_init(JNIEnv *env, jobject self,jint 
 {
 	pthread_mutex_lock(&g_mutex);
 	if(g_pMultiPublish == NULL)
-		g_pMultiPublish =  CMultiPublish::getInstance();
+		g_pMultiPublish =  new COnyxEventHandler(env, self);//CMultiPublish::getInstance();
 	DBGLOG("", "initializing screencat");
 	pthread_mutex_unlock(&g_mutex);
 	return (jlong)g_pMultiPublish;
@@ -39,22 +39,6 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_deinit(JNIEnv *env, jobject self,
 	return true;
 }
 
-
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_stop(JNIEnv *env, jobject self, jlong publisher)
-{
-	//TODO if(!CMultiPublish::safeLock(&g_mutex))
-	//	return false;
-	CMultiPublish* _publisher = (CMultiPublish*)publisher;
-	if(_publisher != NULL)
-		_publisher->stop();
-	DBGLOG("", "jni stopPlaying: stopped playback1");
-	return true;
-}
-
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_pause(JNIEnv *env, jobject self, jlong publisher)
-{
-	return true;
-}
 // play from start of track every time
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_start(JNIEnv *env, jobject self, jlong publisher, jstring path, jstring title, jstring artist)
 {
@@ -71,17 +55,39 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_start(JNIEnv *env, jobject self, 
 	return result;
 }
 
-//resumes playback if same track selected
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_stop(JNIEnv *env, jobject self, jlong publisher)
+{
+	//TODO if(!CMultiPublish::safeLock(&g_mutex))
+	//	return false;
+	CMultiPublish* _publisher = (CMultiPublish*)publisher;
+	if(_publisher != NULL)
+		_publisher->stop();
+	DBGLOG("", "jni stopPlaying: stopped playback1");
+	return true;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_pause(JNIEnv *env, jobject self, jlong publisher)
+{
+	return true;
+}
+
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_resume(JNIEnv *env, jobject self, jlong publisher, jstring path, jstring title, jstring artist)
 {
 	return true;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_isDeviceActive(JNIEnv *env, jobject self, jlong publisher, jlong deviceid)
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_addRemoteNode(JNIEnv *env, jobject self, jlong handle, jstring url, jstring jappName)
 {
-	jboolean isDeviceActive = JNI_FALSE;
-	// TODO
-	return isDeviceActive;
+	int result = 0;
+	CMultiPublish* _publisher = (CMultiPublish*)handle;
+	const char * szUrl = env->GetStringUTFChars(url, 0);
+	std::string tmpUrl = szUrl;
+	const char *szAppName = env->GetStringUTFChars(jappName, 0);
+	std::string tmpAppName = szAppName;
+	_publisher->AddPublishServer(tmpUrl, tmpAppName);
+	env->ReleaseStringUTFChars(url, szUrl);
+	env->ReleaseStringUTFChars(jappName, szAppName);
+	return JNI_TRUE;
 }
 
 jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject self, jlong publisher,jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
@@ -131,18 +137,6 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_endSession(JNIEnv *env, jobject s
 	//TODO
 	pthread_mutex_unlock(&g_mutex);
 	return JNI_TRUE;
-}
-
-
-///////////////////////////////Misc state information////////////////////////////////////
-
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_isPlaying(JNIEnv *env, jobject self, jlong publisher)
-{
-	pthread_mutex_lock(&g_mutex);
-	CMultiPublish* _publisher = (CMultiPublish*)publisher;
-	jboolean result = JNI_TRUE; //TODO _publisher->isPlaying();
-	pthread_mutex_unlock(&g_mutex);
-	return result;
 }
 
 jstring Java_com_mcntech_ezscreencast_OnyxApi_getVersion(JNIEnv *env, jobject self, jlong publisher)

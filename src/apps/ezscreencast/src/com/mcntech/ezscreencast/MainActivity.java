@@ -106,29 +106,32 @@ public class MainActivity extends Activity implements View.OnClickListener {
         
         mDeviceHandler = new RemoteNodeHandler(){
     		@Override
-    		public void onConnectRemoteNode(final OnyxRemoteNode device, boolean updated) {
+    		public void onConnectRemoteNode(final String url) {
     			boolean newDevice = true;
     			if(mOnyxRemoteNodeList == null)
     				return;
+    			// TODO Update status
     	    }
 
     		@Override
-    		public void onRemoveRemoteNode(String deviceid) {
+    		public void onDisconnectRemoteNode(String deviceid) {
     			final String url = deviceid;
     			if(mOnyxRemoteNodeList == null)
     				return;
     			runOnUiThread(new Runnable() {
                     public void run(){
                 		for(int i=0;i<mOnyxRemoteNodeList.size();i++){
-                			if(mOnyxRemoteNodeList.get(i).mUrl == url)
-                				mOnyxRemoteNodeList.remove(i);
+                			if(mOnyxRemoteNodeList.get(i).mUrl == url){
+                				//mOnyxRemoteNodeList.remove(i);
+                				// TODO : Upda
+                			}
                 		}
                     }
                 });    			
     		}
 
     		@Override
-    		public void onNetworkDisconnected() {
+    		public void onStatusRemoteNode(final String url, String Msg) {
     			// TODO Auto-generated method stub
     			
     		}
@@ -137,6 +140,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
     		public void onRemoteNodeError(final String url,final String message) {
     			// TODO Auto-generated method stub			
     		}
+
+			@Override
+			public void onNetworkDisconnected() {
+				// TODO Auto-generated method stub
+				
+			}
     	};        
     	//ConfigDatabase.loadSavedPreferences(this, isSystemApp);
         OnyxApi.initialize(true, ConfigDatabase.mLatency);

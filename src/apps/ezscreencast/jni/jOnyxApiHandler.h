@@ -17,10 +17,11 @@ public:
 	bool safeAttach(JNIEnv** env);
 	void safeDetach();
 
-	jobject createJDevice(JNIEnv* env);
   	bool onNativeMessage(char *szTitle, char *szMsg);
   	bool onRemoteNodeError(char *url, char *szErr);
-  	bool onRemoteNodePlayStarted();
+  	bool onConnectRemoteNode(char *url);
+  	bool onDisconnectRemoteNode(char *url);
+  	bool onStatusRemoteNode(char *url, char *szMsg);
 
   	jclass m_deviceClass;
 		

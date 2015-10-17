@@ -1,5 +1,7 @@
 
 #ifndef _MULTI_PUBLISH_CLNT_H_
+#define _MULTI_PUBLISH_CLNT_H_
+
 #ifdef WIN32
 #include <winsock2.h>
 #else // Linux
@@ -31,6 +33,7 @@
 #include <signal.h>
 
 #include "MediaSwitch.h"
+
 #include "RtspPublishBridge.h"
 #include "ConfigBase.h"
 #include "uimsg.h"
@@ -43,7 +46,7 @@ public:
 	static 	CMultiPublish *getInstance();
 	static 	void closeInstancce(CMultiPublish *pInst);
 
-	int AddPublishServer(std::string url, std::string appName, int localRtpPort, int remoteRtpPort, int serverPort);
+	int AddPublishServer(std::string url, std::string appName, int localRtpPort=0, int remoteRtpPort=0, int serverPort=554);
 	int RemovePublishServer(std::string url);
 
 	int sendAudioData(const char *pData, int numBytes, long Pts, int Flags);

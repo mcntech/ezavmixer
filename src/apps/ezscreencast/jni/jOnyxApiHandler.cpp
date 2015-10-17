@@ -25,76 +25,6 @@ int COnyxEventHandler::printlog(const char *tag, const char *msg, va_list args)
 	return 0;
 }
 
-jobject COnyxEventHandler::createJDevice(JNIEnv* env){
-	jthrowable exc = 0;
-	if(g_deviceClass == 0){//assigned when app was created to keep thread context
-		g_deviceClass = env->FindClass("com/bfrx/fcvsrc/Device");
-		exc = env->ExceptionOccurred();
-		if(exc){
-			env->ExceptionDescribe(); // write exception data to the console 
-	    	env->ExceptionClear();    // clear the exception that was pending 
-	    	return NULL;
-	    }
-		if(g_deviceClass == 0)
-			return NULL;
-		
-		g_deviceClass = (jclass)env->NewGlobalRef(g_deviceClass);
-		env->ExceptionOccurred();	
-		if(exc){
-			env->ExceptionDescribe(); 
-    		env->ExceptionClear(); 
-    		return NULL;
-    	}     		
-		//return NULL;
-    }
-    
-	jfieldID labelID = env->GetFieldID(g_deviceClass, "label","Ljava/lang/String;");
-	env->ExceptionOccurred();	
-	if(exc){
-		env->ExceptionDescribe(); 
-		env->ExceptionClear(); 
-		return NULL;
-	}   
-    if(labelID == NULL)
-		return NULL;
-	jfieldID roleField = env->GetFieldID(g_deviceClass, "role","I");
-	jfieldID deviceInfoField = env->GetFieldID(g_deviceClass, "deviceInfo","Ljava/lang/String;");
-	env->ExceptionOccurred();	
-	if(exc){
-		env->ExceptionDescribe(); 
-		env->ExceptionClear(); 
-		return NULL;
-	}   
-      
-	jmethodID nodeConstructor = env->GetMethodID(g_deviceClass, "<init>", "()V");
-	env->ExceptionOccurred();	
-	if(exc){
-		env->ExceptionDescribe(); 
-		env->ExceptionClear(); 
-		return NULL;
-	}      
-	if(nodeConstructor == NULL)
-		return NULL;
-	jobject jnode = env->NewObject(g_deviceClass,nodeConstructor);
-	env->ExceptionOccurred();	
-	if(exc){
-		env->ExceptionDescribe(); 
-		env->ExceptionClear(); 
-		return NULL;
-	}      
-	if(jnode == NULL)
-		return NULL;
-	//make sure to match the method to the right jtype or values can get overwritten
-	env->SetIntField(jnode, roleField,0);
-	
-	char deviceInfo[256];
-	deviceInfo[0] = 0;
-	// TODO info.getMfiInfo(deviceInfo,256);
-	if(deviceInfo[0] != '\0' && strcmp(deviceInfo,"") != 0){
-		env->SetObjectField(jnode, deviceInfoField, env->NewStringUTF(deviceInfo));
-	}
-	return jnode;
-}
 
 bool COnyxEventHandler::onNativeMessage(char *szTitle, char *szMsg)
 {
@@ -117,8 +47,8 @@ bool COnyxEventHandler::onRemoteNodeError(char *url, char *szErr)
 	jstring jurl = env->NewStringUTF(url);
 	jstring jmsg = env->NewStringUTF(szErr);
 
-	jmethodID callback = env->GetStaticMethodID(onyxApi, "onRemoteNodeError", "(Ljava/lang/Object;)V");
-	env->CallStaticVoidMethod(onyxApi, callback,szErr);
+	jmethodID callback = env->GetStaticMethodID(onyxApi, "onRemoteNodeError", "(Ljava/lang/Object;Ljava/lang/Object;)V");
+	env->CallStaticVoidMethod(onyxApi, callback,jurl,jmsg);
 	env->DeleteLocalRef(jurl);
 	env->DeleteLocalRef(jmsg);
 
@@ -126,16 +56,53 @@ bool COnyxEventHandler::onRemoteNodeError(char *url, char *szErr)
 	return true;
 }
 
-bool COnyxEventHandler::onRemoteNodePlayStarted()
-{
-	JNIEnv* env;
-	safeAttach(&env);
-    jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
-	jmethodID callback = env->GetStaticMethodID(onyxApi, "onRemoteNodePlayStarted", "(J)V");
-	env->CallStaticVoidMethod(onyxApi, 0);
-	safeDetach();
-	return true;
-}
+	bool COnyxEventHandler::onConnectRemoteNode(char *url)
+	{
+		JNIEnv* env;
+		safeAttach(&env);//must always call safeDetach() before returning
+		jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+		jstring jurl = env->NewStringUTF(url);
+
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onConnectRemoteNode", "(Ljava/lang/Object;)V");
+		env->CallStaticVoidMethod(onyxApi, callback, jurl);
+		env->DeleteLocalRef(jurl);
+
+
+		safeDetach();
+		return true;
+	}
+
+	bool COnyxEventHandler::onDisconnectRemoteNode(char *url)
+	{
+		JNIEnv* env;
+		safeAttach(&env);//must always call safeDetach() before returning
+		jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+		jstring jurl = env->NewStringUTF(url);
+
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onDisconnectRemoteNode", "(Ljava/lang/Object;)V");
+		env->CallStaticVoidMethod(onyxApi, callback,jurl);
+		env->DeleteLocalRef(jurl);
+
+		safeDetach();
+		return true;
+	}
+
+	bool COnyxEventHandler::onStatusRemoteNode(char *url, char *szErr)
+	{
+		JNIEnv* env;
+		safeAttach(&env);//must always call safeDetach() before returning
+		jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+		jstring jurl = env->NewStringUTF(url);
+		jstring jmsg = env->NewStringUTF(szErr);
+
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onStatusRemoteNode", "(Ljava/lang/Object;Ljava/lang/Object;)V");
+		env->CallStaticVoidMethod(onyxApi, callback,jurl,jmsg);
+		env->DeleteLocalRef(jurl);
+		env->DeleteLocalRef(jmsg);
+
+		safeDetach();
+		return true;
+	}
 
 bool COnyxEventHandler::attachThread(JNIEnv** env){
   bool changed = false;

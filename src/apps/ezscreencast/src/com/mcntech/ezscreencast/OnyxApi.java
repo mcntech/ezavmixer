@@ -15,8 +15,9 @@ import android.widget.TabHost;
 public class OnyxApi {	
 
 	public interface RemoteNodeHandler {
-		void onConnectRemoteNode(OnyxRemoteNode node,boolean updated);
-		void onRemoveRemoteNode(String url);
+		void onConnectRemoteNode(String url);
+		void onDisconnectRemoteNode(String url);
+		void onStatusRemoteNode(String url, final String message);		
 		void onRemoteNodeError(final String url,final String message);
 		void onNetworkDisconnected();
 	}
@@ -99,13 +100,34 @@ public class OnyxApi {
 	public static void onNativeMessage(final Object title,final Object message) {		
 		System.out.println("java onNativeMessage:" + title + " message:" + message);
 	}
-	
+
+	public static void onConnectRemoteNode(final String url ) 
+	{		
+		if(m_nodeHandler != null)
+			m_nodeHandler.onConnectRemoteNode(url);
+	}
+
+	public static void onDisconnectRemoteNode(final String url ) 
+	{		
+		if(m_nodeHandler != null)
+			m_nodeHandler.onDisconnectRemoteNode(url);
+	}
+	public static void onStatusRemoteNode(final String url, String Msg) 
+	{		
+		if(m_nodeHandler != null)
+			m_nodeHandler.onStatusRemoteNode(url, Msg);
+	}
+		
 	public static void onRemoteNodeError(final String url, final Object message ) 
 	{		
 		if(m_nodeHandler != null)
 			m_nodeHandler.onRemoteNodeError(url,(String)message);
 	}
-		
+	public static void onStatusRemoteNode(final String url, final Object message ) 
+	{		
+		if(m_nodeHandler != null)
+			m_nodeHandler.onStatusRemoteNode(url,(String)message);
+	}	
 	public static void onRemoteNodePlayStarted(final long nodeid ) {		
 		System.out.println("java onRemoteNodePlayStarted:" + " id:" + nodeid);
 		return;
@@ -164,16 +186,16 @@ public class OnyxApi {
 	private native static void startSession(long handle, boolean enableAud, boolean enableVid);
 	private native static void stopSession(long handle);
 
-	private native static boolean addRemoteNode(long handle, String url);	
+	private native static boolean addRemoteNode(long handle, String url, jstring appname);	
 	private native static boolean removeRemoteNode(long handle, String url);	
-	private native static boolean isRemoteNodeActive(long handle, String url);
-	private native static boolean setRemoteNodeSettings(long handle, OnyxRemoteNode newSettings);
 	
 	private native static boolean start(long handle);
 	private native static boolean stop(long handle);
 	private native static boolean pause(long handle);
 	private native static boolean resume(long handle);	
+	
 	public native static String getVersion(long handle);
+	
 	private native static int sendAudioData(long handle,byte[] pcmBytes, int numBytes, long lPts, int nFlags);
 	private native static int sendVideoData(long handle,byte[] vidBytes, int numBytes, long Pts, int Flags);	
 	private native static long getClockUs(long handle);	

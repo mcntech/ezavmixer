@@ -145,21 +145,11 @@ public class OnyxApi {
 		mSelf = new OnyxApi();
 	}
 	
-	public static boolean setRemoteNodeSettings(OnyxRemoteNode newSettings){
-		if(mHandle==0)
-			return false;
-		return setRemoteNodeSettings(mHandle,newSettings);
-	}
 	
 	public static String getVersion() {
 		if(mHandle==0)
 			return null;
 		return getVersion(mHandle);
-	}
-	public static boolean isRemoteNodeActive(String url) {
-		if(mHandle==0)
-			return false;
-		return isRemoteNodeActive(mHandle,url);
 	}
 	
 	public static int sendAudioData(byte[] pcmBytes, int numBytes, long lPts, int nFlags){
@@ -186,7 +176,7 @@ public class OnyxApi {
 	private native static void startSession(long handle, boolean enableAud, boolean enableVid);
 	private native static void stopSession(long handle);
 
-	private native static boolean addRemoteNode(long handle, String url, jstring appname);	
+	private native static boolean addRemoteNode(long handle, String url, String appname);	
 	private native static boolean removeRemoteNode(long handle, String url);	
 	
 	private native static boolean start(long handle);

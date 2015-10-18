@@ -26,10 +26,11 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../core/include
 LOCAL_CFLAGS += -DPLATFORM_ANDROID
 LOCAL_MODULE := OnyxApi
 
-LOCAL_SRC_FILES := 	MultiPublishClnt.cpp
+LOCAL_SRC_FILES := 	RtspMultiPublishClnt.cpp
 LOCAL_SRC_FILES +=	jOnyxApi.cpp 
-LOCAL_SRC_FILES +=	jOnyxApiHandler.cpp
+LOCAL_SRC_FILES +=	jOnyxEvents.cpp
 LOCAL_SRC_FILES +=	ServerNode.cpp 	
+
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_LDLIBS := -llog
 LOCAL_STATIC_LIBRARIES := onyxcore jdrtsp tsmux streamif jdosal

@@ -247,11 +247,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			return;
 		OnyxRemoteNode device = (OnyxRemoteNode) mRemoteNodeListView.getItemAtPosition(i);
 		final int deviceIndex = i;
-		final boolean checked = OnyxApi.isRemoteNodeActive(device.mUrl);
-		runOnUiThread(new Runnable() {
-			public void run() {	
-				mRemoteNodeListView.setItemChecked(deviceIndex, checked);
-			}
-		});
+		//final boolean checked = OnyxApi.isRemoteNodeActive(device.mUrl);
+		//runOnUiThread(new Runnable() {
+		//	public void run() {	
+		//		mRemoteNodeListView.setItemChecked(deviceIndex, checked);
+		//	}
+		//});
 	} 
 }

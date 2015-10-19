@@ -11,7 +11,13 @@ LOCAL_C_INCLUDES += $(OSAL_FOLDER)/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../codecdm81xx/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../logutil/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/jdrtsp/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/mpegdash/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/tinyxml/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/jdhttp/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/httplive/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/tsmux/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/tsdemux/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/mp4mux/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/misc/include
 
 LOCAL_CFLAGS += -DPLATFORM_ANDROID
@@ -21,5 +27,6 @@ LOCAL_SRC_FILES += ../src/RtspPublishBridge.cpp
 LOCAL_SRC_FILES += ../src/StrmInBridgeBase.cpp
 LOCAL_SRC_FILES += ../src/StrmOutBridgeBase.cpp
 LOCAL_SRC_FILES += ../src/RtspConfigure.cpp
+LOCAL_SRC_FILES += ../src/MpdSrvBridge.cpp
 
 include $(BUILD_STATIC_LIBRARY)

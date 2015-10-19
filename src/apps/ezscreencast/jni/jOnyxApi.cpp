@@ -3,6 +3,7 @@
 #include <android/log.h>
 //#include "jEventHandler.h"
 #include "RtspMultiPublishClnt.h"
+#include "DashMultiPublishClnt.h"
 #include "PublishClntBase.h"
 #include "jOnyxEvents.h"
 #define DBGLOG
@@ -18,12 +19,15 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 	return JNI_VERSION_1_6;
 }
 
-jlong Java_com_mcntech_ezscreencast_OnyxApi_init(JNIEnv *env, jobject self,jint deviceIp)
+jlong Java_com_mcntech_ezscreencast_OnyxApi_init(JNIEnv *env, jobject self,jint protocol)
 {
 	pthread_mutex_lock(&g_mutex);
 	if(g_pMultiPublish == NULL) {
 		COnyxEvents *pEventCallback = new COnyxEvents(env, self);
-		g_pMultiPublish =  CRtspMultiPublishClnt::openInstance(pEventCallback);
+		if(protocol == 0)
+			g_pMultiPublish =  CRtspMultiPublishClnt::openInstance(pEventCallback);
+		if(protocol == 1)
+			g_pMultiPublish =  CDashMultiPublishClnt::openInstance(pEventCallback);
 	}
 	DBGLOG("", "initializing screencat");
 	pthread_mutex_unlock(&g_mutex);

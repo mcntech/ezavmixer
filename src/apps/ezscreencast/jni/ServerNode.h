@@ -1,5 +1,6 @@
 
 #ifndef _SERVER_NODE__H_
+#define _SERVER_NODE__H_
 #ifdef WIN32
 #include <winsock2.h>
 #else // Linux

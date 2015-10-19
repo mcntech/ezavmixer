@@ -3,9 +3,20 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := mpegdash
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/.. $(LOCAL_PATH)/../include $(LOCAL_PATH)/../../tinyxml/include
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/.. 
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include 
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../tinyxml/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../osal/include
-MY_SRCS := $(LOCAL_PATH)/../src
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../jdhttp/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../httplive/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../misc/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../mp4mux/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../tsdemux/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../tsmux/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../jdaws/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../logutil/include
+
+MY_SRCS := ../src
 
 LOCAL_CFLAGS += -DPLATFORM_ANDROID
 

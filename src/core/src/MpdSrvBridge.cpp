@@ -62,10 +62,10 @@ CMpdSrvBridgeChan::~CMpdSrvBridgeChan()
 	}
 
 	if(m_pUploader){
-		hlsPublishStop(m_pUploader);
+		mpdPublishStop(m_pUploader);
 	}
 	if(m_pUploaderForExtHttpSrv){
-		hlsPublishStop(m_pUploaderForExtHttpSrv);
+		mpdPublishStop(m_pUploaderForExtHttpSrv);
 	}
 	if(m_pMpdRepresentation) {
 		delete m_pMpdRepresentation;

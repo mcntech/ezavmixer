@@ -12,7 +12,7 @@ LOCAL_CFLAGS += -DPLATFORM_ANDROID
 
 LOCAL_SRC_FILES := $(MY_SRCS)/tinystr.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/tinyxml.cpp
-LOCAL_SRC_FILES := $(MY_SRCS)/tinyxmlerror.cpp
-LOCAL_SRC_FILES := $(MY_SRCS)/tinyxmlparser.cpp
+LOCAL_SRC_FILES += $(MY_SRCS)/tinyxmlerror.cpp
+LOCAL_SRC_FILES += $(MY_SRCS)/tinyxmlparser.cpp
 
 include $(BUILD_STATIC_LIBRARY)

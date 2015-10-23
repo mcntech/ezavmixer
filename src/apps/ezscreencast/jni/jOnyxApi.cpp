@@ -1,15 +1,18 @@
 #include <string.h>
 #include <jni.h>
 #include <android/log.h>
+#include <InprocStrmConn.h>
 //#include "jEventHandler.h"
 #include "RtspMultiPublishClnt.h"
 #include "DashMultiPublishClnt.h"
 #include "PublishClntBase.h"
 #include "jOnyxEvents.h"
+
 #define DBGLOG
 
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 CPublishClntBase *g_pMultiPublish;
+CInprocStrmConn *gpStrmInputInproc0 = NULL;
 
 extern "C" {
 
@@ -29,6 +32,11 @@ jlong Java_com_mcntech_ezscreencast_OnyxApi_init(JNIEnv *env, jobject self,jint 
 		if(protocol == 1)
 			g_pMultiPublish =  CDashMultiPublishClnt::openInstance(pEventCallback);
 	}
+
+	CInprocStrmConnRegistry *pRegistry = CInprocStrmConnRegistry::getRegistry();
+	const char *pszInputUri = "Input0";
+	gpStrmInputInproc0 = pRegistry->getEntry(pszInputUri);
+
 	DBGLOG("", "initializing screencat");
 	pthread_mutex_unlock(&g_mutex);
 	return (jlong)g_pMultiPublish;
@@ -107,7 +115,12 @@ jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject se
 	jboolean isCopy;
 	int len = env->GetArrayLength (pcmBytes);
 	jbyte* rawjBytes = env->GetByteArrayElements(pcmBytes, &isCopy);
-	result = _publisher->sendAudioData((const char *)rawjBytes, len, Pts, Flags);
+	//result = _publisher->sendAudioData((const char *)rawjBytes, len, Pts, Flags);
+	if(gpStrmInputInproc0 && gpStrmInputInproc0->m_pAudCon){
+		ConnCtxT *pStrm = gpStrmInputInproc0->m_pAudCon;
+		pStrm->Write(pStrm, (char *)rawjBytes, len, Pts, Flags);
+	}
+
 	env->ReleaseByteArrayElements(pcmBytes,rawjBytes,0);
 	//pthread_mutex_unlock(&g_mutex);
 	return result;
@@ -121,7 +134,11 @@ jint Java_com_mcntech_ezscreencast_OnyxApi_sendVideoData(JNIEnv *env, jobject se
 	jboolean isCopy;
 	int len = env->GetArrayLength (pcmBytes);
 	jbyte* rawjBytes = env->GetByteArrayElements(pcmBytes, &isCopy);
-	result = _publisher->sendVideoData((const char *)rawjBytes, len, Pts, Flags);
+	//result = _publisher->sendVideoData((const char *)rawjBytes, len, Pts, Flags);
+	if(gpStrmInputInproc0 && gpStrmInputInproc0->m_pVidCon){
+		ConnCtxT *pStrm = gpStrmInputInproc0->m_pVidCon;
+		pStrm->Write(pStrm, (char *)rawjBytes, len, Pts, Flags);
+	}
 	env->ReleaseByteArrayElements(pcmBytes,rawjBytes,0);
 	return result;
 }

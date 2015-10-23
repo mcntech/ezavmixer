@@ -12,6 +12,7 @@ include $(SRC_FOLDER)/plugins/osal/jni/Android.mk
 include $(SRC_FOLDER)/core/jni/Android.mk
 include $(SRC_FOLDER)/plugins/streamif/jni/Android.mk
 include $(SRC_FOLDER)/plugins/tinyxml/jni/Android.mk
+include $(SRC_FOLDER)/plugins/configdb/jni/Android.mk
 
 include $(CLEAR_VARS)
 
@@ -48,5 +49,5 @@ LOCAL_SRC_FILES +=	ServerNode.cpp
 
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_LDLIBS := -llog
-LOCAL_STATIC_LIBRARIES := onyxcore jdrtsp  mpegdash jdhttp jdnet tsmux mp4mux parseutil streamif tinyxml jdosal
+LOCAL_STATIC_LIBRARIES := onyxcore jdrtsp  mpegdash jdhttp jdnet tsmux mp4mux parseutil streamif tinyxml configdb jdosal
 include $(BUILD_SHARED_LIBRARY)

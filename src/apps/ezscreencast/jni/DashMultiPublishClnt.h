@@ -40,6 +40,8 @@
 #include "ServerNode.h"
 #include "PublishClntBase.h"
 #include "PublishEventBase.h"
+#include "StreamUtil.h"
+
 class CPublishEventBase;
 class CDashMultiPublishClnt : public CPublishClntBase
 {
@@ -58,7 +60,10 @@ public:
 	int stop();
 
 private:
+	int SetPublishSwitchSrc(const char *pszSwitchId, int nSrcId, const char *pszConfFile);
 	int StartMpdServer(const char *pszConfFile);
+	int SetupPublishSwiches(const char *pszConfFile);
+
 public:
 	CDashMultiPublishClnt(CPublishEventBase *pEventBase);
 	CDashMultiPublishClnt(CConfigBase *pConfig);

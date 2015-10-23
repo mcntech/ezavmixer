@@ -10,6 +10,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/..
 LOCAL_C_INCLUDES += $(OSAL_FOLDER)/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../codecdm81xx/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../logutil/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/configdb/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/jdrtsp/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/mpegdash/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/tinyxml/include
@@ -28,5 +29,9 @@ LOCAL_SRC_FILES += ../src/StrmInBridgeBase.cpp
 LOCAL_SRC_FILES += ../src/StrmOutBridgeBase.cpp
 LOCAL_SRC_FILES += ../src/RtspConfigure.cpp
 LOCAL_SRC_FILES += ../src/MpdSrvBridge.cpp
+LOCAL_SRC_FILES += ../src/StreamUtil.cpp
+LOCAL_SRC_FILES += ../src/StrmConnWrapper.cpp
+LOCAL_SRC_FILES += ../src/InprocStrmConn.cpp
+LOCAL_SRC_FILES += ../src/InputStrmBase.cpp
 
 include $(BUILD_STATIC_LIBRARY)

@@ -118,4 +118,7 @@ JD_STATUS JdAwsGetHttpResponse(
 	int *httpStatus,
 	int timeout);
 
+int JdAwsCloseHttpConnection(
+	void *handle);
+
 #endif // __JD_AWS_S3_UPNP_HTTP_CONNECTION_H__

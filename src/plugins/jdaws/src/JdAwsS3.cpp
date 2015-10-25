@@ -10,6 +10,8 @@
 #include <sstream>
 #include "JdAwsS3.h"
 
+#define ENABLE_OPENSSL
+
 char *jd_url_encode(const char *)
 {
 	return NULL;

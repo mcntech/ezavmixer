@@ -8,11 +8,17 @@
 #include "PublishClntBase.h"
 #include "jOnyxEvents.h"
 
+#define PUBLISH_TYPE_NONE  0
+#define PUBLISH_TYPE_RTSP  1
+#define PUBLISH_TYPE_MPD   2
+#define PUBLISH_TYPE_HLS   3
+#define PUBLISH_TYPE_RTMP  4
+
 #define DBGLOG
 
-pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
-CPublishClntBase *g_pMultiPublish;
-CInprocStrmConn *gpStrmInputInproc0 = NULL;
+pthread_mutex_t   g_mutex = PTHREAD_MUTEX_INITIALIZER;
+CPublishClntBase  *g_pMultiPublish;
+CInprocStrmConn   *gpStrmInputInproc0 = NULL;
 
 extern "C" {
 
@@ -25,14 +31,17 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 jlong Java_com_mcntech_ezscreencast_OnyxApi_init(JNIEnv *env, jobject self,jint protocol)
 {
 	pthread_mutex_lock(&g_mutex);
+
+	/* Initialize publish client */
 	if(g_pMultiPublish == NULL) {
 		COnyxEvents *pEventCallback = new COnyxEvents(env, self);
-		if(protocol == 0)
+		if(protocol == PUBLISH_TYPE_RTSP)
 			g_pMultiPublish =  CRtspMultiPublishClnt::openInstance(pEventCallback);
-		if(protocol == 1)
+		if(protocol == PUBLISH_TYPE_MPD)
 			g_pMultiPublish =  CDashMultiPublishClnt::openInstance(pEventCallback);
 	}
 
+	/* Get strmconn interfacce */
 	CInprocStrmConnRegistry *pRegistry = CInprocStrmConnRegistry::getRegistry();
 	const char *pszInputUri = "Input0";
 	gpStrmInputInproc0 = pRegistry->getEntry(pszInputUri);
@@ -92,7 +101,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_resume(JNIEnv *env, jobject self,
 	return true;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_addRemoteNode(JNIEnv *env, jobject self, jlong handle, jstring url, jstring jappName)
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_addRtspPublishNode(JNIEnv *env, jobject self, jlong handle, jstring url, jstring jappName)
 {
 	int result = 0;
 	CPublishClntBase* _publisher = (CPublishClntBase*)handle;

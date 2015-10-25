@@ -40,7 +40,8 @@ using namespace std;
 #include "MpegDashSgmt.h"
 #include "JdHttpClnt.h"
 #include "TsParse.h"
-#include "MpdOutBase.h"
+//#include "MpdOutBase.h"
+#include "SegmentWriteS3.h"
 #include "MpdPublishBase.h"
 #include "Mpd.h"
 #include "Mp4MuxIf.h"
@@ -53,7 +54,7 @@ using namespace std;
 
 #ifdef EN_S3_UPLOAD
 #include "JdAwsS3.h"
-#include "MpdOutJdAws.h"
+#include "SegmentWriteBase.h"
 #include "JdAwsS3UpnpHttpConnection.h"
 #include "JdAwsConfig.h"
 #endif
@@ -229,7 +230,7 @@ static char *GetMpdBaseName(const char *pszFile)
 	}
 	return NULL;
 }
-class CMpdOutFs : public CMpdOutBase
+class CMpdOutFs : public CSegmentWriteBase
 {
 public:
 	int Start(const char *pszParentFolder, const char *pszFile, int nTotalLen, char *pData, int nLen, const char *pContentType)
@@ -999,7 +1000,7 @@ public:
 		// TODO: Pass as parameter
 		m_nSegmentDurationMs = nSegmentDuration;
 		if (nDestType == MPD_UPLOADER_TYPE_S3) {
-			m_pHlsOut = new CMpdOutJdS3(pszBucket, pszHost, szAccessId, szSecKey);
+			m_pHlsOut = new CSegmentWriteS3(pszBucket, pszHost, szAccessId, szSecKey);
 			
 		} else if (nDestType == MPD_UPLOADER_TYPE_DISC) {
 			m_pHlsOut = new CMpdOutFs;
@@ -1088,7 +1089,7 @@ static void *thrdStreamHttpLiveUpload(void *pArg);
 	char                *m_pszMpdFilePrefix;
 	char                *m_pszMpdBaseUrl;
 
-	CMpdOutBase         *m_pHlsOut;
+	CSegmentWriteBase         *m_pHlsOut;
 	pthread_t			thrdHandle;
 	int                 m_fLiveOnly;
 	int                 m_nSegmentDurationMs;
@@ -1626,7 +1627,7 @@ DWORD CMpdPublishS3::Process()
 	int fChunked = 0;
 	int fDone = 0;
 
-	CMpdOutBase *pHlsOut = m_pHlsOut;
+	CSegmentWriteBase *pHlsOut = m_pHlsOut;
 	int nSegmentDurationMs;
 	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
 
@@ -1725,12 +1726,13 @@ void *mpdPublishStart(
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
 	CMpdPublishBase *pPublisher = NULL;
-#if 0
+#if 1
+	int nSegmentDurationMs = 1000;
 	if(nDestType == MPD_UPLOADER_TYPE_S3 || nDestType == MPD_UPLOADER_TYPE_DISC) {
 		if(nTotalTimeMs == -1)
 			nTotalTimeMs = MAX_UPLOAD_TIME;
-		pPublisher = new CMpdPublishS3(nTotalTimeMs, pSegmenter, pMpdGen, pszSegmentPrefix, pszParentFolder, 
-			pszBucketOrSvrRoot, pszHost, szAccessId, szSecKey,  nStartIndex, nSegmentDurationMs, nDestType);
+		pPublisher = new CMpdPublishS3(nTotalTimeMs, pSegmenter, pMpdRep, pszSegmentPrefix, pszParentFolder,
+			pszBucketOrSvrRoot, pszHost, szAccessId, szSecKey,  fLiveOnly, nStartIndex, nSegmentDurationMs, nDestType);
 	} else 
 #endif
 	{

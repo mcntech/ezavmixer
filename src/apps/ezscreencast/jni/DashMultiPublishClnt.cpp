@@ -6,114 +6,6 @@ CDashMultiPublishClnt::CDashMultiPublishClnt(CPublishEventBase *pEventBase)
 {
 	m_EventCallback = pEventBase;
 }
-
-int CDashMultiPublishClnt::AddPublishServer(std::string url, std::string appName, int localRtpPort, int remoteRtpPort, int serverPort)
-{
-
-}
-
-int CDashMultiPublishClnt::RemovePublishServer(std::string url)
-{
-
-}
-
-int CDashMultiPublishClnt::SetPublishSwitchSrc(const char *pszSwitchId, int nSrcId, const char *pszConfFile)
-{
-	INPUT_TYPE_T  nInputType;
-	char          szSwitchInputId[64];
-	char          szInputSourceId[64];
-	char          szInputUri[64];
-	// TODO: Modify
-	CMediaSwitch *pPublishSwitch = NULL;
-	std::map<std::string, CMediaSwitch *>::iterator it = m_listPublishSwitches.find(pszSwitchId);
-
-	if(m_listPublishSwitches.end() != it){
-		pPublishSwitch = (*it).second;
-	} else {
-		//JDBG_LOG(CJdDbg::LVL_ERR,("!!!  switch_id=%s not mapped !!!\n", pszSwitchId));
-		return -1;
-	}
-	//JDBG_LOG(CJdDbg::LVL_SETUP,("SwitchId=%s nSrcId=%d", pszSwitchId, nSrcId));
-	CAvmixInputStrm *pSwitchpInput = pPublishSwitch->m_pSwitchInput;
-	//pPublishSwitch->Stop();
-	if(pSwitchpInput){
-		CStreamUtil::DeinitInputStrm(pSwitchpInput);
-		delete pSwitchpInput;
-		pPublishSwitch->m_pSwitchInput = NULL;
-	}
-
-	sprintf(szSwitchInputId, "%s%d",SECTION_SWITCH_INPUT_ID_PREFIX, nSrcId);
-	//JDBG_LOG(CJdDbg::LVL_SETUP,("SwitchId=%s szSwitchInputId=%s", pszSwitchId, szSwitchInputId));
-	ini_gets(pszSwitchId, szSwitchInputId, "", szInputSourceId, 63, pszConfFile);
-	//JDBG_LOG(CJdDbg::LVL_SETUP,("SwitchId=%s szSwitchInputId=%s szInputSourceId=%s", pszSwitchId, szSwitchInputId, szInputSourceId));
-	if(strlen(szInputSourceId)) {
-		int nRes = 0;
-		pSwitchpInput = CStreamUtil::GetStreamParamsFromCfgDb(szInputSourceId, pszConfFile);
-		nInputType = pSwitchpInput->nInputType;
-
-		//if(nInputType == INPUT_TYPE_AVMIXER) {
-		//	CAvMixer *pAvMixer = GetAvMixer(pSwitchpInput->pszInputUri);
-		//	if(pAvMixer){
-		//		pSwitchpInput->mpInputBridge = pAvMixer->GetOutputConn();
-		//	}
-		//} else
-		{
-			nRes  = CStreamUtil::InitInputStrm(pSwitchpInput, nSrcId);
-		}
-		if (nRes == 0 && pSwitchpInput->mpInputBridge) {
-			ConnCtxT   *pVidConnSrc = NULL;
-			ConnCtxT   *pAudConnSrc = NULL;
-			XADataSource *pDataSrc1 = pSwitchpInput->mpInputBridge->GetDataSource1();
-			XADataSource *pDataSrc2 = pSwitchpInput->mpInputBridge->GetDataSource2();
-			if(pDataSrc1) {
-				XADataLocator_Address *pDataLocatorVideo = (XADataLocator_Address *)pDataSrc1->pLocator;
-				pVidConnSrc = (ConnCtxT  *)pDataLocatorVideo->pAddress;
-			}
-			if(pDataSrc2) {
-				XADataLocator_Address *pDataLocatorAudio = (XADataLocator_Address *)pDataSrc2->pLocator;
-				pAudConnSrc = (ConnCtxT   *)pDataLocatorAudio->pAddress;
-			}
-
-			pPublishSwitch->SetSource(pVidConnSrc, pAudConnSrc);
-			if(pSwitchpInput->mpInputBridge) {
-				pSwitchpInput->mpInputBridge->StartStreaming();
-			}
-			pPublishSwitch->m_pSwitchInput = pSwitchpInput;
-		} else {
-			//JDBG_LOG(CJdDbg::LVL_ERR,("!!! Failed to set input switch_id=%s src_id=%d !!!\n", pszSwitchId, nSrcId));
-			delete pSwitchpInput;
-		}
-	} else {
-		//JDBG_LOG(CJdDbg::LVL_ERR,("!!! Source not specified SwitchId=%s SrcId=%d !!!\n", pszSwitchId, nSrcId));
-	}
-	return 0;
-}
-
-int CDashMultiPublishClnt::SetupPublishSwiches(const char *pszConfFile)
-{
-	int res = 0;
-	int i;
-	char szSwitchIdSection[128];
-	char szSwitchInput[128];
-	//JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
-	int nNumSwitches =  ini_getl(SECTION_GLOBAL, KEY_MW_SWITCHES,   0, pszConfFile);
-	for(int i=0; i < nNumSwitches; i++) {
-		int nInputs = 0;
-		sprintf(szSwitchIdSection,"%s%d",SWITCH_PREFIX, i);
-		int nNumInputs =  ini_getl(szSwitchIdSection, SWITCH_INPUT_COUNT,   0, pszConfFile);
-		if(nNumInputs) {
-			CMediaSwitch *pPublishSwitch = new CMediaSwitch(szSwitchIdSection);
-			m_listPublishSwitches[szSwitchIdSection] = pPublishSwitch;
-			SetPublishSwitchSrc(szSwitchIdSection,0, pszConfFile);
-		} else {
-			JDBG_LOG(CJdDbg::LVL_ERR,("switch_id=%s not defined\n", szSwitchIdSection));
-		}
-	}
-
-	//JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
-	return res;
-}
-
 int CDashMultiPublishClnt::StartMpdServer(const char *pszInitialMpdFile)
 {
 	int res = 0;
@@ -212,19 +104,6 @@ int CDashMultiPublishClnt::start()
 	StartMpdServer(NULL);
 }
 
-int CDashMultiPublishClnt::sendAudioData(const char *pData, int numBytes, long Pts, int Flags)
-{
-	long long llPts = Pts;
-	m_pAudConnSrc->Write(m_pAudConnSrc, (char *)pData, numBytes, (unsigned int)Flags, llPts);
-	return 0;
-}
-
-int CDashMultiPublishClnt::sendVideoData(const char *pData, int numBytes, long Pts, int Flags)
-{
-	long long llPts = Pts;
-	m_pVidConnSrc->Write(m_pAudConnSrc, (char *)pData, numBytes, (unsigned int)Flags, llPts);
-	return 0;
-}
 
 int CDashMultiPublishClnt::stop()
 {

@@ -84,7 +84,7 @@ public class OnyxApi {
 		m_nodeHandler = handler;
 	}
 	
-    public static void addRemoteNode(String url){
+    public static void addRtspPublishNode(String url){
 		mActiveRemoteNodes.add(url);
 	}
 
@@ -176,7 +176,7 @@ public class OnyxApi {
 	private native static void startSession(long handle, boolean enableAud, boolean enableVid);
 	private native static void stopSession(long handle);
 
-	private native static boolean addRemoteNode(long handle, String url, String appname);	
+	private native static boolean addRtspPublishNode(long handle, String url, String appname);	
 	private native static boolean removeRemoteNode(long handle, String url);	
 	
 	private native static boolean start(long handle);

@@ -46,28 +46,20 @@ class CPublishEventBase;
 class CDashMultiPublishClnt : public CPublishClntBase
 {
 public:
+	CDashMultiPublishClnt(CPublishEventBase *pEventBase);
+	CDashMultiPublishClnt(CConfigBase *pConfig);
+
 	CConfigBase *m_pConfig;
 	static CPublishClntBase *openInstance(CPublishEventBase *pEventBase);
 	//void closeInstancce(CPublishClntBase *pInst);
-
-	int AddPublishServer(std::string url, std::string appName, int localRtpPort=0, int remoteRtpPort=0, int serverPort=554);
-	int RemovePublishServer(std::string url);
-
-	int sendAudioData(const char *pData, int numBytes, long Pts, int Flags);
-	int sendVideoData(const char *pData, int numBytes, long Pts, int Flags);
 
 	int start();
 	int stop();
 
 private:
-	int SetPublishSwitchSrc(const char *pszSwitchId, int nSrcId, const char *pszConfFile);
 	int StartMpdServer(const char *pszConfFile);
-	int SetupPublishSwiches(const char *pszConfFile);
 
 public:
-	CDashMultiPublishClnt(CPublishEventBase *pEventBase);
-	CDashMultiPublishClnt(CConfigBase *pConfig);
-	std::map <std::string, CMediaSwitch *>  m_listPublishSwitches;
 	COutputStream      *m_pOutputStream;
 	CMpdSrvBridge      *m_pMpdSrvBridge;
 	CMpdRoot           *m_pMpdRoot;

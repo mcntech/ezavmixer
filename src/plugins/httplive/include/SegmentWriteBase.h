@@ -9,7 +9,7 @@
 #define CONTENT_STR_MP2T			"application/octet-stream"
 #define CONTENT_STR_DEF				"application/octet-stream"
 
-class CHlsOutBase
+class CSegmentWriteBase
 {
 public:
 	virtual int Start(const char *pszParent, const char *pszFile, int nTotalLen, char *pData, int nLen, const char *pContentType) = 0;

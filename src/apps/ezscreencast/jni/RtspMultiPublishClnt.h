@@ -41,6 +41,7 @@
 #include "PublishClntBase.h"
 #include "PublishEventBase.h"
 class CPublishEventBase;
+
 class CRtspMultiPublishClnt : public CPublishClntBase
 {
 public:

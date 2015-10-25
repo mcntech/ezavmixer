@@ -40,14 +40,14 @@
 #include "JdHttpSrv.h"
 #include "JdHttpClnt.h"
 #include "TsParse.h"
-#include "HlsOutBase.h"
+#include "SegmentWriteBase.h"
 #include "HlsPublishBase.h"
 
 #define EN_S3_UPLOAD
 
 #ifdef EN_S3_UPLOAD
 #include "JdAwsS3.h"
-#include "HlsOutJdAws.h"
+#include "../jdaws/include/SegmentWriteS3.h"
 #include "JdAwsS3UpnpHttpConnection.h"
 #include "JdAwsConfig.h"
 #endif
@@ -124,7 +124,7 @@ CHlsMemFileServer *GetMemFileServerForResource(const char *pszResource);
 //application/octet-stream
 //video/MP2T
 
-class CHlsOutFs : public CHlsOutBase
+class CHlsOutFs : public CSegmentWriteBase
 {
 public:
 	int Start(const char *pszParentFolder, const char *pszFile, int nTotalLen, char *pData, int nLen, const char *pContentType)
@@ -466,7 +466,7 @@ public:
 		return res;
 	}
 
-	int UploadTsFile(CHlsOutBase *pHlsOut, char *pszHost, char *pszRelUrl, int nTimeOut)
+	int UploadTsFile(CSegmentWriteBase *pHlsOut, char *pszHost, char *pszRelUrl, int nTimeOut)
 	{
 		CHttpPut HttpPut;
 		int res = pHlsOut->Send(pszHost, pszRelUrl, m_pData, m_nOffset, CONTENT_STR_MP2T, nTimeOut);
@@ -815,7 +815,7 @@ public:
 		return -1;
 	}
 
-	int UploadTsFile(CHlsOutBase *pHlsOut, int nFileIdx, char *pszParentFolder, char *pszSegmentName)
+	int UploadTsFile(CSegmentWriteBase *pHlsOut, int nFileIdx, char *pszParentFolder, char *pszSegmentName)
 	{
 		long lTimeout = WAIT_TIME_FOR_FILLED_BUFF;
 		int nRd = -1;
@@ -1077,7 +1077,7 @@ static void *thrdStreamHttpLiveUpload(void *pArg);
 	char				*m_pszM3u8File;
 	char                *m_pszM3u8BaseName;
 
-	CHlsOutBase         *m_pHlsOut;
+	CSegmentWriteBase         *m_pHlsOut;
 	pthread_t			thrdHandle;
 	int                 m_fLiveOnly;
 	int                 m_nSegmentDurationMs;
@@ -1666,7 +1666,7 @@ DWORD CHlsPublishS3::Process()
 	int fChunked = 0;
 	int fDone = 0;
 
-	CHlsOutBase *pHlsOut = m_pHlsOut;
+	CSegmentWriteBase *pHlsOut = m_pHlsOut;
 	int nSegmentDurationMs;
 	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
 

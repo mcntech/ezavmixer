@@ -253,6 +253,7 @@ class CMpdRoot
 {
 public:
 	CMpdRoot(const char *pszConfFile);
+	CMpdRoot(const char *szSwitchId[], int numSwitches);
 	~CMpdRoot();
 	
 	void SetSaveFileName(const char *pszFileName);

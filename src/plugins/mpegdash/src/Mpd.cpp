@@ -467,6 +467,127 @@ unsigned int osalGetSystemTime()
 #endif
 }
 
+CMpdRoot::CMpdRoot(const char *szSwitchId[], int numSwitches)
+{
+	char szDaration[MAX_TIME_STRING];
+	int numAdaptations = 1;
+	int numPeriods = 1;
+
+	m_pDoc = new TiXmlDocument( );
+
+	TiXmlNode* pPeriodNode = NULL;
+	TiXmlNode* pAdaptNode = NULL;
+	TiXmlNode* pRepNode = NULL;
+	TiXmlNode* pSegNode = NULL;
+	TiXmlElement *pPeriodElem;
+	TiXmlElement *pElem;
+	TiXmlElement *pRepElem;
+	TiXmlElement *pSegElem;
+	TiXmlElement *pAdaptElem;
+
+	TiXmlElement *element  = new TiXmlElement( ELEMENT_MPD );
+	m_pNode = element;
+	pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS_XSI, ATTRIB_VAL_MPD_XMLNS_XSI);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS, ATTRIB_NAME_MPD_XMLNS);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_XSI_SCHEMA_LOCN, ATTRIB_VAL_MPD_XSI_SCHEMA_LOCN);
+
+
+	if(1/*TODO: Check if dynamic*/)	{
+		struct tm ast_time;
+		time_t    time_now;
+		char availability_start_time[MAX_TIME_STRING];
+		time ( &time_now );
+		time_now += GetCustomAvailabilityDelay() / 1000;
+		ast_time = *gmtime(&time_now);
+		strftime(availability_start_time, 64, "%Y-%m-%dT%H:%M:%S", &ast_time);
+		pElem->SetAttribute(ATTRIB_NAME_MPD_availabilityStartTime, availability_start_time);
+	} else {
+		// TODO: Make v_dur, a_dur externally set
+		int v_dur = 0;
+		int a_dur = 0;
+		int dur = v_dur > a_dur ? v_dur : a_dur;
+		FormatTime(dur, szDaration, MAX_TIME_STRING);
+		pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
+	}
+
+	int nMinimumUpdatePeriod = DEFAULT_UPDATE_PERIOD;//3600 * 1000; // 1 Hour
+	FormatTime(nMinimumUpdatePeriod, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_minimumUpdatePeriod, szDaration);
+
+	int nTimeShiftBufferDepth = DEFAULT_MIN_BUFFER;
+	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_minBufferTime, szDaration);
+
+	nTimeShiftBufferDepth = DEFAULT_TIME_SHIFT_BUFFER; //12 * 1000;
+	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_timeShiftBufferDepth, szDaration);
+
+	int nSuggestedPresentationDelay = 4000;
+	FormatTime(nSuggestedPresentationDelay, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_suggestedPresentationDelay, szDaration);
+
+	int nMaxSegmentDuration = DEFAULT_SEGMENT_DURATION; //4000;
+	FormatTime(nMaxSegmentDuration, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_MPD_maxSegmentDuration, szDaration);
+
+	int nMaxSubsegmentDuration = 4000;
+	FormatTime(nMaxSubsegmentDuration, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_MPD_maxSubsegmentDuration, szDaration);
+
+	//while (pPeriodNode = m_pNode->IterateChildren(ELEMENT_Period, pPeriodNode))
+	{
+		pPeriodElem = new TiXmlElement( ELEMENT_Period );
+		CMpdPeriod *pPeriod = new CMpdPeriod(this);
+		pPeriod->m_pNode = pPeriodElem;
+		pPeriodElem->SetAttribute(ATTRIB_NAME_PERIOD_start, 0);
+
+		//while(pAdaptNode = pPeriodNode->IterateChildren(ELEMENT_AdaptationSet, pAdaptNode))
+		for(int j=0; j < numAdaptations; j++)
+		{
+			int fSegmentTmplate = 0;
+			pAdaptElem = new TiXmlElement( ELEMENT_AdaptationSet );
+			CMpdAdaptaionSet *pAdaptaionSet = new  CMpdAdaptaionSet(pPeriod, pAdaptNode);
+			pAdaptaionSet->m_pNode = pAdaptElem;
+
+
+//			pSegNode = pAdaptElem->FirstChild(ELEMENT_SegmentTemplate);
+//			if(pSegNode) {
+//				CMpdSegmentTemplate *pSegmentTemplate =  new CMpdSegmentTemplate(pAdaptaionSet, pSegNode);
+//				fSegmentTmplate = 1;
+//				pAdaptaionSet->m_pSegmentTemplate = pSegmentTemplate;
+//			}
+
+			//while(pRepNode = pAdaptNode->IterateChildren(ELEMENT_Representation, pRepNode))
+			for(int i =0; i <  numSwitches; i++)
+			{
+				pRepElem = new TiXmlElement( ELEMENT_Representation );
+				CMpdRepresentation *pRepresentation = new  CMpdRepresentation(pAdaptaionSet);
+				pRepresentation->m_pNode = pRepElem;
+
+				if(!fSegmentTmplate) {
+					TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
+						pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
+						pRepresentation->m_pSegmentList = new CMpdSegmentList(pRepresentation, pSegNode);
+						pRepresentation->m_pSegmentList->m_pNode = pSegElem;
+				} else {
+					// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
+				}
+				pRepresentation->m_inputSwitch = szSwitchId[i];
+				pAdaptaionSet->m_listRepresentations.push_back(pRepresentation);
+			}
+			pPeriod->m_listAdaptionSets.push_back(pAdaptaionSet);
+		}
+		pPeriod->m_pNode = pPeriodNode;
+		pPeriod->m_pParent = this;
+		m_listPeriods.push_back(pPeriod);
+	}
+	m_nUpdateTime = 0;
+    m_nUpdateInterval = 1000; // default 1 Sec
+Exit:
+	return;
+}
+
 CMpdRoot::CMpdRoot(const char *pszConfFile)
 {
 	char szDaration[MAX_TIME_STRING];

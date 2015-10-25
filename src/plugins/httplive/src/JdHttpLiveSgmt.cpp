@@ -47,7 +47,7 @@
 
 #ifdef EN_S3_UPLOAD
 #include "JdAwsS3.h"
-#include "HlsOutJdAws.h"
+#include "../../jdaws/include/SegmentWriteS3.h"
 #include "JdAwsS3UpnpHttpConnection.h"
 #include "JdAwsConfig.h"
 #endif

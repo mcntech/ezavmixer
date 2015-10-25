@@ -12,11 +12,11 @@
 #include <string>
 #include <time.h>
 
+#include "../../include/SegmentWriteS3.h"
 
 #include "JdAwsS3.h"
 #include "JdAwsS3UpnpHttpConnection.h"
 #include "JdHttpClnt2.h"
-#include "HlsOutJdAws.h"
 #include "JdAwsConfig.h"
 
 //#define RUN_SERVER_TESTS
@@ -401,7 +401,7 @@ int main(int argc, const char *argv[])
     CJdAwsContext context(pId, pSecKey, NULL, "s3.amazonaws.com");
 	CTestPut::Run(&context);
 #endif
-	CHlsOutJdS3 HlsOut(JdAwsConfig.m_Bucket.c_str(), JdAwsConfig.m_Host.c_str(), JdAwsConfig.m_AccessId.c_str(), JdAwsConfig.m_SecKey.c_str());
+	CSegmentWriteS3 HlsOut(JdAwsConfig.m_Bucket.c_str(), JdAwsConfig.m_Host.c_str(), JdAwsConfig.m_AccessId.c_str(), JdAwsConfig.m_SecKey.c_str());
 	HlsOut.Send("Folder1", "File1", pBuf, size, CONTENT_STR_DEF, 30);
 	return 0;
 }

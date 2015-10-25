@@ -13,6 +13,8 @@ include $(SRC_FOLDER)/core/jni/Android.mk
 include $(SRC_FOLDER)/plugins/streamif/jni/Android.mk
 include $(SRC_FOLDER)/plugins/tinyxml/jni/Android.mk
 include $(SRC_FOLDER)/plugins/configdb/jni/Android.mk
+include $(SRC_FOLDER)/plugins/jdaws/jni/Android.mk
+include $(SRC_FOLDER)/extlibs/openssl-1.0.2/Android.mk
 
 include $(CLEAR_VARS)
 
@@ -36,18 +38,22 @@ LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/configdb/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/osal/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/streamif/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/tsmux/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/jdaws/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../core/include
 
 LOCAL_CFLAGS += -DPLATFORM_ANDROID
 LOCAL_MODULE := OnyxApi
 
-LOCAL_SRC_FILES := 	RtspMultiPublishClnt.cpp
+LOCAL_SRC_FILES := 	PublishClntBase.cpp
 LOCAL_SRC_FILES += 	DashMultiPublishClnt.cpp
+LOCAL_SRC_FILES += 	RtspMultiPublishClnt.cpp
+
+
 LOCAL_SRC_FILES +=	jOnyxApi.cpp 
 LOCAL_SRC_FILES +=	jOnyxEvents.cpp
 LOCAL_SRC_FILES +=	ServerNode.cpp 	
 
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_LDLIBS := -llog
-LOCAL_STATIC_LIBRARIES := onyxcore jdrtsp  mpegdash jdhttp jdnet tsmux mp4mux parseutil streamif tinyxml configdb jdosal
+LOCAL_STATIC_LIBRARIES := onyxcore jdrtsp  mpegdash jdaws opencrypto_static jdhttp jdnet tsmux mp4mux parseutil streamif tinyxml configdb jdosal
 include $(BUILD_SHARED_LIBRARY)

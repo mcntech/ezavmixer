@@ -51,17 +51,15 @@ public:
 	/**
 	 *  Initializes stream parameters
 	 *  @param pInputStream(in/out) stores the state and configuration of the session
-	 *  @param nSessionId(in) identifies the stream in configuration file
- 	 *  @param pszConfFile(in) configuration file
-	 *  @param nInputType(in) identifies stream type
 	 *  @returns 0 on success
 	 */
-	static int InitInputStrm(CInputStrmBase *pInputStream, int nSessionId);
+	static int InitInputStrm(CInputStrmBase *pInputStream);
 
 	/**
 	 *  Uninitializes stream parameters
 	 */
 	static void DeinitInputStrm(CInputStrmBase *pInputStream);
+	static INPUT_TYPE_T InputTypeStringToInt(const char *szType);
 };
 
 

@@ -2,12 +2,12 @@
 #include "StreamUtil.h"
 int modDbgLevel = 0;
 
-int CStreamUtil::InitInputStrm(CInputStrmBase *pInputStream, int nSessionId)
+int CStreamUtil::InitInputStrm(CInputStrmBase *pInputStream)
 {
 	int res = -1;
 
-	JDBG_LOG(CJdDbg::LVL_SETUP,("nSessionId=%d nInputType=%d Input=%s",nSessionId, pInputStream->nInputType, pInputStream->pszInputUri));
-	pInputStream->nCodecSessionId = nSessionId;
+	//JDBG_LOG(CJdDbg::LVL_SETUP,("nSessionId=%d nInputType=%d Input=%s",nSessionId, pInputStream->nInputType, pInputStream->pszInputUri));
+	//pInputStream->nCodecSessionId = nSessionId;
 
 
 	// TODO: Make it configurable
@@ -130,7 +130,7 @@ int CStreamUtil::InitInputStrm(CInputStrmBase *pInputStream, int nSessionId)
 void CStreamUtil::DeinitInputStrm(CInputStrmBase *pInputStream)
 {
 	if(pInputStream->mpInputBridge) {
-		JDBG_LOG(CJdDbg::LVL_TRACE,("Stopping RtspClnt"));
+		//JDBG_LOG(CJdDbg::LVL_TRACE,("Stopping RtspClnt"));
 		pInputStream->mpInputBridge->StopStreaming();
 		delete (pInputStream->mpInputBridge);
 		pInputStream->mpInputBridge = NULL;
@@ -146,7 +146,7 @@ CAvmixInputStrm *CStreamUtil::GetStreamParamsFromCfgDb(const char *pszSection, c
 
 	ini_gets(pszSection, KEY_INPUT_TYPE, "", szType, 16, pszConfFile);
 
-	JDBG_LOG(CJdDbg::LVL_SETUP,("Section=%s szType=%s\n", pszSection, szType));
+	//JDBG_LOG(CJdDbg::LVL_SETUP,("Section=%s szType=%s\n", pszSection, szType));
 
 	if (strcmp(szType, INPUT_STREAM_TYPE_FILE) == 0) {
 		nType = INPUT_TYPE_FILE;
@@ -206,4 +206,47 @@ CAvmixInputStrm *CStreamUtil::GetStreamParamsFromCfgDb(const char *pszSection, c
 	strcpy(pInputStream->pszInputUri, szInput);
 	pInputStream->nInputType = nType;
 	return pInputStream;
+}
+
+INPUT_TYPE_T CStreamUtil::InputTypeStringToInt(const char *szType)
+{
+	INPUT_TYPE_T nType = INPUT_TYPE_UNKNOWN;
+
+	if (strcmp(szType, INPUT_STREAM_TYPE_FILE) == 0) {
+		nType = INPUT_TYPE_FILE;
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_RTSP) == 0) {
+		nType = INPUT_TYPE_RTSP;
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_HLS) == 0) {
+		nType = INPUT_TYPE_HLS;
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_CAPTURE) == 0) {
+		nType = INPUT_TYPE_CAPTURE;
+		//ini_gets(pszSection, KEY_INPUT_DEVICE, "/dev/dvm_sdi", szInput, 64, pszConfFile);
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_STRMCONN) == 0) {
+		//strcpy(szInput, "strmconn");
+		nType = INPUT_TYPE_STRMCONN;
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_STRMCONN_IPC) == 0) {
+		nType = INPUT_TYPE_STRMCONN_IPC;
+		//strcpy(szInput, "strmconn_ipc");
+		/*
+		EXT_PARAM_STRMCONN_IPC_T *pExtPram = &pInputStream->ExtParam.strmconn_ipc;
+		ini_gets(pszSection, KEY_INPUT_AUD_PORT_LOCAL, "", pExtPram->szAudSocketRxName, IPC_SOCK_PORT_NAME_SIZE, pszConfFile);
+		ini_gets(pszSection, KEY_INPUT_AUD_PORT_PEER, "", pExtPram->szAudSocketTxName, IPC_SOCK_PORT_NAME_SIZE, pszConfFile);
+		ini_gets(pszSection, KEY_INPUT_VID_PORT_LOCAL, "", pExtPram->szVidSocketRxName, IPC_SOCK_PORT_NAME_SIZE, pszConfFile);
+		ini_gets(pszSection, KEY_INPUT_VID_PORT_PEER, "", pExtPram->szVidSocketTxName, IPC_SOCK_PORT_NAME_SIZE, pszConfFile);
+		*/
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_STRMCONN_ZMQ) == 0) {
+		nType = INPUT_TYPE_STRMCONN_ZMQ;
+		//strcpy(szInput, "strmconn_zmq");
+		/*
+		EXT_PARAM_STRMCONN_IPC_T *pExtPram = &pInputStream->ExtParam.strmconn_ipc;
+		ini_gets(pszSection, KEY_INPUT_AUD_PORT_PEER, "", pExtPram->szAudSocketTxName, IPC_SOCK_PORT_NAME_SIZE, pszConfFile);
+		ini_gets(pszSection, KEY_INPUT_VID_PORT_PEER, "", pExtPram->szVidSocketTxName, IPC_SOCK_PORT_NAME_SIZE, pszConfFile);
+		*/
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_AVMIXER) == 0) {
+		/*
+		ini_gets(pszSection, KEY_INPUT_DEVICE , "avmixer0", szInput, 64, pszConfFile);
+		*/
+		nType = INPUT_TYPE_AVMIXER;
+	}
+	return nType;
 }

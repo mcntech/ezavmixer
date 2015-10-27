@@ -7,7 +7,7 @@ CRtspMultiPublishClnt::CRtspMultiPublishClnt(CPublishEventBase *pEventBase)
 
 int CRtspMultiPublishClnt::AddPublishServer(std::string url, std::string appName, int localRtpPort, int remoteRtpPort, int serverPort)
 {
-	CServerNode *pServerNode = new CServerNode(url, appName, localRtpPort, remoteRtpPort, serverPort);
+	CRtspServerNode *pServerNode = new CRtspServerNode(url, appName, localRtpPort, remoteRtpPort, serverPort);
 	m_PublishServerList[url] = pServerNode;
 	CRtspPublishBridge *pRtspPublishBridge = new CRtspPublishBridge;
 	pRtspPublishBridge->SetStreamCfg(pServerNode->m_pRtspCommonCfg);
@@ -18,7 +18,7 @@ int CRtspMultiPublishClnt::RemovePublishServer(std::string url)
 {
 	ServerNodeMap::iterator it = m_PublishServerList.find(url);
 	if(it != m_PublishServerList.end()) {
-		CServerNode *pNode = it->second;
+		CRtspServerNode *pNode = (CRtspServerNode *)it->second;
 		if(pNode->m_pRtspPublishBridge)
 			delete pNode->m_pRtspPublishBridge;
 		m_PublishServerList.erase(it);
@@ -29,13 +29,13 @@ int CRtspMultiPublishClnt::start()
 {
 	char szSwitchIdSection[128];
 	int i = 0;
-	CServerNode *pServerNode;
+	CRtspServerNode *pServerNode;
 	sprintf(szSwitchIdSection,"%s%d",SWITCH_PREFIX, i);
 	m_pOutputStream = new COutputStream("test");
 	CMediaSwitch *pPublishSwitch = new CMediaSwitch(szSwitchIdSection);
 
 	for(ServerNodeMap::iterator it = m_PublishServerList.begin(); it != m_PublishServerList.end(); it++){
-		pServerNode = it->second;
+		pServerNode = (CRtspServerNode *)it->second;
 		if(pServerNode) {
 			CRtspPublishBridge *pRtspSrvBridge = pServerNode->m_pRtspPublishBridge;
 			pRtspSrvBridge->Init(m_pOutputStream);
@@ -68,7 +68,7 @@ int CRtspMultiPublishClnt::stop()
 {
 	m_pPublishSwitch->Stop();
 	for(ServerNodeMap::iterator it = m_PublishServerList.begin(); it != m_PublishServerList.end(); it++){
-		CServerNode *pServerNode = it->second;
+		CRtspServerNode *pServerNode = (CRtspServerNode *)it->second;
 		CRtspPublishBridge *pRtspPublishBridge = pServerNode->m_pRtspPublishBridge;
 		if(pRtspPublishBridge) {
 			delete pRtspPublishBridge;

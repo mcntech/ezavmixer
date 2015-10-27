@@ -115,6 +115,42 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_addRtspPublishNode(JNIEnv *env, j
 	return JNI_TRUE;
 }
 
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_addS3PublishNode(JNIEnv *env, jobject self, jlong handle, jstring jid,
+		jstring jhost, jstring jaccessId, jstring jsecKey,
+		jstring jbucket, jstring jfolder, jstring jfilePerfix)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+
+	const char * szId = env->GetStringUTFChars(jid, 0);
+	std::string tmpId = szId;
+
+	const char * szhost = env->GetStringUTFChars(jhost, 0);
+	std::string tmphost = szhost;
+	const char *szAppName = env->GetStringUTFChars(jaccessId, 0);
+	std::string tmpaccessId = szAppName;
+	const char *szsecKey = env->GetStringUTFChars(jsecKey, 0);
+	std::string tmpsecKey = szsecKey;
+
+	const char *szbucket = env->GetStringUTFChars(jbucket, 0);
+	std::string tmpbucket = szbucket;
+	const char *szfolder = env->GetStringUTFChars(jfolder, 0);
+	std::string tmpfolder = szfolder;
+	const char *szfilePerfix = env->GetStringUTFChars(jfilePerfix, 0);
+	std::string tmpfilePerfix = szfilePerfix;
+
+	_publisher->AddS3PublishNode(tmpId, tmphost, tmpaccessId, tmpsecKey, tmpbucket, tmpfolder, tmpfilePerfix);
+
+	env->ReleaseStringUTFChars(jhost, szhost);
+	env->ReleaseStringUTFChars(jaccessId, szAppName);
+	env->ReleaseStringUTFChars(jsecKey, szsecKey);
+
+	env->ReleaseStringUTFChars(jbucket, szbucket);
+	env->ReleaseStringUTFChars(jfolder, szfolder);
+	env->ReleaseStringUTFChars(jfilePerfix, szfilePerfix);
+	return JNI_TRUE;
+}
+
 jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject self, jlong publisher,jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
 {
 	int result = 0;

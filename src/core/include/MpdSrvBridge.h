@@ -30,7 +30,8 @@ public:
 		CMpdRepresentation *pMpdRepresentation,  
 		const char *pszFilePrefix, 
 		const char *pszParentFolder, 
-		const char *pszBucketOrServerRoot);
+		const char *pszBucketOrServerRoot,
+		const char *pszHost, const char *pszAccessId, const char *pszSecKey);
 	
 	int GetPublishStatistics(int *pnState, int *pnStreamInTime, int *pnLostBufferTime,  int *pnStreamOutTime, int *pnSegmentTime)
 	{
@@ -55,6 +56,10 @@ public:
 	char            m_szParentFolder[256];
 	char            m_szBucketOrServerRoot[256];  
 
+	char	        m_szHost[256];
+	char	        m_szAccessId[256];
+	char	        m_szSecKey[256];
+
 	int             m_fEnableServer;
 	int             m_fEnablePublish;
 	COsalMutex      m_Mutex;
@@ -71,14 +76,15 @@ public:
 	CMpdSrvBridge();
 	~CMpdSrvBridge();
 	CMpdSrvBridgeChan *CreateChannel(
-		CMpdRepresentation *pCfgRepresenation, 
-		int         nSegmentStart,
-		int         nSegemtTime, 
-		int         nTimeShiftBuffer, 
-		const char *pszFilePrefix, 
-		const char *pszParentFolder, 
-		const char *pszBucketOrServerRoot, 
-		int        nMimetype);
+			CMpdRepresentation *pCfgRepresenation,
+			int        nSegmentStart,
+			int        nSegemtTimeMs,
+			int        nTimeShiftBuffer,
+			const char *pszFilePrefix,
+			const char *pszParentFolder,
+			const char *pszBucketOrServerRoot,
+			const char *pszHost, const char *pszAccessId, const char *pszSecKey,
+			int        nMimeType);
 
 
 	std::vector<CMpdSrvBridgeChan *> m_plistChan;

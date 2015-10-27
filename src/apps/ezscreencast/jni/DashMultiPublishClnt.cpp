@@ -63,7 +63,15 @@ int CDashMultiPublishClnt::StartMpdServer(const char *pszInitialMpdFile)
 
 					pszFilePrefix = pRepresentation->GetId();
 					//pszMimetype = pRepresentation->GetMimetTpe();
-					pOutBridge = m_pMpdSrvBridge->CreateChannel(pRepresentation, nStartIndex, nSegmentTimeMs, nTimeShiftBufferMs, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, nMuxType);
+					// TODO Get the params
+					const char *pszHost = NULL;
+					const char *pszAccessId = NULL;
+					const char *pszSecKey = NULL;
+					pOutBridge = m_pMpdSrvBridge->CreateChannel(pRepresentation, nStartIndex,
+							nSegmentTimeMs, nTimeShiftBufferMs, pszFilePrefix,
+							pszParentFolder, pszBucketOrServerRoot,
+							pszHost, pszAccessId, pszSecKey,
+							nMuxType);
 
 					pPublishSwitch->AddOutput(pOutBridge);
 					pOutBridge->Run(m_pOutputStream);

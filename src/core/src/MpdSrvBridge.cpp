@@ -135,7 +135,8 @@ int CMpdSrvBridgeChan::SetServerConfig(
 	CMpdRepresentation *pMpdRepresentation,  
 	const char *pszFilePrefix, 
 	const char *pszParentFolder, 
-	const char *pszBucketOrServerRoot)
+	const char *pszBucketOrServerRoot,
+	const char *pszHost, const char *pszAccessId, const char *pszSecKey)
 { 
 	m_fEnableServer = 1;
 	m_pMpdRepresentation = pMpdRepresentation;
@@ -144,7 +145,16 @@ int CMpdSrvBridgeChan::SetServerConfig(
 	if(pszParentFolder)
 		strcpy(m_szParentFolder, pszParentFolder);
 	if(pszBucketOrServerRoot)
-		strcpy(m_szBucketOrServerRoot ,pszBucketOrServerRoot);
+		strcpy(m_szBucketOrServerRoot,pszBucketOrServerRoot);
+
+	if(pszHost)
+		strcpy(m_szHost, pszHost);
+
+	if(pszAccessId)
+		strcpy(m_szAccessId, pszAccessId);
+
+	if(pszSecKey)
+		strcpy(m_szSecKey, pszSecKey);
 	return 0;
 }
 
@@ -155,7 +165,10 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 		nUpLoadType = UPLOADER_TYPE_MEM;
 		char szM3u8File[128];
 		//hlsSetDebugLevel(m_pPublishCfg->m_nDdebugLevel);
-		nUpLoadType = UPLOADER_TYPE_MEM;
+		if(m_szHost)
+			nUpLoadType = UPLOADER_TYPE_S3;
+		else
+			nUpLoadType = UPLOADER_TYPE_MEM;
 
 		m_pSegmenter = mpdCreateSegmenter(m_pMpdRepresentation);
 
@@ -165,9 +178,9 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 			m_szFilePrefix, 
 			m_szParentFolder, 
 			m_szBucketOrServerRoot,  
-			NULL,  
-			NULL, 
-			NULL, 
+			m_szHost,
+			m_szAccessId,
+			m_szSecKey,
 			m_pMpdRepresentation->IsLive(), 
 			m_nSegmentStart, nUpLoadType);
 	}
@@ -200,11 +213,12 @@ CMpdSrvBridgeChan *CMpdSrvBridge::CreateChannel(
 		int        nTimeShiftBuffer, 
 		const char *pszFilePrefix, 
 		const char *pszParentFolder, 
-		const char *pszBucketOrServerRoot, 
+		const char *pszBucketOrServerRoot,
+		const char *pszHost, const char *pszAccessId, const char *pszSecKey,
 		int        nMimeType)
 {
 	CMpdSrvBridgeChan *pChan = new CMpdSrvBridgeChan(nMimeType, nSegmentStart, nSegemtTimeMs, nTimeShiftBuffer);
-	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot);
+	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, pszHost, pszAccessId, pszSecKey);
 
 	m_plistChan.push_back(pChan);
 	return pChan;

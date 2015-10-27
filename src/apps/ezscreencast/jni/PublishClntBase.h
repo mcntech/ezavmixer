@@ -37,6 +37,8 @@ public:
 
 	virtual int AddPublishServer(std::string url, std::string appName, int localRtpPort=0, int remoteRtpPort=0, int serverPort=554);
 	virtual int RemovePublishServer(std::string url);
+	int AddS3PublishNode(std::string szId, std::string szHost, std::string szAccessId, std::string szSecKey,
+			std::string szBucket, std::string szFolder, std::string szFilePerfix);
 
 	virtual int start() = 0;
 	virtual int stop() = 0;
@@ -48,8 +50,7 @@ public:
 protected:
 	std::map <std::string, CMediaSwitch *>  m_listPublishSwitches;
 	std::map <std::string, CAvmixInputStrm *>  m_listInputStrmConn;
-	std::map <std::string, CStrmOutBridge *>  m_listPublishServer;
-
+	ServerNodeMap                             m_PublishServerList;
 };
 
 #endif // _PUBLISH_CLNT_BASE_H_

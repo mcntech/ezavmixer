@@ -7,6 +7,14 @@ int CPublishClntBase::AddPublishServer(std::string url, std::string appName, int
 
 }
 
+int CPublishClntBase::AddS3PublishNode(std::string szId, std::string szHost, std::string szAccessId, std::string szSecKey,
+		std::string szBucket, std::string szFolder, std::string szFilePerfix)
+{
+	CS3PublishNode *pNode = new CS3PublishNode(szHost, szAccessId, szSecKey,
+			szBucket, szFolder, szFilePerfix);
+	m_PublishServerList[szId] = pNode;
+}
+
 int CPublishClntBase::RemovePublishServer(std::string url)
 {
 	int res = 0;

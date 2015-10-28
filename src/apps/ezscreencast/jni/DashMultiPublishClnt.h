@@ -63,8 +63,6 @@ public:
 	COutputStream      *m_pOutputStream;
 	CMpdSrvBridge      *m_pMpdSrvBridge;
 	CMpdRoot           *m_pMpdRoot;
-	ConnCtxT           *m_pAudConnSrc;
-	ConnCtxT           *m_pVidConnSrc;
 	CPublishEventBase  *m_EventCallback;
 };
 

@@ -211,9 +211,9 @@ public:
 	const char *GetBaseURL();
 	int GetMimeType();
 	CMpdRoot *GetMpd();
+	int AddRepresentation(std::string szSwitchId, int fSegmentTmplate);
 
 public:
-	char           m_szId[128];
 	char           m_szGroup[128];
 	char           m_szLang[128];
 	char           m_szContentType[128];
@@ -230,6 +230,7 @@ public:
 	int            m_nBitStreamSwitching;
 	char           m_szBaseURL[128];
 	std::vector<CMpdRepresentation *> m_listRepresentations;
+	std::string    m_szId;
 	CMpdPeriod     *m_pParent;
 	TiXmlNode      *m_pNode;
 	CMpdSegmentTemplate  *m_pSegmentTemplate;
@@ -240,6 +241,7 @@ class CMpdPeriod
 public:
 	CMpdPeriod(CMpdRoot *pParent);
 	~CMpdPeriod();
+	CMpdAdaptaionSet *CreateAdaptationSet(std::string szId);
 	int CallbackChildUpdate(CMpdAdaptaionSet *pChild);
 	CMpdRoot *GetMpd();
 
@@ -253,9 +255,11 @@ class CMpdRoot
 {
 public:
 	CMpdRoot(const char *pszConfFile);
+	CMpdRoot( int fDynamic);
 	CMpdRoot(const char *szSwitchId[], int numSwitches);
 	~CMpdRoot();
 	
+	CMpdPeriod *CreatePeriod();
 	void SetSaveFileName(const char *pszFileName);
 	int CallbackChildUpdate(CMpdPeriod *pChild);
 	int SaveFile();

@@ -233,6 +233,48 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env,
 	return JNI_TRUE;
 }
 
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateInputStream(JNIEnv *env, jobject self, jlong handle, jstring jid, jstring jInputType, jstring jUrl)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	const char * szId = env->GetStringUTFChars(jid, 0);
+	const char * szInputType = env->GetStringUTFChars(jInputType, 0);
+	const char * szUrl = env->GetStringUTFChars(jUrl, 0);
+	_publisher->CreateInputStrm(szId, szInputType, szUrl);
+
+	env->ReleaseStringUTFChars(jid, szId);
+	env->ReleaseStringUTFChars(jInputType, szId);
+	env->ReleaseStringUTFChars(jUrl, szUrl);
+	return JNI_TRUE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateSwitch(JNIEnv *env, jobject self, jlong handle, jstring jid)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	const char * szId = env->GetStringUTFChars(jid, 0);
+	_publisher->CreateSwitch(szId);
+
+	env->ReleaseStringUTFChars(jid, szId);
+	return JNI_TRUE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, jobject self, jlong handle, jstring jSwitchId, jstring jInputId)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+
+	const char * szSwitchId = env->GetStringUTFChars(jSwitchId, 0);
+	const char * szInputId = env->GetStringUTFChars(jInputId, 0);
+
+	_publisher->ConnectSwitchInput(szSwitchId, szInputId);
+
+	env->ReleaseStringUTFChars(jSwitchId, szSwitchId);
+	env->ReleaseStringUTFChars(jInputId, szInputId);
+	return JNI_TRUE;
+}
+
 jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject self, jlong publisher,jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
 {
 	int result = 0;

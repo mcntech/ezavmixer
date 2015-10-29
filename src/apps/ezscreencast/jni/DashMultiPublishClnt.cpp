@@ -16,16 +16,40 @@ int CDashMultiPublishClnt::CreateMpd(std::string szId)
 int CDashMultiPublishClnt::CreatePeriod(std::string szmpdId, std::string szperiodId)
 {
 	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
-	pMpdRoot->FindPeriod(szperiodId);
-	return 0;
+	if(pMpdRoot) {
+		CMpdPeriod *pPeriod = pMpdRoot->CreatePeriod(szperiodId);
+		return 0;
+	}
+	return -1;
 }
+
 int CDashMultiPublishClnt::CreateAdaptationSet(std::string szmpdId, std::string szperiodId, std::string szadaptId)
 {
-	return 0;
+	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
+	if(pMpdRoot) {
+		CMpdPeriod *pPeriod = pMpdRoot->FindPeriod(szperiodId);
+		if(pPeriod) {
+			pPeriod->CreateAdaptationSet(szadaptId);
+			return 0;
+		}
+	}
+	return -1;
 }
+
 int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId)
 {
-	return 0;
+	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
+	if(pMpdRoot) {
+		CMpdPeriod *pPeriod = pMpdRoot->FindPeriod(szperiodId);
+		if(pPeriod) {
+			CMpdAdaptaionSet *pAdaptationSet = pPeriod->FindAdaptationSet(szadaptId);
+			if(pAdaptationSet) {
+				pAdaptationSet->CreateRepresentation(szrepId, 1);
+				return 0;
+			}
+		}
+	}
+	return -1;
 }
 
 

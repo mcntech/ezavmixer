@@ -45,7 +45,7 @@ public:
 
 	int CreateSwitch(const char *pszSwitchId);
 	int CreateInputStrm(const char *szInputId, const char *szInputType, const char *szInputUri);
-	int ConnectSwitchInput(const char *szInputId, const char *pszSwitchId);
+	int ConnectSwitchInput(const char *pszSwitchId, const char *szInputId);
 
 protected:
 	std::map <std::string, CMediaSwitch *>  m_listPublishSwitches;

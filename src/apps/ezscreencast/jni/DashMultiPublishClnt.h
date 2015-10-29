@@ -48,6 +48,11 @@ class CDashMultiPublishClnt : public CPublishClntBase
 public:
 	CDashMultiPublishClnt(CPublishEventBase *pEventBase);
 	CDashMultiPublishClnt(CConfigBase *pConfig);
+	CDashMultiPublishClnt(){m_pConfig=NULL;}
+	int CreateMpd(std::string szId);
+	int CreatePeriod(std::string szId, std::string szperiodId);
+	int CreateAdaptationSet(std::string szmpdId, std::string szperiodId, std::string szadaptId);
+	int CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId);
 
 	CConfigBase *m_pConfig;
 	static CPublishClntBase *openInstance(CPublishEventBase *pEventBase);
@@ -60,6 +65,7 @@ private:
 	int StartMpdServer(const char *pszConfFile);
 
 public:
+	std::map <std::string, CMpdRoot *>  m_listMpd;
 	COutputStream      *m_pOutputStream;
 	CMpdSrvBridge      *m_pMpdSrvBridge;
 	CMpdRoot           *m_pMpdRoot;

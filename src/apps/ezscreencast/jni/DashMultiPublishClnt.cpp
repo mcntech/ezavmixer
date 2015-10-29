@@ -6,6 +6,29 @@ CDashMultiPublishClnt::CDashMultiPublishClnt(CPublishEventBase *pEventBase)
 {
 	m_EventCallback = pEventBase;
 }
+
+int CDashMultiPublishClnt::CreateMpd(std::string szId)
+{
+	CMpdRoot *pMpdRoot = new CMpdRoot(1);
+	m_listMpd[szId] = pMpdRoot;
+	return 0;
+}
+int CDashMultiPublishClnt::CreatePeriod(std::string szmpdId, std::string szperiodId)
+{
+	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
+	pMpdRoot->FindPeriod(szperiodId);
+	return 0;
+}
+int CDashMultiPublishClnt::CreateAdaptationSet(std::string szmpdId, std::string szperiodId, std::string szadaptId)
+{
+	return 0;
+}
+int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId)
+{
+	return 0;
+}
+
+
 int CDashMultiPublishClnt::StartMpdServer(const char *pszInitialMpdFile)
 {
 	int res = 0;

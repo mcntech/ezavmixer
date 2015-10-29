@@ -191,6 +191,7 @@ public:
 	int            m_fPrimary;
 	std::string    m_inputSwitch;
 
+	std::string          m_szId;
 	CMpdAdaptaionSet     *m_pParent;
 	TiXmlNode            *m_pNode;
 	CMpdSegmentBase      *m_pSegmentBase;
@@ -211,7 +212,8 @@ public:
 	const char *GetBaseURL();
 	int GetMimeType();
 	CMpdRoot *GetMpd();
-	int AddRepresentation(std::string szSwitchId, int fSegmentTmplate);
+	int CreateRepresentation(std::string szId, int fSegmentTmplate);
+	CMpdRepresentation *FindRepresentation(std::string szId);
 
 public:
 	char           m_szGroup[128];
@@ -242,12 +244,14 @@ public:
 	CMpdPeriod(CMpdRoot *pParent);
 	~CMpdPeriod();
 	CMpdAdaptaionSet *CreateAdaptationSet(std::string szId);
+	CMpdAdaptaionSet *FindAdaptationSet(std::string szAdapt);
 	int CallbackChildUpdate(CMpdAdaptaionSet *pChild);
 	CMpdRoot *GetMpd();
 
 public:
+	std::string  m_szId;
 	CMpdRoot    *m_pParent;
-	TiXmlNode  *m_pNode;
+	TiXmlNode   *m_pNode;
 	std::vector<CMpdAdaptaionSet *> m_listAdaptionSets;
 };
 
@@ -259,7 +263,10 @@ public:
 	CMpdRoot(const char *szSwitchId[], int numSwitches);
 	~CMpdRoot();
 	
-	CMpdPeriod *CreatePeriod();
+	CMpdPeriod *FindPeriod(std::string szPeriod);
+	int CreateRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep, int fTmplate);
+
+	CMpdPeriod *CreatePeriod(std::string szId);
 	void SetSaveFileName(const char *pszFileName);
 	int CallbackChildUpdate(CMpdPeriod *pChild);
 	int SaveFile();

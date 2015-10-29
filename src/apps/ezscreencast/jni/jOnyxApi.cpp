@@ -141,6 +141,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_addS3PublishNode(JNIEnv *env, job
 
 	_publisher->AddS3PublishNode(tmpId, tmphost, tmpaccessId, tmpsecKey, tmpbucket, tmpfolder, tmpfilePerfix);
 
+	env->ReleaseStringUTFChars(jid, szId);
 	env->ReleaseStringUTFChars(jhost, szhost);
 	env->ReleaseStringUTFChars(jaccessId, szAppName);
 	env->ReleaseStringUTFChars(jsecKey, szsecKey);
@@ -148,6 +149,87 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_addS3PublishNode(JNIEnv *env, job
 	env->ReleaseStringUTFChars(jbucket, szbucket);
 	env->ReleaseStringUTFChars(jfolder, szfolder);
 	env->ReleaseStringUTFChars(jfilePerfix, szfilePerfix);
+	return JNI_TRUE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpd(JNIEnv *env, jobject self, jlong handle, jstring jid)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+	const char * szId = env->GetStringUTFChars(jid, 0);
+	std::string tmpId = szId;
+
+	pDash->CreateMpd(tmpId);
+
+	env->ReleaseStringUTFChars(jid, szId);
+	return JNI_TRUE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreatePeriod(JNIEnv *env, jobject self, jlong handle, jstring jmpdId, jstring jperiodId)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+
+	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
+	std::string tmpmpdId = szmpdId;
+	const char * szperiodId = env->GetStringUTFChars(jperiodId, 0);
+	std::string tmpperiodId = szperiodId;
+
+	pDash->CreatePeriod(tmpmpdId, tmpperiodId);
+
+	env->ReleaseStringUTFChars(jmpdId, szmpdId);
+	env->ReleaseStringUTFChars(jperiodId, szperiodId);
+	return JNI_TRUE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateAdaptationSet(JNIEnv *env, jobject self, jlong handle, jstring jmpdId, jstring jperiodId, jstring jadaptId)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+
+	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
+	std::string tmpmpdId = szmpdId;
+	const char * szperiodId = env->GetStringUTFChars(jperiodId, 0);
+	std::string tmpperiodId = szperiodId;
+
+	const char * szadaptId = env->GetStringUTFChars(jadaptId, 0);
+	std::string tmpadaptId = szadaptId;
+
+	pDash->CreateAdaptationSet(tmpmpdId, tmpperiodId, tmpadaptId);
+
+	env->ReleaseStringUTFChars(jadaptId, szadaptId);
+	env->ReleaseStringUTFChars(jmpdId, szmpdId);
+	env->ReleaseStringUTFChars(jperiodId, szperiodId);
+	return JNI_TRUE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env, jobject self, jlong handle,  jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+
+	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
+	std::string tmpmpdId = szmpdId;
+	const char * szperiodId = env->GetStringUTFChars(jperiodId, 0);
+	std::string tmpperiodId = szperiodId;
+
+	const char * szadaptId = env->GetStringUTFChars(jadaptId, 0);
+	std::string tmpadaptId = szadaptId;
+
+	const char * szrepId = env->GetStringUTFChars(jrepId, 0);
+	std::string tmprepId = szrepId;
+
+	pDash->CreateRepresentation(tmpmpdId, tmpperiodId, tmpadaptId, tmprepId);
+
+	env->ReleaseStringUTFChars(jadaptId, szadaptId);
+	env->ReleaseStringUTFChars(jmpdId, szmpdId);
+	env->ReleaseStringUTFChars(jperiodId, szperiodId);
+
+	env->ReleaseStringUTFChars(jrepId, szrepId);
 	return JNI_TRUE;
 }
 

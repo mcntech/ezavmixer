@@ -477,6 +477,17 @@ CMpdAdaptaionSet *CMpdPeriod::CreateAdaptationSet(std::string szId)
 	m_listAdaptionSets.push_back(pAdaptaionSet);
 }
 
+CMpdAdaptaionSet *CMpdPeriod::FindAdaptationSet(std::string szId)
+{
+	CMpdAdaptaionSet *pAdapt;
+	for (std::vector<CMpdAdaptaionSet *>::iterator it = m_listAdaptionSets.begin(); it !=  m_listAdaptionSets.end(); it++) {
+		pAdapt = *it;
+		if(pAdapt->m_szId == szId)
+			return pAdapt;
+	}
+	return NULL;
+}
+
 unsigned int osalGetSystemTime()
 {
 #ifdef WIN32
@@ -489,7 +500,7 @@ unsigned int osalGetSystemTime()
 #endif
 }
 
-int CMpdAdaptaionSet::AddRepresentation(std::string szSwitchId, int fSegmentTmplate)
+int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate)
 {
 	TiXmlElement *pRepElem = new TiXmlElement( ELEMENT_Representation );
 	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this);
@@ -504,68 +515,24 @@ int CMpdAdaptaionSet::AddRepresentation(std::string szSwitchId, int fSegmentTmpl
 	} else {
 		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
 	}
-
-	pRepresentation->m_inputSwitch = szSwitchId;
+	pRepresentation->m_szId = szId;
+	//pRepresentation->m_inputSwitch = szSwitchId;
 	m_listRepresentations.push_back(pRepresentation);
 	return 0;
 }
 
-CMpdRoot::CMpdRoot(int fDynamic)
+CMpdRepresentation *CMpdAdaptaionSet::FindRepresentation(std::string szId)
 {
-	m_pDoc = new TiXmlDocument( );
-	char szDaration[128];
-	TiXmlElement *pElem  = new TiXmlElement( ELEMENT_MPD );
-	m_pNode = pElem;
-	pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
-	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS_XSI, ATTRIB_VAL_MPD_XMLNS_XSI);
-	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS, ATTRIB_NAME_MPD_XMLNS);
-	pElem->SetAttribute(ATTRIB_NAME_MPD_XSI_SCHEMA_LOCN, ATTRIB_VAL_MPD_XSI_SCHEMA_LOCN);
-
-
-	if(fDynamic)	{
-		struct tm ast_time;
-		time_t    time_now;
-		char availability_start_time[MAX_TIME_STRING];
-		time ( &time_now );
-		time_now += GetCustomAvailabilityDelay() / 1000;
-		ast_time = *gmtime(&time_now);
-		strftime(availability_start_time, 64, "%Y-%m-%dT%H:%M:%S", &ast_time);
-		pElem->SetAttribute(ATTRIB_NAME_MPD_availabilityStartTime, availability_start_time);
-	} else {
-		// TODO: Make v_dur, a_dur externally set
-		int v_dur = 0;
-		int a_dur = 0;
-		int dur = v_dur > a_dur ? v_dur : a_dur;
-		FormatTime(dur, szDaration, MAX_TIME_STRING);
-		pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
+	CMpdRepresentation *pRep;
+	for (std::vector<CMpdRepresentation *>::iterator it = m_listRepresentations.begin(); it !=  m_listRepresentations.end(); it++) {
+		pRep = *it;
+		if(pRep->m_szId == szId)
+			return pRep;
 	}
-
-	int nMinimumUpdatePeriod = DEFAULT_UPDATE_PERIOD;//3600 * 1000; // 1 Hour
-	FormatTime(nMinimumUpdatePeriod, szDaration, MAX_TIME_STRING);
-	pElem->SetAttribute(ATTRIB_NAME_MPD_minimumUpdatePeriod, szDaration);
-
-	int nTimeShiftBufferDepth = DEFAULT_MIN_BUFFER;
-	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
-	pElem->SetAttribute(ATTRIB_NAME_MPD_minBufferTime, szDaration);
-
-	nTimeShiftBufferDepth = DEFAULT_TIME_SHIFT_BUFFER; //12 * 1000;
-	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
-	pElem->SetAttribute(ATTRIB_NAME_MPD_timeShiftBufferDepth, szDaration);
-
-	int nSuggestedPresentationDelay = 4000;
-	FormatTime(nSuggestedPresentationDelay, szDaration, MAX_TIME_STRING);
-	pElem->SetAttribute(ATTRIB_NAME_MPD_suggestedPresentationDelay, szDaration);
-
-	int nMaxSegmentDuration = DEFAULT_SEGMENT_DURATION; //4000;
-	FormatTime(nMaxSegmentDuration, szDaration, MAX_TIME_STRING);
-	pElem->SetAttribute(ATTRIB_MPD_maxSegmentDuration, szDaration);
-
-	int nMaxSubsegmentDuration = 4000;
-	FormatTime(nMaxSubsegmentDuration, szDaration, MAX_TIME_STRING);
-	pElem->SetAttribute(ATTRIB_MPD_maxSubsegmentDuration, szDaration);
+	return NULL;
 }
 
-CMpdPeriod *CMpdRoot::CreatePeriod()
+CMpdPeriod *CMpdRoot::CreatePeriod(std::string szId)
 {
 	TiXmlElement *pPeriodElem;
 	TiXmlNode* pPeriodNode = NULL;
@@ -577,36 +544,11 @@ CMpdPeriod *CMpdRoot::CreatePeriod()
 
 	pPeriod->m_pNode = pPeriodNode;
 	pPeriod->m_pParent = this;
+	pPeriod->m_szId = szId;
 	m_listPeriods.push_back(pPeriod);
 	return pPeriod;
 }
 
-CMpdRoot::CMpdRoot(const char *szSwitchId[], int numSwitches)
-{
-	char szDaration[MAX_TIME_STRING];
-	int numAdaptations = 1;
-	int numPeriods = 1;
-
-	CMpdRoot(1);
-	//while (pPeriodNode = m_pNode->IterateChildren(ELEMENT_Period, pPeriodNode))
-	{
-		CMpdPeriod *pPeriod = CMpdRoot::CreatePeriod();
-
-		//while(pAdaptNode = pPeriodNode->IterateChildren(ELEMENT_AdaptationSet, pAdaptNode))
-		for(int j=0; j < numAdaptations; j++)
-		{
-			int fSegmentTmplate = 0;
-			CMpdAdaptaionSet *pAdaptaionSet = pPeriod->CreateAdaptationSet("id");
-			for(int i =0; i <  numSwitches; i++) {
-				pAdaptaionSet->AddRepresentation(szSwitchId[i], fSegmentTmplate);
-			}
-		}
-	}
-	m_nUpdateTime = 0;
-    m_nUpdateInterval = 1000; // default 1 Sec
-Exit:
-	return;
-}
 
 CMpdRoot::CMpdRoot(const char *pszConfFile)
 {
@@ -899,4 +841,93 @@ int CMpdRoot::IsDynamic()
 		}
 	}
 	return res;
+}
+
+CMpdRoot::CMpdRoot(int fDynamic)
+{
+	m_pDoc = new TiXmlDocument( );
+	char szDaration[128];
+	TiXmlElement *pElem  = new TiXmlElement( ELEMENT_MPD );
+	m_pNode = pElem;
+	pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS_XSI, ATTRIB_VAL_MPD_XMLNS_XSI);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS, ATTRIB_NAME_MPD_XMLNS);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_XSI_SCHEMA_LOCN, ATTRIB_VAL_MPD_XSI_SCHEMA_LOCN);
+
+
+	if(fDynamic)	{
+		struct tm ast_time;
+		time_t    time_now;
+		char availability_start_time[MAX_TIME_STRING];
+		time ( &time_now );
+		time_now += GetCustomAvailabilityDelay() / 1000;
+		ast_time = *gmtime(&time_now);
+		strftime(availability_start_time, 64, "%Y-%m-%dT%H:%M:%S", &ast_time);
+		pElem->SetAttribute(ATTRIB_NAME_MPD_availabilityStartTime, availability_start_time);
+	} else {
+		// TODO: Make v_dur, a_dur externally set
+		int v_dur = 0;
+		int a_dur = 0;
+		int dur = v_dur > a_dur ? v_dur : a_dur;
+		FormatTime(dur, szDaration, MAX_TIME_STRING);
+		pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
+	}
+
+	int nMinimumUpdatePeriod = DEFAULT_UPDATE_PERIOD;//3600 * 1000; // 1 Hour
+	FormatTime(nMinimumUpdatePeriod, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_minimumUpdatePeriod, szDaration);
+
+	int nTimeShiftBufferDepth = DEFAULT_MIN_BUFFER;
+	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_minBufferTime, szDaration);
+
+	nTimeShiftBufferDepth = DEFAULT_TIME_SHIFT_BUFFER; //12 * 1000;
+	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_timeShiftBufferDepth, szDaration);
+
+	int nSuggestedPresentationDelay = 4000;
+	FormatTime(nSuggestedPresentationDelay, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_suggestedPresentationDelay, szDaration);
+
+	int nMaxSegmentDuration = DEFAULT_SEGMENT_DURATION; //4000;
+	FormatTime(nMaxSegmentDuration, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_MPD_maxSegmentDuration, szDaration);
+
+	int nMaxSubsegmentDuration = 4000;
+	FormatTime(nMaxSubsegmentDuration, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_MPD_maxSubsegmentDuration, szDaration);
+
+	m_nUpdateTime = 0;
+    m_nUpdateInterval = 1000; // default 1 Sec
+
+}
+
+CMpdPeriod *CMpdRoot::FindPeriod(std::string szPeriod)
+{
+	CMpdPeriod *pPeriod;
+	for (std::vector<CMpdPeriod *>::iterator it = m_listPeriods.begin(); it !=  m_listPeriods.end(); it++) {
+		pPeriod = *it;
+		if(pPeriod->m_szId == szPeriod)
+			return pPeriod;
+	}
+	return NULL;
+}
+
+int CMpdRoot::CreateRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep, int fTmplate)
+{
+	char szDaration[MAX_TIME_STRING];
+	int numAdaptations = 1;
+	int numPeriods = 1;
+
+	//CMpdRoot(1);
+
+	CMpdPeriod *pPeriod = FindPeriod(szPeriod);
+	if(pPeriod) {
+		int fSegmentTmplate = 0;
+			CMpdAdaptaionSet *pAdaptaionSet = pPeriod->FindAdaptationSet(szAdapt);
+			if(pAdaptaionSet) {
+				pAdaptaionSet->CreateRepresentation(szRep, fTmplate);
+			}
+	}
+	return 0;
 }

@@ -233,6 +233,41 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env,
 	return JNI_TRUE;
 }
 
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId, jstring jswitchId, jstring jserverNode)
+{
+	int result = 0;
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+
+	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
+	std::string tmpmpdId = szmpdId;
+	const char * szperiodId = env->GetStringUTFChars(jperiodId, 0);
+	std::string tmpperiodId = szperiodId;
+
+	const char * szadaptId = env->GetStringUTFChars(jadaptId, 0);
+	std::string tmpadaptId = szadaptId;
+
+	const char * szrepId = env->GetStringUTFChars(jrepId, 0);
+	std::string tmprepId = szrepId;
+
+	const char * szSwitchId = env->GetStringUTFChars(jswitchId, 0);
+	std::string strSwitchId = szSwitchId;
+
+	const char * szServerNode = env->GetStringUTFChars(jserverNode, 0);
+	std::string strServerNode= szServerNode;
+
+	pDash->CreateMpdPublishStream(szmpdId, szperiodId, szadaptId, szrepId, strSwitchId, strServerNode);
+	env->ReleaseStringUTFChars(jadaptId, szadaptId);
+	env->ReleaseStringUTFChars(jmpdId, szmpdId);
+	env->ReleaseStringUTFChars(jperiodId, szperiodId);
+	env->ReleaseStringUTFChars(jperiodId, szperiodId);
+	env->ReleaseStringUTFChars(jrepId, szrepId);
+	env->ReleaseStringUTFChars(jswitchId, szSwitchId);
+	env->ReleaseStringUTFChars(jserverNode, szServerNode);
+
+	return JNI_TRUE;
+}
+
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateInputStream(JNIEnv *env, jobject self, jlong handle, jstring jid, jstring jInputType, jstring jUrl)
 {
 	int result = 0;
@@ -275,7 +310,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, j
 	return JNI_TRUE;
 }
 
-jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject self, jlong publisher,jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
+jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject self, jlong publisher, jstring jinputId, jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
 {
 	int result = 0;
 	//pthread_mutex_lock(&g_mutex);
@@ -295,7 +330,7 @@ jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject se
 	return result;
 }
 
-jint Java_com_mcntech_ezscreencast_OnyxApi_sendVideoData(JNIEnv *env, jobject self, jlong publisher,jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
+jint Java_com_mcntech_ezscreencast_OnyxApi_sendVideoData(JNIEnv *env, jobject self, jlong publisher, jstring jinputId, jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
 {
 	int result = 0;
 	//pthread_mutex_lock(&g_mutex);

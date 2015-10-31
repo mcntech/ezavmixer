@@ -265,6 +265,7 @@ public:
 	
 	CMpdPeriod *FindPeriod(std::string szPeriod);
 	int CreateRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep, int fTmplate);
+	CMpdRepresentation *FindRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep);
 
 	CMpdPeriod *CreatePeriod(std::string szId);
 	void SetSaveFileName(const char *pszFileName);

@@ -53,6 +53,10 @@ public:
 	int CreatePeriod(std::string szId, std::string szperiodId);
 	int CreateAdaptationSet(std::string szmpdId, std::string szperiodId, std::string szadaptId);
 	int CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId);
+	CMpdRepresentation * FindRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId);
+
+	int CreateMpdPublishStream(std::string strSwitchId, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode);
+	int CreateMpdPublishStream(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId, std::string strSwitchId, std::string strServerNode);
 
 	CConfigBase *m_pConfig;
 	static CPublishClntBase *openInstance(CPublishEventBase *pEventBase);

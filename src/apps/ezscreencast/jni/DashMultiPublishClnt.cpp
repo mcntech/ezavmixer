@@ -52,6 +52,63 @@ int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string
 	return -1;
 }
 
+CMpdRepresentation * CDashMultiPublishClnt::FindRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId)
+{
+	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
+	return pMpdRoot->FindRepresentation(szperiodId, szadaptId, szrepId);
+}
+
+int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId, std::string strSwitchId, std::string strServerNode)
+{
+	CMpdRepresentation *pRepresentation = FindRepresentation(szmpdId, szperiodId, szadaptId, szrepId);
+	ServerNodeMap::iterator it = m_PublishServerList.find(strServerNode);
+	if(it == m_PublishServerList.end())
+		return -1;
+	CS3PublishNode *pServerNode = (CS3PublishNode *)it->second;
+	CreateMpdPublishStream(strSwitchId, pRepresentation, pServerNode);
+	return 0;
+}
+
+int CDashMultiPublishClnt::CreateMpdPublishStream(std::string strSwitchId, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode)
+{
+	int nStartIndex;
+	int nSegmentTimeMs = 0;
+	int nTimeShiftBufferMs = 0;
+	char strMpdFileName[256];
+	int nMuxType;
+	int fFileUpdate = 0;
+	//JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	nSegmentTimeMs = m_pMpdRoot->GetMaxSegmentDuration();
+	nTimeShiftBufferMs = m_pMpdRoot->GetTimeShiftBuffer();
+	nStartIndex = time(NULL);
+
+	CMediaSwitch *pPublishSwitch = NULL;
+
+	std::map<std::string, CMediaSwitch *>::iterator it = m_listPublishSwitches.find(strSwitchId);
+	if(m_listPublishSwitches.end() != it) {
+		const char *pszMimetype = NULL;
+		CMpdSrvBridgeChan *pOutBridge;
+		pPublishSwitch = (*it).second;
+
+		//pszFilePrefix = pRepresentation->GetId();
+		//pszMimetype = pRepresentation->GetMimetTpe();
+
+		pOutBridge = m_pMpdSrvBridge->CreateChannel(pRepresentation,
+				nStartIndex, nSegmentTimeMs, nTimeShiftBufferMs,
+				pServerNode->m_szFilePefix.c_str(), pServerNode->m_szFolder.c_str(), pServerNode->m_szBucket.c_str(),
+				pServerNode->m_szHost.c_str(), pServerNode->m_szAccesId.c_str(), pServerNode->m_szSecKey.c_str(),
+				nMuxType);
+
+		pPublishSwitch->AddOutput(pOutBridge);
+		pOutBridge->Run(m_pOutputStream);
+		{
+			int nWith = 0, nHeight = 0, nFrameRate = 0, nBandwidth = 0;
+			pPublishSwitch->GetInputParams(&nWith, &nHeight, &nFrameRate, &nBandwidth);
+			pRepresentation->SetStreamParams(nWith, nHeight, nFrameRate, nBandwidth);
+		}
+
+	}
+}
 
 int CDashMultiPublishClnt::StartMpdServer(const char *pszInitialMpdFile)
 {

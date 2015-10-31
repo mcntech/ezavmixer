@@ -148,7 +148,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
     	};        
     	//ConfigDatabase.loadSavedPreferences(this, isSystemApp);
-        OnyxApi.initialize(true, ConfigDatabase.mLatency);
+        OnyxApi.initialize(OnyxApi.PROTOCOL_MPD);
         OnyxApi.setRemoteNodeHandler(mDeviceHandler);
     }
     

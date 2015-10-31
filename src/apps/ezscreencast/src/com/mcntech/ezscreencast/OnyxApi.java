@@ -14,6 +14,9 @@ import android.widget.TabHost;
 @SuppressWarnings("unused") //suppress unused variable warnings
 public class OnyxApi {	
 
+	public static final int PROTOCOL_MPD = 1;	
+	public static final int PROTOCOL_RTSP = 2;
+	
 	public interface RemoteNodeHandler {
 		void onConnectRemoteNode(String url);
 		void onDisconnectRemoteNode(String url);
@@ -30,16 +33,17 @@ public class OnyxApi {
 
 	private static RemoteNodeHandler m_nodeHandler = null;
 	final static Object mWaitOnRemoteNode = new Object();
+
+	
 	private static ArrayList<String> mActiveRemoteNodes = new ArrayList<String>();
 	static Object mWaitOnStop = new Object();
 	
 	private OnyxApi() {
 	}
 	
-	public static void initialize(boolean retry, int nDelay) {
+	public static void initialize(int protocol) {
 		if(mHandle == 0) {
-			int nodeIP = 0;
-			mHandle = mSelf.init(nodeIP);
+			mHandle = mSelf.init(protocol);
 		}
 	}
 
@@ -52,7 +56,39 @@ public class OnyxApi {
 	}
 
 	public static void startSession(boolean enableAud, boolean enabeVid) {
-		mSelf.startSession(mHandle, enableAud, enabeVid);
+
+		String jswitchId = "getit";
+		String jinpuId = "getit";
+		String jInputType = "getit";
+		String jUrl = "getit";		
+		String jInputId = "getit";		
+		CreateInputStream(mHandle, jinpuId, jInputType, jUrl);
+		CreateSwitch(mHandle, jswitchId);
+		ConnectSwitchInput(mHandle, jswitchId, jInputId);
+		
+		String jid = "getit";
+		String jhost = "getit";
+		String jaccessId = "getit";
+		String jsecKey = "getit";
+		String jbucket = "getit";
+		String jfolder = "getit";
+		String jfilePerfix = "getit";
+		addS3PublishNode(mHandle, jid,
+				jhost, jaccessId, jsecKey,
+				jbucket, jfolder, jfilePerfix);
+		String jmpdId = "getit";
+		CreateMpd(mHandle, jmpdId);
+		String jperiodId = "getit";
+		CreatePeriod(mHandle, jmpdId, jperiodId);
+		String jadaptId = "getit";		
+		CreateAdaptationSet(mHandle, jmpdId, jperiodId, jadaptId);
+		String jrepId = "getit";		
+		CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId);
+
+		String jserverNode = "getit";
+		CreateMpdPublishStream(mHandle, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverNode);
+
+		startSession(mHandle, enableAud, enabeVid);
 	}
 
 	public static void stopSession() {
@@ -171,7 +207,7 @@ public class OnyxApi {
 		return getClockUs(mHandle);
 	}
 
-	private native long init(int ip);
+	private native long init(int protocol);
 	private native boolean deinit(long handle);
 	private native static void startSession(long handle, boolean enableAud, boolean enableVid);
 	private native static void stopSession(long handle);
@@ -186,7 +222,18 @@ public class OnyxApi {
 	
 	public native static String getVersion(long handle);
 	
-	private native static int sendAudioData(long handle,byte[] pcmBytes, int numBytes, long lPts, int nFlags);
-	private native static int sendVideoData(long handle,byte[] vidBytes, int numBytes, long Pts, int Flags);	
+	private native static int sendAudioData(long handle,String inputId, byte[] pcmBytes, int numBytes, long lPts, int nFlags);
+	private native static int sendVideoData(long handle,String inputId, byte[] vidBytes, int numBytes, long Pts, int Flags);	
 	private native static long getClockUs(long handle);	
+	private native static boolean addS3PublishNode(long handle, String jid,
+			String jhost, String jaccessId, String jsecKey,
+			String jbucket, String jfolder, String jfilePerfix);
+	private native static boolean CreateMpd(long  handle, String jid);	
+	private native static boolean CreatePeriod(long handle, String jmpdId, String jperiodId);
+	private native static boolean CreateAdaptationSet(long handle, String jmpdId, String jperiodId, String jadaptId);
+	private native static boolean CreateRepresentation(long handle,  String jmpdId, String jperiodId, String jadaptId, String jrepId);
+	private native static boolean CreateMpdPublishStream(long handle,  String jmpdId, String jperiodId, String jadaptId, String jrepId, String jswitchId, String jserverNode);
+	private native static boolean CreateInputStream(long handle, String jid, String jInputType, String jUrl);
+	private native static boolean CreateSwitch(long handle, String jid);
+	private native static boolean ConnectSwitchInput(long handle, String jSwitchId, String jInputId);
 }

@@ -931,3 +931,20 @@ int CMpdRoot::CreateRepresentation(std::string szPeriod, std::string szAdapt, st
 	}
 	return 0;
 }
+
+CMpdRepresentation *CMpdRoot::FindRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep)
+{
+	char szDaration[MAX_TIME_STRING];
+	int numAdaptations = 1;
+	int numPeriods = 1;
+
+	CMpdPeriod *pPeriod = FindPeriod(szPeriod);
+	if(pPeriod) {
+		int fSegmentTmplate = 0;
+			CMpdAdaptaionSet *pAdaptaionSet = pPeriod->FindAdaptationSet(szAdapt);
+			if(pAdaptaionSet) {
+				return pAdaptaionSet->FindRepresentation(szRep);
+			}
+	}
+	return 0;
+}

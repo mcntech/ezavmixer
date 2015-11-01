@@ -61,7 +61,7 @@ public class ScreenRecorder extends Thread {
     private long mStartFcVClkUs = 0;
     
     private boolean mfSlaveToFireClock = false;
-    
+    MpdSession mMpdSession = new MpdSession();
     public ScreenRecorder(int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
         super(TAG);
         mWidth = width;
@@ -100,7 +100,7 @@ public class ScreenRecorder extends Thread {
                 	mMuxer = new MediaMuxer(mDstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
                 }
                 if(ConfigDatabase.mEnableVideo || ConfigDatabase.mEnableAudio) {
-                	OnyxApi.startSession(ConfigDatabase.mEnableAudio, ConfigDatabase.mEnableVideo);
+                	OnyxApi.startSession(mMpdSession, ConfigDatabase.mEnableAudio, ConfigDatabase.mEnableVideo);
                 	Log.d(TAG, "firecast startSession: Waiting for 2 secs");
                 	try {
 						Thread.sleep(2000);
@@ -182,9 +182,9 @@ public class ScreenRecorder extends Thread {
         	//Log.d(TAG, "AudioRecord : read got buffer, info: size=" + numBytes);
         	if(mAudSrc == android.media.MediaRecorder.AudioSource.MIC) {
         		dbgInterleave2Mono16bit(AudioBytes, AudioBytes, AudioData,  numBytes/2);
-        		OnyxApi.sendAudioData(AudioData, numBytes * 2, 0, 0);
+        		OnyxApi.sendAudioData("input0", AudioData, numBytes * 2, 0, 0);
         	} else {
-        		OnyxApi.sendAudioData(AudioBytes, numBytes, 0, 0);
+        		OnyxApi.sendAudioData("input0", AudioBytes, numBytes, 0, 0);
         	} 
          }  
          Log.d("MyActivity", "Record_Thread stopped");  
@@ -300,7 +300,7 @@ public class ScreenRecorder extends Thread {
 	            }
 	            // transfer bytes from this buffer into the given destination array
 	            encodedData.get(vidBytes, prependLen, payloadLen);
-		        OnyxApi.sendVideoData(vidBytes, prependLen + payloadLen, pts, mBufferInfo.flags);
+		        OnyxApi.sendVideoData("input0", vidBytes, prependLen + payloadLen, pts, mBufferInfo.flags);
             }
             //Log.i(TAG, "sent " + mBufferInfo.size + " bytes to muxer...Flags=0x" + Integer.toHexString(mBufferInfo.flags));
         }

@@ -1,22 +1,23 @@
 package com.mcntech.ezscreencast;
 
 public class MpdSession {
-	public String mSwcitchId;
+	public static String mServerId = "server0";
+	public static String mSwcitchId = "switch0";
 	
-	public String mInputId;
-	public String mInputType;
-	public String mInputUrl;
+	public static String mInputId = "input0";
+	public static String mInputType = "inproc";
+	public static String mInputUrl = "none";
 	
-	public String mMpdId;
-	public String mPeriodId;
-	public String mAdaptId;
-	public String mRepId;
+	public static String mMpdId = "mpd0";
+	public static String mPeriodId = "period0";
+	public static String mAdaptId = "adapt0";
+	public static String mRepId = "rep0";
 
-	public String mFilePrefix;
-	public String mFolder;
-	public String mBucket;	
+	public static String mFilePrefix = "test";
+	public static String mFolder = "test";
+	public static String mBucket = "educast";	
 	
-	public String mHost;
-	public String mAccessId;
-	public String mSecKey;	
+	public static String mHost = "s3.amazonaws.com";
+	public static String mAccessId = "AKIAJQNTUBGBH374IY5Q";
+	public static String mSecKey = "YwEA6bhJLmosVq6u6zEqrhIoWLVecqpK68ESjY3e";	
 }

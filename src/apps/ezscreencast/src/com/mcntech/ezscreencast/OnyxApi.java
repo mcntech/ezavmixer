@@ -55,37 +55,36 @@ public class OnyxApi {
 		}
 	}
 
-	public static void startSession(boolean enableAud, boolean enabeVid) {
+	public static void startSession(MpdSession mpdSession, boolean enableAud, boolean enabeVid) {
 
-		String jswitchId = "getit";
-		String jinpuId = "getit";
-		String jInputType = "getit";
-		String jUrl = "getit";		
-		String jInputId = "getit";		
-		CreateInputStream(mHandle, jinpuId, jInputType, jUrl);
+		String jswitchId = mpdSession.mSwcitchId;
+		String jinputId = mpdSession.mInputId;
+		String jInputType = mpdSession.mInputType;
+		String jUrl = mpdSession.mInputUrl;		
+		CreateInputStream(mHandle, jinputId, jInputType, jUrl);
 		CreateSwitch(mHandle, jswitchId);
-		ConnectSwitchInput(mHandle, jswitchId, jInputId);
+		ConnectSwitchInput(mHandle, jswitchId, jinputId);
 		
-		String jid = "getit";
-		String jhost = "getit";
-		String jaccessId = "getit";
-		String jsecKey = "getit";
-		String jbucket = "getit";
-		String jfolder = "getit";
-		String jfilePerfix = "getit";
-		addS3PublishNode(mHandle, jid,
+		String jserverId = mpdSession.mServerId;
+		String jhost = mpdSession.mHost;
+		String jaccessId = mpdSession.mAccessId;
+		String jsecKey = mpdSession.mSecKey;
+		String jbucket = mpdSession.mBucket;
+		String jfolder = mpdSession.mFolder;
+		String jfilePerfix = mpdSession.mFilePrefix;
+		addS3PublishNode(mHandle, jserverId,
 				jhost, jaccessId, jsecKey,
 				jbucket, jfolder, jfilePerfix);
-		String jmpdId = "getit";
+		String jmpdId = mpdSession.mMpdId;
 		CreateMpd(mHandle, jmpdId);
-		String jperiodId = "getit";
+		String jperiodId = mpdSession.mPeriodId;
 		CreatePeriod(mHandle, jmpdId, jperiodId);
-		String jadaptId = "getit";		
+		String jadaptId = mpdSession.mAdaptId;		
 		CreateAdaptationSet(mHandle, jmpdId, jperiodId, jadaptId);
-		String jrepId = "getit";		
+		String jrepId = mpdSession.mRepId;		
 		CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId);
 
-		String jserverNode = "getit";
+		String jserverNode = mpdSession.mServerId;
 		CreateMpdPublishStream(mHandle, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverNode);
 
 		startSession(mHandle, enableAud, enabeVid);
@@ -188,16 +187,16 @@ public class OnyxApi {
 		return getVersion(mHandle);
 	}
 	
-	public static int sendAudioData(byte[] pcmBytes, int numBytes, long lPts, int nFlags){
+	public static int sendAudioData(String inputId, byte[] pcmBytes, int numBytes, long lPts, int nFlags){
 		if(mHandle==0)
 			return 0;
-		return sendAudioData(mHandle,pcmBytes,numBytes, lPts, nFlags);
+		return sendAudioData(mHandle, inputId, pcmBytes,numBytes, lPts, nFlags);
 	}
 
-	public static int sendVideoData(byte[] vidBytes, int numBytes, long lPts, int nFlags){
+	public static int sendVideoData(String inputId, byte[] vidBytes, int numBytes, long lPts, int nFlags){
 		if(mHandle==0)
 			return 0;
-		return sendVideoData(mHandle,vidBytes,numBytes, lPts, nFlags);
+		return sendVideoData(mHandle,inputId,vidBytes,numBytes, lPts, nFlags);
 	}
 	
 

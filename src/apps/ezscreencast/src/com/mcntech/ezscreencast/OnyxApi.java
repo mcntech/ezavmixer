@@ -57,34 +57,34 @@ public class OnyxApi {
 
 	public static void startSession(MpdSession mpdSession, boolean enableAud, boolean enabeVid) {
 
-		String jswitchId = mpdSession.mSwcitchId;
-		String jinputId = mpdSession.mInputId;
-		String jInputType = mpdSession.mInputType;
-		String jUrl = mpdSession.mInputUrl;		
+		String jswitchId = MpdSession.mSwcitchId;
+		String jinputId = MpdSession.mInputId;
+		String jInputType = MpdSession.mInputType;
+		String jUrl = MpdSession.mInputUrl;		
 		CreateInputStream(mHandle, jinputId, jInputType, jUrl);
 		CreateSwitch(mHandle, jswitchId);
 		ConnectSwitchInput(mHandle, jswitchId, jinputId);
 		
-		String jserverId = mpdSession.mServerId;
-		String jhost = mpdSession.mHost;
-		String jaccessId = mpdSession.mAccessId;
-		String jsecKey = mpdSession.mSecKey;
-		String jbucket = mpdSession.mBucket;
-		String jfolder = mpdSession.mFolder;
-		String jfilePerfix = mpdSession.mFilePrefix;
+		String jserverId = MpdSession.mServerId;
+		String jhost = MpdSession.mHost;
+		String jaccessId = MpdSession.mAccessId;
+		String jsecKey = MpdSession.mSecKey;
+		String jbucket = MpdSession.mBucket;
+		String jfolder = MpdSession.mFolder;
+		String jfilePerfix = MpdSession.mFilePrefix;
 		addS3PublishNode(mHandle, jserverId,
 				jhost, jaccessId, jsecKey,
 				jbucket, jfolder, jfilePerfix);
-		String jmpdId = mpdSession.mMpdId;
+		String jmpdId = MpdSession.mMpdId;
 		CreateMpd(mHandle, jmpdId);
-		String jperiodId = mpdSession.mPeriodId;
+		String jperiodId = MpdSession.mPeriodId;
 		CreatePeriod(mHandle, jmpdId, jperiodId);
-		String jadaptId = mpdSession.mAdaptId;		
+		String jadaptId = MpdSession.mAdaptId;		
 		CreateAdaptationSet(mHandle, jmpdId, jperiodId, jadaptId);
-		String jrepId = mpdSession.mRepId;		
+		String jrepId = MpdSession.mRepId;		
 		CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId);
 
-		String jserverNode = mpdSession.mServerId;
+		String jserverNode = MpdSession.mServerId;
 		CreateMpdPublishStream(mHandle, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverNode);
 
 		startSession(mHandle, enableAud, enabeVid);

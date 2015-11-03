@@ -1,6 +1,7 @@
 #include "DashMultiPublishClnt.h"
-
+#include <android/log.h>
 static int modDbgLevel = 0;
+#define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
 
 CDashMultiPublishClnt::CDashMultiPublishClnt(CPublishEventBase *pEventBase)
 {
@@ -9,8 +10,11 @@ CDashMultiPublishClnt::CDashMultiPublishClnt(CPublishEventBase *pEventBase)
 
 int CDashMultiPublishClnt::CreateMpd(std::string szId)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	CMpdRoot *pMpdRoot = new CMpdRoot(1);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	m_listMpd[szId] = pMpdRoot;
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return 0;
 }
 int CDashMultiPublishClnt::CreatePeriod(std::string szmpdId, std::string szperiodId)

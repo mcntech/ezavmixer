@@ -14,7 +14,7 @@
 #define PUBLISH_TYPE_HLS   3
 #define PUBLISH_TYPE_RTMP  4
 
-#define DBGLOG
+#define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
 
 pthread_mutex_t   g_mutex = PTHREAD_MUTEX_INITIALIZER;
 CPublishClntBase  *g_pMultiPublish;
@@ -24,7 +24,7 @@ extern "C" {
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
-	DBGLOG("", "JNI_OnLoad ");
+	DBGLOG("JNI_OnLoad ");
 	return JNI_VERSION_1_6;
 }
 
@@ -46,21 +46,21 @@ jlong Java_com_mcntech_ezscreencast_OnyxApi_init(JNIEnv *env, jobject self,jint 
 	const char *pszInputUri = "Input0";
 	gpStrmInputInproc0 = pRegistry->getEntry(pszInputUri);
 
-	DBGLOG("", "initializing screencat");
+	DBGLOG("initializing screencat");
 	pthread_mutex_unlock(&g_mutex);
 	return (jlong)g_pMultiPublish;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_deinit(JNIEnv *env, jobject self, jlong publisher)
 {
-	DBGLOG("", "MediaController_deinit:Start");
+	DBGLOG("MediaController_deinit:Start");
 	pthread_mutex_lock(&g_mutex);
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
 	//_publisher->closeInstancce((CPublishClntBase *)g_pMultiPublish);
 	delete g_pMultiPublish;
 	g_pMultiPublish = NULL;
 	pthread_mutex_unlock(&g_mutex);
-	DBGLOG("", "MediaController_deinit:End");
+	DBGLOG("MediaController_deinit:End");
 	return true;
 }
 
@@ -72,7 +72,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_start(JNIEnv *env, jobject self, 
 
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
 	_publisher->stop();
-	DBGLOG("", "jni playfile: waiting for session to end");
+	DBGLOG("jni playfile: waiting for session to end");
 	jboolean result = true;
 	_publisher->start();
 
@@ -87,7 +87,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_stop(JNIEnv *env, jobject self, j
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
 	if(_publisher != NULL)
 		_publisher->stop();
-	DBGLOG("", "jni stopPlaying: stopped playback1");
+	DBGLOG("jni stopPlaying: stopped playback1");
 	return true;
 }
 
@@ -154,15 +154,17 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_addS3PublishNode(JNIEnv *env, job
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpd(JNIEnv *env, jobject self, jlong handle, jstring jid)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int result = 0;
 	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
 	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
 	const char * szId = env->GetStringUTFChars(jid, 0);
 	std::string tmpId = szId;
-
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	pDash->CreateMpd(tmpId);
 
 	env->ReleaseStringUTFChars(jid, szId);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return JNI_TRUE;
 }
 
@@ -360,7 +362,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_startSession(JNIEnv *env, jobject
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_endSession(JNIEnv *env, jobject self, jlong publisher)
 {
-	DBGLOG("", "MediaController_endSession:Begin");
+	DBGLOG("MediaController_endSession:Begin");
 	pthread_mutex_lock(&g_mutex);
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
 	//TODO

@@ -13,6 +13,9 @@
 #define snprintf _snprintf
 #endif
 
+#include <android/log.h>
+#define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
+
 #include "Mpd.h"
 #include "JdMpdDefs.h"
 
@@ -845,17 +848,22 @@ int CMpdRoot::IsDynamic()
 
 CMpdRoot::CMpdRoot(int fDynamic)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	m_pDoc = new TiXmlDocument( );
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	char szDaration[128];
 	TiXmlElement *pElem  = new TiXmlElement( ELEMENT_MPD );
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	m_pNode = pElem;
 	pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS_XSI, ATTRIB_VAL_MPD_XMLNS_XSI);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS, ATTRIB_NAME_MPD_XMLNS);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XSI_SCHEMA_LOCN, ATTRIB_VAL_MPD_XSI_SCHEMA_LOCN);
 
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 
 	if(fDynamic)	{
+		DBGLOG("%s:%d", __FILE__, __LINE__);
 		struct tm ast_time;
 		time_t    time_now;
 		char availability_start_time[MAX_TIME_STRING];
@@ -884,19 +892,19 @@ CMpdRoot::CMpdRoot(int fDynamic)
 	nTimeShiftBufferDepth = DEFAULT_TIME_SHIFT_BUFFER; //12 * 1000;
 	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_timeShiftBufferDepth, szDaration);
-
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int nSuggestedPresentationDelay = 4000;
 	FormatTime(nSuggestedPresentationDelay, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_suggestedPresentationDelay, szDaration);
-
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int nMaxSegmentDuration = DEFAULT_SEGMENT_DURATION; //4000;
 	FormatTime(nMaxSegmentDuration, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_MPD_maxSegmentDuration, szDaration);
-
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int nMaxSubsegmentDuration = 4000;
 	FormatTime(nMaxSubsegmentDuration, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_MPD_maxSubsegmentDuration, szDaration);
-
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	m_nUpdateTime = 0;
     m_nUpdateInterval = 1000; // default 1 Sec
 

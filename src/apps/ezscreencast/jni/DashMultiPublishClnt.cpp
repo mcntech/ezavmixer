@@ -56,24 +56,53 @@ int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string
 	return -1;
 }
 
-CMpdRepresentation * CDashMultiPublishClnt::FindRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId)
+CMpdRoot *CDashMultiPublishClnt::getMpd(std::string szmpdId)
 {
-	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
-	return pMpdRoot->FindRepresentation(szperiodId, szadaptId, szrepId);
+	MpdRootMap::iterator it = m_listMpd.find(szmpdId);
+	if(it != m_listMpd.end()){
+		CMpdRoot *pMpdRoot = it->second;
+		return pMpdRoot;
+	}
+	return NULL;
+}
+
+CMpdRepresentation *CDashMultiPublishClnt::FindRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId)
+{
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	MpdRootMap::iterator it = m_listMpd.find(szmpdId);
+	if(it != m_listMpd.end()){
+		CMpdRoot *pMpdRoot = it->second;
+		if(pMpdRoot){
+			return pMpdRoot->FindRepresentation(szperiodId, szadaptId, szrepId);
+		}
+	}
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 }
 
 int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId, std::string strSwitchId, std::string strServerNode)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+
+	CMpdRoot  *pMpdRoot = getMpd(szmpdId);
 	CMpdRepresentation *pRepresentation = FindRepresentation(szmpdId, szperiodId, szadaptId, szrepId);
-	ServerNodeMap::iterator it = m_PublishServerList.find(strServerNode);
-	if(it == m_PublishServerList.end())
-		return -1;
-	CS3PublishNode *pServerNode = (CS3PublishNode *)it->second;
-	CreateMpdPublishStream(strSwitchId, pRepresentation, pServerNode);
+	if(pRepresentation) {
+		ServerNodeMap::iterator it = m_PublishServerList.find(strServerNode);
+		if(it == m_PublishServerList.end()) {
+			DBGLOG("%s:%d: m_PublishServerList is empty", __FILE__, __LINE__);
+			return -1;
+		}
+		CS3PublishNode *pServerNode = (CS3PublishNode *)it->second;
+		if(pServerNode) {
+			CreateMpdPublishStream(pMpdRoot, strSwitchId, pRepresentation, pServerNode);
+		}
+	} else {
+		DBGLOG("%s:%d: Representation not found", __FILE__, __LINE__);
+	}
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return 0;
 }
 
-int CDashMultiPublishClnt::CreateMpdPublishStream(std::string strSwitchId, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode)
+int CDashMultiPublishClnt::CreateMpdPublishStream(CMpdRoot *pMpdRoot, std::string strSwitchId, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode)
 {
 	int nStartIndex;
 	int nSegmentTimeMs = 0;
@@ -82,8 +111,8 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string strSwitchId, CMpdR
 	int nMuxType;
 	int fFileUpdate = 0;
 	//JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
-	nSegmentTimeMs = m_pMpdRoot->GetMaxSegmentDuration();
-	nTimeShiftBufferMs = m_pMpdRoot->GetTimeShiftBuffer();
+	nSegmentTimeMs = pMpdRoot->GetMaxSegmentDuration();
+	nTimeShiftBufferMs = pMpdRoot->GetTimeShiftBuffer();
 	nStartIndex = time(NULL);
 
 	CMediaSwitch *pPublishSwitch = NULL;
@@ -114,110 +143,9 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string strSwitchId, CMpdR
 	}
 }
 
-int CDashMultiPublishClnt::StartMpdServer(const char *pszInitialMpdFile)
-{
-	int res = 0;
-
-	int nStartIndex;
-	const char *pszFilePrefix = NULL;
-	const char *pszParentFolder = NULL;
-	const char *pszBucketOrServerRoot = NULL;
-	int nSegmentTimeMs = 0;
-	int nTimeShiftBufferMs = 0;
-	char strMpdFileName[256];
-	int nMuxType;
-	int fFileUpdate = 0;
-	//JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
-
-	CMediaSwitch *pPublishSwitch = NULL;
-	m_pMpdSrvBridge = new CMpdSrvBridge;
-	m_pMpdRoot = new CMpdRoot(pszInitialMpdFile);
-	//pszBucketOrServerRoot = m_pMpdRoot->GetBaseURL();
-	pszBucketOrServerRoot = m_pMpdRoot->GetCutomCfgFolder();
-	sprintf(strMpdFileName, "%s/onyx.mpd",pszBucketOrServerRoot);
-	m_pMpdRoot->SetSaveFileName(strMpdFileName);
-	nSegmentTimeMs = m_pMpdRoot->GetMaxSegmentDuration();
-	nTimeShiftBufferMs = m_pMpdRoot->GetTimeShiftBuffer();
-	nStartIndex = time(NULL);
-
-	if(m_pMpdRoot && !m_pMpdRoot->m_listPeriods.empty()) {
-		CMpdPeriod *pMpdPeriod = m_pMpdRoot->m_listPeriods[0];
-		for (std::vector<CMpdAdaptaionSet *>::iterator it = pMpdPeriod->m_listAdaptionSets.begin(); it !=  pMpdPeriod->m_listAdaptionSets.end(); it++) {
-			CMpdAdaptaionSet *pAdapSet = *it;
-			pszParentFolder = pAdapSet->GetBaseURL();
-			nMuxType = pAdapSet->GetMimeType();
-			if(pAdapSet->IsSegmentTemplate()) {
-				char szSegmentExt[8] = {0};
-
-				if(nMuxType == MPD_MUX_TYPE_TS)
-					strcpy(szSegmentExt, TS_SEGEMNT_FILE_EXT);
-				else
-					strcpy(szSegmentExt, MP4_SEGEMNT_FILE_EXT);
-
-				char *szMedia="$RepresentationID$_$Number$.m4s";
-				pAdapSet->SetupTemplate(nStartIndex, nSegmentTimeMs, szMedia);
-				fFileUpdate = 1;
-			} else {
-				// TODO Check for segmentlist xlink:href
-				fFileUpdate = 1;
-			}
-			for (int j = 0; j < pAdapSet->m_listRepresentations.size(); j++) {
-				CMpdRepresentation *pRepresentation = pAdapSet->m_listRepresentations[j];
-				std::map<std::string, CMediaSwitch *>::iterator it = m_listPublishSwitches.find(pRepresentation->m_inputSwitch);
-				if(m_listPublishSwitches.end() != it) {
-					const char *pszMimetype = NULL;
-					CMpdSrvBridgeChan *pOutBridge;
-					pPublishSwitch = (*it).second;
-
-					pszFilePrefix = pRepresentation->GetId();
-					//pszMimetype = pRepresentation->GetMimetTpe();
-					// TODO Get the params
-					const char *pszHost = NULL;
-					const char *pszAccessId = NULL;
-					const char *pszSecKey = NULL;
-					pOutBridge = m_pMpdSrvBridge->CreateChannel(pRepresentation, nStartIndex,
-							nSegmentTimeMs, nTimeShiftBufferMs, pszFilePrefix,
-							pszParentFolder, pszBucketOrServerRoot,
-							pszHost, pszAccessId, pszSecKey,
-							nMuxType);
-
-					pPublishSwitch->AddOutput(pOutBridge);
-					pOutBridge->Run(m_pOutputStream);
-					{
-						int nWith = 0, nHeight = 0, nFrameRate = 0, nBandwidth = 0;
-						pPublishSwitch->GetInputParams(&nWith, &nHeight, &nFrameRate, &nBandwidth);
-						pRepresentation->SetStreamParams(nWith, nHeight, nFrameRate, nBandwidth);
-					}
-				}
-			}
-		}
-	}
-	if(fFileUpdate) {
-		m_pMpdRoot->SaveFile();
-	}
-	//JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
-	return res;
-}
 int CDashMultiPublishClnt::start()
 {
-#if 0
-	char szSwitchIdSection[128];
-	int i = 0;
-	sprintf(szSwitchIdSection,"%s%d",SWITCH_PREFIX, i);
-	m_pOutputStream = new COutputStream("test");
-	CMediaSwitch *pPublishSwitch = new CMediaSwitch(szSwitchIdSection);
-
-
-	//pRtspSrvBridge->Init(m_pOutputStream);
-	pPublishSwitch->AddOutput(m_pMpdSrvBridge);
-	ConnCtxT   *m_pVidConnSrc = CreateStrmConn(1024*1024,3);
-	ConnCtxT   *m_pAudConnSrc = CreateStrmConn(16*1024, 3);
-
-	pPublishSwitch->SetSource(m_pVidConnSrc, m_pAudConnSrc);
-	m_pPublishSwitch = pPublishSwitch;
-	pPublishSwitch->Run();
-#endif
-	StartMpdServer(NULL);
+	//StartMpdServer(NULL);
 }
 
 

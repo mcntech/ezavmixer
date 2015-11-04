@@ -14,8 +14,8 @@ import android.widget.TabHost;
 @SuppressWarnings("unused") //suppress unused variable warnings
 public class OnyxApi {	
 
-	public static final int PROTOCOL_MPD = 1;	
-	public static final int PROTOCOL_RTSP = 2;
+	public static final int PROTOCOL_MPD = 2;	
+	public static final int PROTOCOL_RTSP = 1;
 	
 	public interface RemoteNodeHandler {
 		void onConnectRemoteNode(String url);

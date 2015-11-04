@@ -526,12 +526,14 @@ int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate
 
 CMpdRepresentation *CMpdAdaptaionSet::FindRepresentation(std::string szId)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	CMpdRepresentation *pRep;
 	for (std::vector<CMpdRepresentation *>::iterator it = m_listRepresentations.begin(); it !=  m_listRepresentations.end(); it++) {
 		pRep = *it;
 		if(pRep->m_szId == szId)
 			return pRep;
 	}
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return NULL;
 }
 

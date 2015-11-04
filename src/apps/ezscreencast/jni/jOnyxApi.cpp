@@ -156,8 +156,8 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpd(JNIEnv *env, jobject se
 {
 	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int result = 0;
-	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
-	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
 	const char * szId = env->GetStringUTFChars(jid, 0);
 	std::string tmpId = szId;
 	DBGLOG("%s:%d", __FILE__, __LINE__);
@@ -170,9 +170,9 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpd(JNIEnv *env, jobject se
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreatePeriod(JNIEnv *env, jobject self, jlong handle, jstring jmpdId, jstring jperiodId)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int result = 0;
-	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
-	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
 
 	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
 	std::string tmpmpdId = szmpdId;
@@ -183,14 +183,18 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreatePeriod(JNIEnv *env, jobject
 
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);
 	env->ReleaseStringUTFChars(jperiodId, szperiodId);
+
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	return JNI_TRUE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateAdaptationSet(JNIEnv *env, jobject self, jlong handle, jstring jmpdId, jstring jperiodId, jstring jadaptId)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int result = 0;
-	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
-	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
 
 	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
 	std::string tmpmpdId = szmpdId;
@@ -205,14 +209,16 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateAdaptationSet(JNIEnv *env, 
 	env->ReleaseStringUTFChars(jadaptId, szadaptId);
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);
 	env->ReleaseStringUTFChars(jperiodId, szperiodId);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return JNI_TRUE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env, jobject self, jlong handle,  jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	int result = 0;
-	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
-	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
 
 	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
 	std::string tmpmpdId = szmpdId;
@@ -232,17 +238,21 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env,
 	env->ReleaseStringUTFChars(jperiodId, szperiodId);
 
 	env->ReleaseStringUTFChars(jrepId, szrepId);
+
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	return JNI_TRUE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId, jstring jswitchId, jstring jserverNode)
 {
 	int result = 0;
-	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
-	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
 
 	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
 	std::string tmpmpdId = szmpdId;
+
 	const char * szperiodId = env->GetStringUTFChars(jperiodId, 0);
 	std::string tmpperiodId = szperiodId;
 
@@ -258,7 +268,10 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *en
 	const char * szServerNode = env->GetStringUTFChars(jserverNode, 0);
 	std::string strServerNode= szServerNode;
 
-	pDash->CreateMpdPublishStream(szmpdId, szperiodId, szadaptId, szrepId, strSwitchId, strServerNode);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	pDash->CreateMpdPublishStream(tmpmpdId, tmpperiodId, tmpadaptId, tmprepId, strSwitchId, strServerNode);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	env->ReleaseStringUTFChars(jadaptId, szadaptId);
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);
 	env->ReleaseStringUTFChars(jperiodId, szperiodId);
@@ -266,12 +279,13 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *en
 	env->ReleaseStringUTFChars(jrepId, szrepId);
 	env->ReleaseStringUTFChars(jswitchId, szSwitchId);
 	env->ReleaseStringUTFChars(jserverNode, szServerNode);
-
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return JNI_TRUE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateInputStream(JNIEnv *env, jobject self, jlong handle, jstring jid, jstring jInputType, jstring jUrl)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int result = 0;
 	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
 	const char * szId = env->GetStringUTFChars(jid, 0);
@@ -282,22 +296,26 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateInputStream(JNIEnv *env, jo
 	env->ReleaseStringUTFChars(jid, szId);
 	env->ReleaseStringUTFChars(jInputType, szId);
 	env->ReleaseStringUTFChars(jUrl, szUrl);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return JNI_TRUE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateSwitch(JNIEnv *env, jobject self, jlong handle, jstring jid)
 {
 	int result = 0;
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
 	const char * szId = env->GetStringUTFChars(jid, 0);
 	_publisher->CreateSwitch(szId);
 
 	env->ReleaseStringUTFChars(jid, szId);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return JNI_TRUE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, jobject self, jlong handle, jstring jSwitchId, jstring jInputId)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	int result = 0;
 	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
 	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)_publisher;
@@ -309,6 +327,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, j
 
 	env->ReleaseStringUTFChars(jSwitchId, szSwitchId);
 	env->ReleaseStringUTFChars(jInputId, szInputId);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return JNI_TRUE;
 }
 
@@ -351,11 +370,13 @@ jint Java_com_mcntech_ezscreencast_OnyxApi_sendVideoData(JNIEnv *env, jobject se
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_startSession(JNIEnv *env, jobject self, jlong publisher, jboolean fEnableAudio, jboolean fEnableVideo)
 {
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	pthread_mutex_lock(&g_mutex);
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
 	bool result =  JNI_FALSE;
 	//TODO
 	pthread_mutex_unlock(&g_mutex);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	return result;
 }
 

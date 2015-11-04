@@ -55,7 +55,7 @@ public:
 	int CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId);
 	CMpdRepresentation * FindRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId);
 
-	int CreateMpdPublishStream(std::string strSwitchId, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode);
+	int CreateMpdPublishStream(CMpdRoot  *pMpdRoot, std::string strSwitchId, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode);
 	int CreateMpdPublishStream(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId, std::string strSwitchId, std::string strServerNode);
 
 	CConfigBase *m_pConfig;
@@ -66,14 +66,13 @@ public:
 	int stop();
 
 private:
-	int StartMpdServer(const char *pszConfFile);
-
+	CMpdRoot *getMpd(std::string szmpdId);
 public:
 	std::map <std::string, CMpdRoot *>  m_listMpd;
 	COutputStream      *m_pOutputStream;
 	CMpdSrvBridge      *m_pMpdSrvBridge;
-	CMpdRoot           *m_pMpdRoot;
 	CPublishEventBase  *m_EventCallback;
 };
 
+typedef std::map <std::string, CMpdRoot *> MpdRootMap;
 #endif

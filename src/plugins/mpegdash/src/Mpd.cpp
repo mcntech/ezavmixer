@@ -435,6 +435,43 @@ CMpdRoot *CMpdAdaptaionSet::GetMpd()
 	return m_pParent->GetMpd();
 }
 
+int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate)
+{
+	TiXmlElement *pRepElem = new TiXmlElement( ELEMENT_Representation );
+	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this);
+	pRepresentation->m_pNode = pRepElem;
+
+	if(!fSegmentTmplate) {
+		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
+		TiXmlNode *pSegNode = pSegElem;
+			pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
+			pRepresentation->m_pSegmentList = new CMpdSegmentList(pRepresentation, pSegNode);
+			pRepresentation->m_pSegmentList->m_pNode = pSegElem;
+	} else {
+		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
+	}
+	pRepresentation->m_szId = szId;
+	//pRepresentation->m_inputSwitch = szSwitchId;
+	m_listRepresentations.push_back(pRepresentation);
+	return 0;
+}
+
+CMpdRepresentation *CMpdAdaptaionSet::FindRepresentation(std::string szId)
+{
+	DBGLOG("%s:%d:%s", __FILE__, __LINE__, szId.c_str());
+	CMpdRepresentation *pRep = NULL;
+	for (std::vector<CMpdRepresentation *>::iterator it = m_listRepresentations.begin(); it !=  m_listRepresentations.end(); it++) {
+		DBGLOG("%s:%d", __FILE__, __LINE__);
+		pRep = *it;
+		if(pRep->m_szId == szId){
+			DBGLOG("%s:%d:%s", __FILE__, __LINE__, pRep->m_szId.c_str());
+			return pRep;
+		}
+	}
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	return NULL;
+}
+
 CMpdPeriod::CMpdPeriod(CMpdRoot *pParent)
 {
 	m_pParent = pParent;
@@ -503,39 +540,6 @@ unsigned int osalGetSystemTime()
 #endif
 }
 
-int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate)
-{
-	TiXmlElement *pRepElem = new TiXmlElement( ELEMENT_Representation );
-	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this);
-	pRepresentation->m_pNode = pRepElem;
-
-	if(!fSegmentTmplate) {
-		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
-		TiXmlNode *pSegNode = pSegElem;
-			pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
-			pRepresentation->m_pSegmentList = new CMpdSegmentList(pRepresentation, pSegNode);
-			pRepresentation->m_pSegmentList->m_pNode = pSegElem;
-	} else {
-		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
-	}
-	pRepresentation->m_szId = szId;
-	//pRepresentation->m_inputSwitch = szSwitchId;
-	m_listRepresentations.push_back(pRepresentation);
-	return 0;
-}
-
-CMpdRepresentation *CMpdAdaptaionSet::FindRepresentation(std::string szId)
-{
-	DBGLOG("%s:%d", __FILE__, __LINE__);
-	CMpdRepresentation *pRep;
-	for (std::vector<CMpdRepresentation *>::iterator it = m_listRepresentations.begin(); it !=  m_listRepresentations.end(); it++) {
-		pRep = *it;
-		if(pRep->m_szId == szId)
-			return pRep;
-	}
-	DBGLOG("%s:%d", __FILE__, __LINE__);
-	return NULL;
-}
 
 CMpdPeriod *CMpdRoot::CreatePeriod(std::string szId)
 {

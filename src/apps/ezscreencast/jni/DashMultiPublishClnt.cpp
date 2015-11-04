@@ -84,14 +84,22 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szmpdId, std::stri
 	DBGLOG("%s:%d", __FILE__, __LINE__);
 
 	CMpdRoot  *pMpdRoot = getMpd(szmpdId);
+	if(pMpdRoot == NULL) {
+		DBGLOG("%s:%d notfound %s", __FILE__, __LINE__, szmpdId.c_str());
+		return -1;
+	}
 	CMpdRepresentation *pRepresentation = FindRepresentation(szmpdId, szperiodId, szadaptId, szrepId);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	if(pRepresentation) {
+		DBGLOG("%s:%d", __FILE__, __LINE__);
 		ServerNodeMap::iterator it = m_PublishServerList.find(strServerNode);
+		DBGLOG("%s:%d", __FILE__, __LINE__);
 		if(it == m_PublishServerList.end()) {
 			DBGLOG("%s:%d: m_PublishServerList is empty", __FILE__, __LINE__);
 			return -1;
 		}
 		CS3PublishNode *pServerNode = (CS3PublishNode *)it->second;
+		DBGLOG("%s:%d", __FILE__, __LINE__);
 		if(pServerNode) {
 			CreateMpdPublishStream(pMpdRoot, strSwitchId, pRepresentation, pServerNode);
 		}
@@ -110,8 +118,10 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(CMpdRoot *pMpdRoot, std::strin
 	char strMpdFileName[256];
 	int nMuxType;
 	int fFileUpdate = 0;
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	//JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
 	nSegmentTimeMs = pMpdRoot->GetMaxSegmentDuration();
+	DBGLOG("%s:%d", __FILE__, __LINE__);
 	nTimeShiftBufferMs = pMpdRoot->GetTimeShiftBuffer();
 	nStartIndex = time(NULL);
 

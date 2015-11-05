@@ -1,4 +1,10 @@
 #include "PublishClntBase.h"
+#include <android/log.h>
+
+#define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
+
+#define TRACE_BEGIN DBGLOG("%s:%d:begin", __FILE__, __LINE__);
+#define TRACE_END DBGLOG("%s:%d:begin", __FILE__, __LINE__);
 
 static int modDbgLevel = 0;
 
@@ -10,9 +16,13 @@ int CPublishClntBase::AddPublishServer(std::string url, std::string appName, int
 int CPublishClntBase::AddS3PublishNode(std::string szId, std::string szHost, std::string szAccessId, std::string szSecKey,
 		std::string szBucket, std::string szFolder, std::string szFilePerfix)
 {
+	 TRACE_BEGIN
+
 	CS3PublishNode *pNode = new CS3PublishNode(szHost, szAccessId, szSecKey,
 			szBucket, szFolder, szFilePerfix);
 	m_PublishServerList[szId] = pNode;
+	TRACE_END
+
 }
 
 int CPublishClntBase::RemovePublishServer(std::string url)
@@ -23,6 +33,7 @@ int CPublishClntBase::RemovePublishServer(std::string url)
 
 int CPublishClntBase::CreateInputStrm(const char *szInputId, const char *szInputType, const char *szInputUri)
 {
+	TRACE_BEGIN
 	int res = 0;
 	CMediaSwitch *pPublishSwitch = NULL;
 	CAvmixInputStrm *pSwitchpInput = new CAvmixInputStrm();
@@ -30,56 +41,105 @@ int CPublishClntBase::CreateInputStrm(const char *szInputId, const char *szInput
 	strncpy(pSwitchpInput->pszInputUri, szInputUri, 127);
 	res  = CStreamUtil::InitInputStrm(pSwitchpInput);
 	m_listInputStrmConn[szInputId] = pSwitchpInput;
+	TRACE_END
 	return res;
 }
 
 int CPublishClntBase::CreateSwitch(const char *szSwitchId)
 {
+	TRACE_BEGIN
 	int res = 0;
 	CMediaSwitch *pPublishSwitch = new CMediaSwitch(szSwitchId);
 	m_listPublishSwitches[szSwitchId] = pPublishSwitch;
+	TRACE_END
 	return res;
+}
+
+CMediaSwitch *CPublishClntBase::getSwitch(std::string szSwitchId)
+{
+	TRACE_BEGIN
+	CMediaSwitch *pPublishSwitch = NULL;
+
+	std::map<std::string, CMediaSwitch *>::iterator it = m_listPublishSwitches.find(szSwitchId);
+	if(m_listPublishSwitches.end() != it) {
+		//const char *pszMimetype = NULL;
+		//CMpdSrvBridgeChan *pOutBridge;
+		pPublishSwitch = (*it).second;
+	}
+	TRACE_END
+	return pPublishSwitch;
+}
+
+ int CPublishClntBase::startSwitch(std::string szSwitchId)
+{
+	 TRACE_BEGIN
+	int res = -1;
+	CMediaSwitch *pPublishSwitch = getSwitch(szSwitchId);
+	if(pPublishSwitch) {
+		res = pPublishSwitch->Run();
+	}
+	TRACE_END
+	return res;
+}
+
+CS3PublishNode *CPublishClntBase::getPublishNode(std::string szPublishNode)
+{
+	TRACE_BEGIN
+	CS3PublishNode *pNode = NULL;
+	ServerNodeMap::iterator it = m_PublishServerList.find(szPublishNode);
+	if(it == m_PublishServerList.end()) {
+		pNode = (CS3PublishNode *)it->second;
+	}
+	TRACE_END
+	return pNode;
 }
 
 int CPublishClntBase::ConnectSwitchInput(const char *szInputId, const char *pszSwitchId)
 {
+	TRACE_BEGIN
+	int res = -1;
 	CMediaSwitch *pPublishSwitch = NULL;
-	std::map<std::string, CMediaSwitch *>::iterator it = m_listPublishSwitches.find(pszSwitchId);
-	if(m_listPublishSwitches.end() != it){
-		pPublishSwitch = (*it).second;
-	} else {
-		return -1;
-	}
-
 	CAvmixInputStrm *pSwitchpInput = NULL;
-	std::map<std::string, CAvmixInputStrm *>::iterator it2 = m_listInputStrmConn.find(pszSwitchId);
-	if(m_listInputStrmConn.end() != it2){
-		pSwitchpInput = (*it2).second;
-	} else {
-		return -1;
-	}
-
-	if (pSwitchpInput->mpInputBridge) {
-		ConnCtxT   *pVidConnSrc = NULL;
-		ConnCtxT   *pAudConnSrc = NULL;
-		XADataSource *pDataSrc1 = pSwitchpInput->mpInputBridge->GetDataSource1();
-		XADataSource *pDataSrc2 = pSwitchpInput->mpInputBridge->GetDataSource2();
-		if(pDataSrc1) {
-			XADataLocator_Address *pDataLocatorVideo = (XADataLocator_Address *)pDataSrc1->pLocator;
-			pVidConnSrc = (ConnCtxT  *)pDataLocatorVideo->pAddress;
-		}
-		if(pDataSrc2) {
-			XADataLocator_Address *pDataLocatorAudio = (XADataLocator_Address *)pDataSrc2->pLocator;
-			pAudConnSrc = (ConnCtxT   *)pDataLocatorAudio->pAddress;
+	ConnCtxT   *pVidConnSrc = NULL;
+	ConnCtxT   *pAudConnSrc = NULL;
+	do{
+		std::map<std::string, CMediaSwitch *>::iterator it = m_listPublishSwitches.find(pszSwitchId);
+		if(m_listPublishSwitches.end() != it){
+			pPublishSwitch = (*it).second;
+		} else {
+			break;
 		}
 
-		pPublishSwitch->SetSource(pVidConnSrc, pAudConnSrc);
-		if(pSwitchpInput->mpInputBridge) {
-			pSwitchpInput->mpInputBridge->StartStreaming();
+
+		std::map<std::string, CAvmixInputStrm *>::iterator it2 = m_listInputStrmConn.find(pszSwitchId);
+		if(m_listInputStrmConn.end() != it2){
+			pSwitchpInput = (*it2).second;
+		} else {
+			break;
 		}
-		pPublishSwitch->m_pSwitchInput = pSwitchpInput;
-	} else {
-		delete pSwitchpInput;
-	}
-	return 0;
+
+		if (pSwitchpInput->mpInputBridge) {
+			XADataSource *pDataSrc1 = pSwitchpInput->mpInputBridge->GetDataSource1();
+			XADataSource *pDataSrc2 = pSwitchpInput->mpInputBridge->GetDataSource2();
+			if(pDataSrc1) {
+				XADataLocator_Address *pDataLocatorVideo = (XADataLocator_Address *)pDataSrc1->pLocator;
+				pVidConnSrc = (ConnCtxT  *)pDataLocatorVideo->pAddress;
+			}
+			if(pDataSrc2) {
+				XADataLocator_Address *pDataLocatorAudio = (XADataLocator_Address *)pDataSrc2->pLocator;
+				pAudConnSrc = (ConnCtxT   *)pDataLocatorAudio->pAddress;
+			}
+
+			pPublishSwitch->SetSource(pVidConnSrc, pAudConnSrc);
+			if(pSwitchpInput->mpInputBridge) {
+				pSwitchpInput->mpInputBridge->StartStreaming();
+			}
+			pPublishSwitch->m_pSwitchInput = pSwitchpInput;
+		} else {
+			delete pSwitchpInput;
+		}
+	} while(0);
+
+	TRACE_END
+	return res;
 }

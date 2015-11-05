@@ -207,6 +207,7 @@ CMpdSrvBridge::~CMpdSrvBridge()
 }
 
 CMpdSrvBridgeChan *CMpdSrvBridge::CreateChannel(
+		std::string         szId,
 		CMpdRepresentation *pCfgRepresenation, 
 		int        nSegmentStart,
 		int        nSegemtTimeMs, 
@@ -220,6 +221,16 @@ CMpdSrvBridgeChan *CMpdSrvBridge::CreateChannel(
 	CMpdSrvBridgeChan *pChan = new CMpdSrvBridgeChan(nMimeType, nSegmentStart, nSegemtTimeMs, nTimeShiftBuffer);
 	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, pszHost, pszAccessId, pszSecKey);
 
-	m_plistChan.push_back(pChan);
+	m_listChan[szId] = pChan;
+	return pChan;
+}
+
+CMpdSrvBridgeChan *CMpdSrvBridge::getChannel(std::string szId)
+{
+	CMpdSrvBridgeChan *pChan = NULL;
+	std::map<std::string, CMpdSrvBridgeChan *>::iterator it = m_listChan.find(szId);
+	if (it != m_listChan.end()){
+		pChan = it->second;
+	}
 	return pChan;
 }

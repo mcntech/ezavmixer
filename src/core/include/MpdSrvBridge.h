@@ -13,6 +13,8 @@
 #include <JdOsal.h>
 #include "Mpd.h"
 #include "Mp4MuxIf.h"
+#include <string>
+#include <map>
 
 class CMpdSrvBridgeChan : public CStrmOutBridge
 {
@@ -76,6 +78,7 @@ public:
 	CMpdSrvBridge();
 	~CMpdSrvBridge();
 	CMpdSrvBridgeChan *CreateChannel(
+			std::string         szId,
 			CMpdRepresentation *pCfgRepresenation,
 			int        nSegmentStart,
 			int        nSegemtTimeMs,
@@ -86,8 +89,9 @@ public:
 			const char *pszHost, const char *pszAccessId, const char *pszSecKey,
 			int        nMimeType);
 
+	CMpdSrvBridgeChan *getChannel(std::string szId);
 
-	std::vector<CMpdSrvBridgeChan *> m_plistChan;
+	std::map<std::string, CMpdSrvBridgeChan *> m_listChan;
 };
 
 #endif

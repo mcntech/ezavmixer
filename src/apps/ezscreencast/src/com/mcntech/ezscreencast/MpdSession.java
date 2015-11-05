@@ -1,6 +1,7 @@
 package com.mcntech.ezscreencast;
 
 public class MpdSession {
+	public static String mPublishId = "publish0";	
 	public static String mServerId = "server0";
 	public static String mSwcitchId = "switch0";
 	

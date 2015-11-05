@@ -244,11 +244,14 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env,
 	return JNI_TRUE;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId, jstring jswitchId, jstring jserverNode)
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jId, jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId, jstring jswitchId, jstring jserverNode)
 {
 	int result = 0;
 	DBGLOG("%s:%d", __FILE__, __LINE__);
 	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
+
+	const char * szId = env->GetStringUTFChars(jId, 0);
+	std::string tmpId = szId;
 
 	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
 	std::string tmpmpdId = szmpdId;
@@ -269,9 +272,10 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *en
 	std::string strServerNode= szServerNode;
 
 	DBGLOG("%s:%d", __FILE__, __LINE__);
-	pDash->CreateMpdPublishStream(tmpmpdId, tmpperiodId, tmpadaptId, tmprepId, strSwitchId, strServerNode);
+	pDash->CreateMpdPublishStream(tmpId, tmpmpdId, tmpperiodId, tmpadaptId, tmprepId, strSwitchId, strServerNode);
 	DBGLOG("%s:%d", __FILE__, __LINE__);
 
+	env->ReleaseStringUTFChars(jId, szId);
 	env->ReleaseStringUTFChars(jadaptId, szadaptId);
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);
 	env->ReleaseStringUTFChars(jperiodId, szperiodId);

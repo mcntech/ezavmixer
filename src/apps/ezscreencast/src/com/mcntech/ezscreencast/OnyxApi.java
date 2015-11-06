@@ -89,12 +89,8 @@ public class OnyxApi {
 		CreateMpdPublishStream(mHandle, jPublishId, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverNode);
 
 		StartSwitch(mHandle, jswitchId);
-		StartMpdPublishStream(mHandle, jPublishId, jmpdId);
+		StartMpdPublishStream(mHandle, jPublishId);
 		//startSession(mHandle, enableAud, enabeVid);
-	}
-
-	public static void stopSession() {
-		mSelf.stopSession(mHandle);
 	}
 	
 	protected void finalize() throws Throwable {
@@ -211,17 +207,11 @@ public class OnyxApi {
 
 	private native long init(int protocol);
 	private native boolean deinit(long handle);
-	private native static void startSession(long handle, boolean enableAud, boolean enableVid);
 	private native static void stopSession(long handle);
 
 	private native static boolean addRtspPublishNode(long handle, String url, String appname);	
 	private native static boolean removeRemoteNode(long handle, String url);	
-	
-	private native static boolean start(long handle);
-	private native static boolean stop(long handle);
-	private native static boolean pause(long handle);
-	private native static boolean resume(long handle);	
-	
+		
 	public native static String getVersion(long handle);
 	
 	private native static int sendAudioData(long handle,String inputId, byte[] pcmBytes, int numBytes, long lPts, int nFlags);

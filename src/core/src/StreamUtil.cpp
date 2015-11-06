@@ -83,15 +83,16 @@ int CStreamUtil::InitInputStrm(CInputStrmBase *pInputStream)
 		}
 		break;
 #endif
-		case INPUT_TYPE_STRMCONN:
+		case INPUT_TYPE_INPROC:
 		{
 			int nResult;
 			// TODO: Retrieve the following interface
-			CInprocStrmConnRegistry *pRegistry = CInprocStrmConnRegistry::getRegistry();
-			CInprocStrmConn *pStrmInput = pRegistry->getEntry(pInputStream->pszInputUri);
-			ConnCtxT *pVidCon = pStrmInput->m_pVidCon;
-			ConnCtxT *pAudCon = pStrmInput->m_pAudCon;
-			pInputStream->mpInputBridge =  new CStrmConnWrapper(pAudCon != NULL, pVidCon != NULL,  pAudCon, pVidCon, &nResult);
+			//CInprocStrmConnRegistry *pRegistry = CInprocStrmConnRegistry::getRegistry();
+			//CInprocStrmConn *pStrmInput = pRegistry->getEntry(pInputStream->pszInputUri);
+			//if(pStrmInput) {
+				ConnCtxT *pVidCon = CreateStrmConn(8*1024*1024, 6);//pStrmInput->m_pVidCon;
+				ConnCtxT *pAudCon = CreateStrmConn(128*1024, 6);//pStrmInput->m_pAudCon;
+				pInputStream->mpInputBridge =  new CStrmConnWrapper(pAudCon != NULL, pVidCon != NULL,  pAudCon, pVidCon, &nResult);
 		}
 		break;
 #ifdef ENABLE_IPC
@@ -183,6 +184,9 @@ CAvmixInputStrm *CStreamUtil::GetStreamParamsFromCfgDb(const char *pszSection, c
 	} else if (strcmp(szType, INPUT_STREAM_TYPE_STRMCONN) == 0) {
 		strcpy(szInput, "strmconn");
 		nType = INPUT_TYPE_STRMCONN;
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_INPROC) == 0) {
+		strcpy(szInput, "inproc");
+		nType = INPUT_TYPE_INPROC;
 	} else if (strcmp(szType, INPUT_STREAM_TYPE_STRMCONN_IPC) == 0) {
 		nType = INPUT_TYPE_STRMCONN_IPC;
 		strcpy(szInput, "strmconn_ipc");
@@ -242,6 +246,12 @@ INPUT_TYPE_T CStreamUtil::InputTypeStringToInt(const char *szType)
 		ini_gets(pszSection, KEY_INPUT_AUD_PORT_PEER, "", pExtPram->szAudSocketTxName, IPC_SOCK_PORT_NAME_SIZE, pszConfFile);
 		ini_gets(pszSection, KEY_INPUT_VID_PORT_PEER, "", pExtPram->szVidSocketTxName, IPC_SOCK_PORT_NAME_SIZE, pszConfFile);
 		*/
+	} else if (strcmp(szType, INPUT_STREAM_TYPE_INPROC) == 0) {
+		/*
+		ini_gets(pszSection, KEY_INPUT_DEVICE , "avmixer0", szInput, 64, pszConfFile);
+		*/
+		nType = INPUT_TYPE_INPROC;
+
 	} else if (strcmp(szType, INPUT_STREAM_TYPE_AVMIXER) == 0) {
 		/*
 		ini_gets(pszSection, KEY_INPUT_DEVICE , "avmixer0", szInput, 64, pszConfFile);

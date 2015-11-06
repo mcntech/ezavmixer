@@ -63,26 +63,6 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_start(JNIEnv *env, jobject self, 
 	return result;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_stop(JNIEnv *env, jobject self, jlong publisher)
-{
-	//TODO if(!CPublishClntBase::safeLock(&g_mutex))
-	//	return false;
-	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
-	if(_publisher != NULL)
-		_publisher->stop();
-	DBGLOG("jni stopPlaying: stopped playback1");
-	return true;
-}
-
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_pause(JNIEnv *env, jobject self, jlong publisher)
-{
-	return true;
-}
-
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_resume(JNIEnv *env, jobject self, jlong publisher, jstring path, jstring title, jstring artist)
-{
-	return true;
-}
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_addRtspPublishNode(JNIEnv *env, jobject self, jlong handle, jstring url, jstring jappName)
 {
@@ -363,6 +343,8 @@ jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject se
 		jbyte* rawjBytes = env->GetByteArrayElements(pcmBytes, &isCopy);
 		pConn->Write(pConn, (char *)rawjBytes, len, Pts, Flags);
 		env->ReleaseByteArrayElements(pcmBytes,rawjBytes, 0);
+	} else{
+		DBGLOG("%s:%d:aud %s pConn==NULL", __FILE__, __LINE__,szInputId );
 	}
 	env->ReleaseStringUTFChars(jInputId, szInputId);
 
@@ -387,34 +369,14 @@ jint Java_com_mcntech_ezscreencast_OnyxApi_sendVideoData(JNIEnv *env, jobject se
 		jbyte* rawjBytes = env->GetByteArrayElements(pcmBytes, &isCopy);
 		pConn->Write(pConn, (char *)rawjBytes, len, Pts, Flags);
 		env->ReleaseByteArrayElements(pcmBytes,rawjBytes, 0);
+	} else {
+		DBGLOG("%s:%d:vid %s pConn==NULL", __FILE__, __LINE__,szInputId );
 	}
 	env->ReleaseStringUTFChars(jInputId, szInputId);
 
 	return result;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_startSession(JNIEnv *env, jobject self, jlong publisher, jboolean fEnableAudio, jboolean fEnableVideo)
-{
-	DBGLOG("%s:%d", __FILE__, __LINE__);
-	pthread_mutex_lock(&g_mutex);
-	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
-	bool result =  JNI_FALSE;
-	//TODO
-	pthread_mutex_unlock(&g_mutex);
-	DBGLOG("%s:%d", __FILE__, __LINE__);
-	return result;
-}
-
-
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_endSession(JNIEnv *env, jobject self, jlong publisher)
-{
-	DBGLOG("MediaController_endSession:Begin");
-	pthread_mutex_lock(&g_mutex);
-	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
-	//TODO
-	pthread_mutex_unlock(&g_mutex);
-	return JNI_TRUE;
-}
 
 jstring Java_com_mcntech_ezscreencast_OnyxApi_getVersion(JNIEnv *env, jobject self, jlong publisher)
 {

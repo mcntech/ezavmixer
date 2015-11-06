@@ -154,6 +154,7 @@
 #define INPUT_STREAM_TYPE_CAPTURE      "capture"
 #define INPUT_STREAM_TYPE_AVMIXURE     "avmixer"
 #define INPUT_STREAM_TYPE_STRMCONN     "strmconn"
+#define INPUT_STREAM_TYPE_INPROC        "inproc"
 #define INPUT_STREAM_TYPE_STRMCONN_IPC "strmconn_ipc"
 #define INPUT_STREAM_TYPE_STRMCONN_ZMQ "strmconn_zmq"
 #define INPUT_STREAM_TYPE_AVMIXER      "avmixer"

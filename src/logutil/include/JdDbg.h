@@ -9,7 +9,9 @@
 
 #include <string>
 #include <vector>
-
+#ifdef PLATFORM_ANDROID
+#include <android/log.h>
+#endif
 #if (defined(DEBUG) || defined(FORCE_DBG_MSG))
 #define JdDbg(level, _x_) if((level) <= mJdDbg.mDbgLvl) { mJdDbg.Out _x_; }
 #else
@@ -22,6 +24,16 @@
 #ifdef NO_DEBUG_LOG
 #define JDBG_LOG(DbgLevel, x)
 #else
+
+#ifdef PLATFORM_ANDROID
+//#define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
+
+#define JDBG_LOG(DbgLevel, x) do { if(DbgLevel <= modDbgLevel) { \
+									CJdDbg::dbg_printf x;                                         \
+								}                                                                  \
+							} while(0);
+
+#else
 #define JDBG_LOG(DbgLevel, x) do { if(DbgLevel <= modDbgLevel) { \
 									fprintf(stderr,"%s:%s:%d:", __FILE__, __FUNCTION__, __LINE__); \
 									CJdDbg::dbg_printf x;                                          \
@@ -29,7 +41,7 @@
 								}                                                                  \
 							} while(0);
 #endif
-
+#endif
 class CJdDbg
 {
 public:
@@ -55,7 +67,9 @@ public:
 		va_list arg;
 		va_start (arg, format);
 		vsprintf (buffer, format, arg);
-#ifdef WIN32
+#if defined(PLATFORM_ANDROID)
+		__android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  ":%s", buffer);
+#elif defined(WIN32)
 		//OutputDebugStringA(buffer);
 		fprintf(stderr, ":%s", buffer);
 #else

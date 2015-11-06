@@ -7,6 +7,7 @@
 #include "DashMultiPublishClnt.h"
 #include "PublishClntBase.h"
 #include "jOnyxEvents.h"
+#include "JdDbg.h"
 
 #define PUBLISH_TYPE_NONE  0
 #define PUBLISH_TYPE_RTSP  1
@@ -20,8 +21,10 @@ pthread_mutex_t   g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern "C" {
 
+static int  modDbgLevel = CJdDbg::LVL_MSG;
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
+	JDBG_LOG(CJdDbg::LVL_SETUP, ("Test Test Test Test ver=%d", 1));
 	DBGLOG("JNI_OnLoad ");
 	return JNI_VERSION_1_6;
 }

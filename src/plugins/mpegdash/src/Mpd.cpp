@@ -15,6 +15,8 @@
 
 #include <android/log.h>
 #define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
+#define TRACE_BEGIN DBGLOG("%s:%d:begin", __FILE__, __LINE__);
+#define TRACE_END DBGLOG("%s:%d:end", __FILE__, __LINE__);
 
 #include "Mpd.h"
 #include "JdMpdDefs.h"

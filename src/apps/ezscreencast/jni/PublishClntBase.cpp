@@ -4,7 +4,7 @@
 #define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
 
 #define TRACE_BEGIN DBGLOG("%s:%d:begin", __FILE__, __LINE__);
-#define TRACE_END DBGLOG("%s:%d:begin", __FILE__, __LINE__);
+#define TRACE_END DBGLOG("%s:%d:end", __FILE__, __LINE__);
 
 static int modDbgLevel = 0;
 
@@ -43,6 +43,40 @@ int CPublishClntBase::CreateInputStrm(const char *szInputId, const char *szInput
 	m_listInputStrmConn[szInputId] = pSwitchpInput;
 	TRACE_END
 	return res;
+}
+
+CAvmixInputStrm *CPublishClntBase::GetInputStrm(const char *szInputId)
+{
+	TRACE_BEGIN
+	CAvmixInputStrm *pSwitchpInput = NULL;
+	std::map <std::string, CAvmixInputStrm *>::iterator it = m_listInputStrmConn.find(szInputId);
+	if(it != m_listInputStrmConn.end()) {
+		pSwitchpInput = it->second;
+	}
+	TRACE_END
+	return pSwitchpInput;
+}
+
+ConnCtxT *CPublishClntBase::GetInputStrmConn(const char *szInputId, int nCodec)
+{
+	CAvmixInputStrm *pSwitchpInput = GetInputStrm(szInputId);
+	ConnCtxT *pConn = NULL;
+	if (pSwitchpInput && pSwitchpInput->mpInputBridge) {
+		if(nCodec == 0/*audio TODO*/) {
+			XADataSource *pDataSrc1 = pSwitchpInput->mpInputBridge->GetDataSource1();
+			if(pDataSrc1) {
+				XADataLocator_Address *pDataLocatorVideo = (XADataLocator_Address *)pDataSrc1->pLocator;
+				pConn = (ConnCtxT  *)pDataLocatorVideo->pAddress;
+			}
+		} else if(nCodec == 1 /*video*/){
+			XADataSource *pDataSrc2 = pSwitchpInput->mpInputBridge->GetDataSource2();
+			if(pDataSrc2) {
+				XADataLocator_Address *pDataLocatorAudio = (XADataLocator_Address *)pDataSrc2->pLocator;
+				pConn = (ConnCtxT   *)pDataLocatorAudio->pAddress;
+			}
+		}
+	}
+	return pConn;
 }
 
 int CPublishClntBase::CreateSwitch(const char *szSwitchId)

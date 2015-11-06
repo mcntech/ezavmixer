@@ -17,8 +17,6 @@
 #define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
 
 pthread_mutex_t   g_mutex = PTHREAD_MUTEX_INITIALIZER;
-CPublishClntBase  *g_pMultiPublish;
-CInprocStrmConn   *gpStrmInputInproc0 = NULL;
 
 extern "C" {
 
@@ -31,24 +29,17 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 jlong Java_com_mcntech_ezscreencast_OnyxApi_init(JNIEnv *env, jobject self,jint protocol)
 {
 	pthread_mutex_lock(&g_mutex);
-
+	CPublishClntBase *pMultiPublish = NULL;
 	/* Initialize publish client */
-	if(g_pMultiPublish == NULL) {
-		COnyxEvents *pEventCallback = new COnyxEvents(env, self);
-		if(protocol == PUBLISH_TYPE_RTSP)
-			g_pMultiPublish =  CRtspMultiPublishClnt::openInstance(pEventCallback);
-		if(protocol == PUBLISH_TYPE_MPD)
-			g_pMultiPublish =  CDashMultiPublishClnt::openInstance(pEventCallback);
-	}
-
-	/* Get strmconn interfacce */
-	CInprocStrmConnRegistry *pRegistry = CInprocStrmConnRegistry::getRegistry();
-	const char *pszInputUri = "Input0";
-	gpStrmInputInproc0 = pRegistry->getEntry(pszInputUri);
+	COnyxEvents *pEventCallback = new COnyxEvents(env, self);
+	if(protocol == PUBLISH_TYPE_RTSP)
+		pMultiPublish =  CRtspMultiPublishClnt::openInstance(pEventCallback);
+	if(protocol == PUBLISH_TYPE_MPD)
+		pMultiPublish =  CDashMultiPublishClnt::openInstance(pEventCallback);
 
 	DBGLOG("initializing screencat");
 	pthread_mutex_unlock(&g_mutex);
-	return (jlong)g_pMultiPublish;
+	return (jlong)pMultiPublish;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_deinit(JNIEnv *env, jobject self, jlong publisher)
@@ -56,22 +47,14 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_deinit(JNIEnv *env, jobject self,
 	DBGLOG("MediaController_deinit:Start");
 	pthread_mutex_lock(&g_mutex);
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
-	//_publisher->closeInstancce((CPublishClntBase *)g_pMultiPublish);
-	delete g_pMultiPublish;
-	g_pMultiPublish = NULL;
 	pthread_mutex_unlock(&g_mutex);
 	DBGLOG("MediaController_deinit:End");
 	return true;
 }
 
-// play from start of track every time
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_start(JNIEnv *env, jobject self, jlong publisher, jstring path, jstring title, jstring artist)
 {
-	//todo if(!CPublishClntBase::safeLock(&g_mutex))//pthread_mutex_lock(&g_mutex);
-	//	return false;
-
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
-	_publisher->stop();
 	DBGLOG("jni playfile: waiting for session to end");
 	jboolean result = true;
 	_publisher->start();
@@ -287,6 +270,22 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *en
 	return JNI_TRUE;
 }
 
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jId)
+{
+	int result = 0;
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
+
+	const char * szId = env->GetStringUTFChars(jId, 0);
+	std::string tmpId = szId;
+
+	pDash->SatrtMpdPublishStream(tmpId);
+
+	env->ReleaseStringUTFChars(jId, szId);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	return JNI_TRUE;
+}
+
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateInputStream(JNIEnv *env, jobject self, jlong handle, jstring jid, jstring jInputType, jstring jUrl)
 {
 	DBGLOG("%s:%d", __FILE__, __LINE__);
@@ -317,6 +316,20 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateSwitch(JNIEnv *env, jobject
 	return JNI_TRUE;
 }
 
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartSwitch(JNIEnv *env, jobject self, jlong handle, jstring jid)
+{
+	int result = 0;
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
+	const char * szId = env->GetStringUTFChars(jid, 0);
+
+	_publisher->startSwitch(szId);
+
+	env->ReleaseStringUTFChars(jid, szId);
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	return JNI_TRUE;
+}
+
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, jobject self, jlong handle, jstring jSwitchId, jstring jInputId)
 {
 	DBGLOG("%s:%d", __FILE__, __LINE__);
@@ -335,40 +348,48 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, j
 	return JNI_TRUE;
 }
 
-jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject self, jlong publisher, jstring jinputId, jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
+jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject self, jlong publisher, jstring jInputId, jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
 {
 	int result = 0;
 	//pthread_mutex_lock(&g_mutex);
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
-	
-	jboolean isCopy;
-	int len = env->GetArrayLength (pcmBytes);
-	jbyte* rawjBytes = env->GetByteArrayElements(pcmBytes, &isCopy);
-	//result = _publisher->sendAudioData((const char *)rawjBytes, len, Pts, Flags);
-	if(gpStrmInputInproc0 && gpStrmInputInproc0->m_pAudCon){
-		ConnCtxT *pStrm = gpStrmInputInproc0->m_pAudCon;
-		pStrm->Write(pStrm, (char *)rawjBytes, len, Pts, Flags);
-	}
+	const char * szInputId = env->GetStringUTFChars(jInputId, 0);
+	std::string strInputId = szInputId;
+	ConnCtxT *pConn = _publisher->GetInputStrmConn(szInputId, 0/*aud*/);
+	if(pConn) {
+		jboolean isCopy;
+		int len = env->GetArrayLength (pcmBytes);
 
-	env->ReleaseByteArrayElements(pcmBytes,rawjBytes,0);
+		jbyte* rawjBytes = env->GetByteArrayElements(pcmBytes, &isCopy);
+		pConn->Write(pConn, (char *)rawjBytes, len, Pts, Flags);
+		env->ReleaseByteArrayElements(pcmBytes,rawjBytes, 0);
+	}
+	env->ReleaseStringUTFChars(jInputId, szInputId);
+
 	//pthread_mutex_unlock(&g_mutex);
 	return result;
 }
 
-jint Java_com_mcntech_ezscreencast_OnyxApi_sendVideoData(JNIEnv *env, jobject self, jlong publisher, jstring jinputId, jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
+jint Java_com_mcntech_ezscreencast_OnyxApi_sendVideoData(JNIEnv *env, jobject self, jlong publisher, jstring jInputId, jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)
 {
 	int result = 0;
 	//pthread_mutex_lock(&g_mutex);
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
-	jboolean isCopy;
-	int len = env->GetArrayLength (pcmBytes);
-	jbyte* rawjBytes = env->GetByteArrayElements(pcmBytes, &isCopy);
-	//result = _publisher->sendVideoData((const char *)rawjBytes, len, Pts, Flags);
-	if(gpStrmInputInproc0 && gpStrmInputInproc0->m_pVidCon){
-		ConnCtxT *pStrm = gpStrmInputInproc0->m_pVidCon;
-		pStrm->Write(pStrm, (char *)rawjBytes, len, Pts, Flags);
+
+	const char * szInputId = env->GetStringUTFChars(jInputId, 0);
+	std::string strInputId = szInputId;
+	ConnCtxT *pConn = _publisher->GetInputStrmConn(szInputId, 1/*vid*/);
+
+	if(pConn) {
+		jboolean isCopy;
+		int len = env->GetArrayLength (pcmBytes);
+
+		jbyte* rawjBytes = env->GetByteArrayElements(pcmBytes, &isCopy);
+		pConn->Write(pConn, (char *)rawjBytes, len, Pts, Flags);
+		env->ReleaseByteArrayElements(pcmBytes,rawjBytes, 0);
 	}
-	env->ReleaseByteArrayElements(pcmBytes,rawjBytes,0);
+	env->ReleaseStringUTFChars(jInputId, szInputId);
+
 	return result;
 }
 

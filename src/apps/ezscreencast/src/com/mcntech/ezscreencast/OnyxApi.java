@@ -88,7 +88,9 @@ public class OnyxApi {
 		String jserverNode = MpdSession.mServerId;
 		CreateMpdPublishStream(mHandle, jPublishId, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverNode);
 
-		startSession(mHandle, enableAud, enabeVid);
+		StartSwitch(mHandle, jswitchId);
+		StartMpdPublishStream(mHandle, jPublishId, jmpdId);
+		//startSession(mHandle, enableAud, enabeVid);
 	}
 
 	public static void stopSession() {
@@ -233,7 +235,9 @@ public class OnyxApi {
 	private native static boolean CreateAdaptationSet(long handle, String jmpdId, String jperiodId, String jadaptId);
 	private native static boolean CreateRepresentation(long handle,  String jmpdId, String jperiodId, String jadaptId, String jrepId);
 	private native static boolean CreateMpdPublishStream(long handle,  String jId, String jmpdId, String jperiodId, String jadaptId, String jrepId, String jswitchId, String jserverNode);
+	private native static boolean StartMpdPublishStream(long handle,  String jId);
 	private native static boolean CreateInputStream(long handle, String jid, String jInputType, String jUrl);
 	private native static boolean CreateSwitch(long handle, String jid);
 	private native static boolean ConnectSwitchInput(long handle, String jSwitchId, String jInputId);
+	private native static boolean StartSwitch(long handle, String jid);
 }

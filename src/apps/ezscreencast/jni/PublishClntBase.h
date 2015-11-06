@@ -46,6 +46,8 @@ public:
 	int CreateSwitch(const char *pszSwitchId);
 	int CreateInputStrm(const char *szInputId, const char *szInputType, const char *szInputUri);
 	int ConnectSwitchInput(const char *pszSwitchId, const char *szInputId);
+	CAvmixInputStrm *GetInputStrm(const char *szInputId);
+	ConnCtxT *GetInputStrmConn(const char *szInputId, int nCodec);
 
 	CS3PublishNode *getPublishNode(std::string szPublishNode);
 	CMediaSwitch * getSwitch(std::string szSwitchId);

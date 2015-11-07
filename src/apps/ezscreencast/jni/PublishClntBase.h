@@ -40,9 +40,6 @@ public:
 	int AddS3PublishNode(std::string szId, std::string szHost, std::string szAccessId, std::string szSecKey,
 			std::string szBucket, std::string szFolder, std::string szFilePerfix);
 
-	virtual int start() = 0;
-	virtual int stop() = 0;
-
 	int CreateSwitch(const char *pszSwitchId);
 	int CreateInputStrm(const char *szInputId, const char *szInputType, const char *szInputUri);
 	int ConnectSwitchInput(const char *pszSwitchId, const char *szInputId);

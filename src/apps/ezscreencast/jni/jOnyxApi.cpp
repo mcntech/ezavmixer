@@ -55,18 +55,6 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_deinit(JNIEnv *env, jobject self,
 	return true;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_start(JNIEnv *env, jobject self, jlong publisher, jstring path, jstring title, jstring artist)
-{
-	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
-	DBGLOG("jni playfile: waiting for session to end");
-	jboolean result = true;
-	_publisher->start();
-
-	//pthread_mutex_unlock(&g_mutex);
-	return result;
-}
-
-
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_addRtspPublishNode(JNIEnv *env, jobject self, jlong handle, jstring url, jstring jappName)
 {
 	int result = 0;
@@ -269,6 +257,20 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartMpdPublishStream(JNIEnv *env
 	return JNI_TRUE;
 }
 
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_UpdatePublishStatus(JNIEnv *env, jobject self, jlong handle,  jstring jId)
+{
+	int result = 0;
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
+
+	const char * szId = env->GetStringUTFChars(jId, 0);
+	std::string tmpId = szId;
+	pDash->UpdateMpdPublishStatus(tmpId);
+
+	DBGLOG("%s:%d", __FILE__, __LINE__);
+	return JNI_TRUE;
+
+}
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateInputStream(JNIEnv *env, jobject self, jlong handle, jstring jid, jstring jInputType, jstring jUrl)
 {
 	DBGLOG("%s:%d", __FILE__, __LINE__);

@@ -56,6 +56,21 @@ bool COnyxEvents::onRemoteNodeError(char *url, char *szErr)
 	return true;
 }
 
+bool COnyxEvents::onMpdPublishStatus(const char *szPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime)
+{
+	JNIEnv* env;
+	safeAttach(&env);
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	jstring jPublishId = env->NewStringUTF(szPublishId);
+
+	jmethodID callback = env->GetStaticMethodID(onyxApi, "onMpdPublishStatus", "(Ljava/lang/Object;Ljava/lang/Object;)V");
+	env->CallStaticVoidMethod(onyxApi, callback, jPublishId, nState, nStrmInTime, nStrmOutTime,  nLostBufferTime);
+	env->DeleteLocalRef(jPublishId);
+
+	safeDetach();
+	return true;
+}
+
 	bool COnyxEvents::onConnectRemoteNode(char *url)
 	{
 		JNIEnv* env;

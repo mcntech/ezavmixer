@@ -22,6 +22,7 @@ public:
   	bool onConnectRemoteNode(char *url);
   	bool onDisconnectRemoteNode(char *url);
   	bool onStatusRemoteNode(char *url, char *szMsg);
+  	bool onMpdPublishStatus(const char *szPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime);
 
   	jclass m_deviceClass;
 		

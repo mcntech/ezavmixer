@@ -54,7 +54,11 @@ public class OnyxApi {
 			e.printStackTrace();
 		}
 	}
-
+	
+	public static void UpdateStatus() {
+		UpdateMpdPublishStatus(mHandle, MpdSession.mPublishId);
+	}
+	
 	public static void startSession(MpdSession mpdSession, boolean enableAud, boolean enabeVid) {
 
 		String jPublishId = MpdSession.mPublishId;
@@ -130,6 +134,9 @@ public class OnyxApi {
 		mActiveRemoteNodes.clear();
 	}
 			
+	public static void onMpdPublishStatus(String jPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime){
+		System.out.println("jPublishId:" + "State=" + nState + " StrmInTime" + nStrmInTime + " StrmOutTime" + nStrmOutTime + " LostBufferTime=" + nLostBufferTime);
+	}
 
 	public static void onNativeMessage(final Object title,final Object message) {		
 		System.out.println("java onNativeMessage:" + title + " message:" + message);
@@ -230,4 +237,5 @@ public class OnyxApi {
 	private native static boolean CreateSwitch(long handle, String jid);
 	private native static boolean ConnectSwitchInput(long handle, String jSwitchId, String jInputId);
 	private native static boolean StartSwitch(long handle, String jid);
+	private native static boolean UpdateMpdPublishStatus(long mHandle, String mPublishId);
 }

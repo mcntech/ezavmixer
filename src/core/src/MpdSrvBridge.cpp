@@ -12,18 +12,7 @@
 
 #include "JdDbg.h"
 #include "MpdSrvBridge.h"
-#include "MpegDashSgmt.h"
 
-
-#ifdef NO_DEBUG_LOG
-#define DBG_PRINT(...)
-#else
-#define DBG_PRINT(...)                                                \
-          if (1)                                                      \
-          {                                                           \
-            printf(__VA_ARGS__);                                      \
-          }
-#endif
 
 static int  modDbgLevel = CJdDbg::LVL_TRACE;
 
@@ -78,6 +67,7 @@ CMpdSrvBridgeChan::~CMpdSrvBridgeChan()
 int CMpdSrvBridgeChan::SendVideo(unsigned char *pData, int size, unsigned long lPts)
 {
 	long hr = 0;
+	JDBG_LOG(CJdDbg::LVL_STRM, ("vid:size=%d pts=%d", size,lPts));
 	m_Mutex.Acquire();
 	if(m_pSegmenter) {
 		if (mpdWriteFrameData(m_pSegmenter, (char *)pData, size, 1, m_fDiscont, lPts / 90) < 0 ) {
@@ -138,6 +128,7 @@ int CMpdSrvBridgeChan::SetServerConfig(
 	const char *pszBucketOrServerRoot,
 	const char *pszHost, const char *pszAccessId, const char *pszSecKey)
 { 
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s:%s:%s:%s", pszFilePrefix,pszParentFolder,pszBucketOrServerRoot, pszHost, pszAccessId));
 	m_fEnableServer = 1;
 	m_pMpdRepresentation = pMpdRepresentation;
 	if(pszFilePrefix)
@@ -160,15 +151,16 @@ int CMpdSrvBridgeChan::SetServerConfig(
 
 int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("Enter"));
 	if(m_fEnableServer){
 		int nUpLoadType;
-		nUpLoadType = UPLOADER_TYPE_MEM;
+		nUpLoadType = MPD_UPLOADER_TYPE_MEM;
 		char szM3u8File[128];
 		//hlsSetDebugLevel(m_pPublishCfg->m_nDdebugLevel);
 		if(m_szHost)
-			nUpLoadType = UPLOADER_TYPE_S3;
+			nUpLoadType = MPD_UPLOADER_TYPE_S3;
 		else
-			nUpLoadType = UPLOADER_TYPE_MEM;
+			nUpLoadType = MPD_UPLOADER_TYPE_MEM;
 
 		m_pSegmenter = mpdCreateSegmenter(m_pMpdRepresentation);
 
@@ -184,6 +176,7 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 			m_pMpdRepresentation->IsLive(), 
 			m_nSegmentStart, nUpLoadType);
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("Leave"));
 	return 0;
 }
 

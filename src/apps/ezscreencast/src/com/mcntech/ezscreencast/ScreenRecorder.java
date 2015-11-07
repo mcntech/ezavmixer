@@ -234,6 +234,8 @@ public class ScreenRecorder extends Thread {
                 encodeToVideoTrack(index);
 
                 mEncoder.releaseOutputBuffer(index, false);
+                
+                OnyxApi.UpdateStatus();
             }
         }
     }

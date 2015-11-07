@@ -1,4 +1,5 @@
 #include "DashMultiPublishClnt.h"
+#include "jOnyxEvents.h"
 #include <android/log.h>
 static int modDbgLevel = 0;
 #define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
@@ -145,6 +146,21 @@ int CDashMultiPublishClnt::SatrtMpdPublishStream(std::string szPublishId)
 	TRACE_END
 }
 
+int CDashMultiPublishClnt::UpdateMpdPublishStatus(std::string szPublishId)
+{
+	TRACE_BEGIN
+	int res = -1;
+	CMpdSrvBridgeChan *pOutBridge = m_pMpdSrvBridge->getChannel(szPublishId);
+	if(pOutBridge) {
+		pOutBridge->UpdateStats();
+		int nState, nStremInTime, nLostBufferTime, nStreamOutTIme, nSegmentTime;
+		pOutBridge->GetPublishStatistics(&nState, &nStremInTime, &nLostBufferTime, &nStreamOutTIme, &nSegmentTime);
+		COnyxEvents *pCallback = (COnyxEvents *)m_EventCallback;
+		pCallback->onMpdPublishStatus(szPublishId.c_str(),nState, nStremInTime, nStreamOutTIme, nStreamOutTIme);
+	}
+	return res;
+	TRACE_END
+}
 int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pMpdRoot, CMediaSwitch *pPublishSwitch, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode)
 {
 	int nStartIndex;
@@ -154,10 +170,8 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 	int nMuxType;
 	int fFileUpdate = 0;
 
-	TRACE_BEGIN
-	//JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
 	nSegmentTimeMs = pMpdRoot->GetMaxSegmentDuration();
-	DBGLOG("%s:%d", __FILE__, __LINE__);
 	nTimeShiftBufferMs = pMpdRoot->GetTimeShiftBuffer();
 	nStartIndex = time(NULL);
 
@@ -173,47 +187,24 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 			pServerNode->m_szHost.c_str(), pServerNode->m_szAccesId.c_str(), pServerNode->m_szSecKey.c_str(),
 			nMuxType);
 
-	pPublishSwitch->AddOutput(pOutBridge);
-	//pOutBridge->Run(m_pOutputStream);
-	{
+	if(pOutBridge) {
+		pPublishSwitch->AddOutput(pOutBridge);
 		int nWith = 0, nHeight = 0, nFrameRate = 0, nBandwidth = 0;
 		pPublishSwitch->GetInputParams(&nWith, &nHeight, &nFrameRate, &nBandwidth);
 		pRepresentation->SetStreamParams(nWith, nHeight, nFrameRate, nBandwidth);
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR,("Failed to create OutputBridge"));
 	}
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
 }
 
-int CDashMultiPublishClnt::start()
-{
-	// Run switch
-
-	// Run output bridge
-}
-
-
-int CDashMultiPublishClnt::stop()
-{
-#if 0
-	m_pPublishSwitch->Stop();
-	for(ServerNodeMap::iterator it = m_PublishServerList.begin(); it != m_PublishServerList.end(); it++){
-		CServerNode *pServerNode = it->second;
-		CRtspPublishBridge *pRtspPublishBridge = pServerNode->m_pRtspPublishBridge;
-		if(pRtspPublishBridge) {
-			delete pRtspPublishBridge;
-		}
-		m_PublishServerList.erase(it);
-	}
-	delete m_pPublishSwitch;
-#endif
-
-}
 
 CPublishClntBase *CDashMultiPublishClnt::openInstance(CPublishEventBase *pEventBase)
 {
 	return new CDashMultiPublishClnt(pEventBase);
 }
 
-//void CDashMultiPublishClnt::closeInstancce(CPublishClntBase *pInst)
-//{
-//	delete (CDashMultiPublishClnt*)pInst;
-//}
+void CDashMultiPublishClnt::closeInstancce(CPublishClntBase *pInst)
+{
+	delete (CDashMultiPublishClnt*)pInst;
+}

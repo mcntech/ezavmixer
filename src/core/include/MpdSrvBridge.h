@@ -3,7 +3,7 @@
 
 #include "StrmOutBridgeBase.h"
 #include "JdHttpSrv.h"
-#include "JdHttpLiveSgmt.h"
+#include "MpegDashSgmt.h"
 #include "h264parser.h"
 #include "TsPsiIf.h"
 #include "tsfilter.h"
@@ -39,7 +39,7 @@ public:
 	{
 		int res = 0;
 		if(m_fEnablePublish && m_pUploader){
-			hlsPublishGetStats(m_pUploader, pnState, pnStreamInTime, pnLostBufferTime, pnStreamOutTime, pnSegmentTime);
+			mpdPublishGetStats(m_pUploader, pnState, pnStreamInTime, pnLostBufferTime, pnStreamOutTime, pnSegmentTime);
 		} else {
 			*pnState = HLS_PUBLISH_STOPPED;
 		}

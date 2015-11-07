@@ -60,11 +60,10 @@ public:
 
 	CConfigBase *m_pConfig;
 	static CPublishClntBase *openInstance(CPublishEventBase *pEventBase);
-	//void closeInstancce(CPublishClntBase *pInst);
+	void closeInstancce(CPublishClntBase *pInst);
 
 	int SatrtMpdPublishStream(std::string szPublishId);
-	int start();
-	int stop();
+	int UpdateMpdPublishStatus(std::string szPublishId);
 
 private:
 	CMpdRoot *getMpd(std::string szmpdId);

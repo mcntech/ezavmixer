@@ -58,9 +58,9 @@ public class ScreenRecorder extends Thread {
     private int mAudSampleRate = 44100;  
     private int mAudFormat = android.media.AudioFormat.ENCODING_PCM_16BIT;
     private long mStartPtsUs = 0;
-    private long mStartFcVClkUs = 0;
+    private long mStartExtVClkUs = 0;
     
-    private boolean mfSlaveToFireClock = false;
+    private boolean mfSlaveToExtClock = false;
     MpdSession mMpdSession = new MpdSession();
     public ScreenRecorder(int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
         super(TAG);
@@ -101,14 +101,14 @@ public class ScreenRecorder extends Thread {
                 }
                 if(ConfigDatabase.mEnableVideo || ConfigDatabase.mEnableAudio) {
                 	OnyxApi.startSession(mMpdSession, ConfigDatabase.mEnableAudio, ConfigDatabase.mEnableVideo);
-                	Log.d(TAG, "firecast startSession: Waiting for 2 secs");
+                	Log.d(TAG, "ezscreencast startSession: Waiting for 2 secs");
                 	try {
 						Thread.sleep(2000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-                	Log.d(TAG, "firecast startSession: Waiting complete ");
+                	Log.d(TAG, "ezscreencast startSession: Waiting complete ");
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -275,11 +275,11 @@ public class ScreenRecorder extends Thread {
               	fcVClkUs = OnyxApi.getClockUs();
                 if(mStartPtsUs == 0)
                 	mStartPtsUs = mBufferInfo.presentationTimeUs;
-                if(mStartFcVClkUs == 0)
-                	mStartFcVClkUs = fcVClkUs;
+                if(mStartExtVClkUs == 0)
+                	mStartExtVClkUs = fcVClkUs;
             	
-                if(mfSlaveToFireClock) {
-	                pts =  (fcVClkUs - mStartFcVClkUs) * 90 / 1000;
+                if(mfSlaveToExtClock) {
+	                pts =  (fcVClkUs - mStartExtVClkUs) * 90 / 1000;
                 } else {
                 	pts = (mBufferInfo.presentationTimeUs - mStartPtsUs) * 90 / 1000;
                 }
@@ -371,7 +371,6 @@ public class ScreenRecorder extends Thread {
         }
         
         if(ConfigDatabase.mEnableVideo) {
-        	OnyxApi.stop();
         	OnyxApi.stopSession();
          	//OnyxApi.deinitialize();
         }

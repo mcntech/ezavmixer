@@ -71,8 +71,8 @@ using namespace std;
 #define MAX_PPS_SIZE    64
 #define EMSZ_MAX_SIZE	1024
 //#define TESTING_ROKU
-static CJdDbg            mJdDbg("MpdLiveSgmnt", CJdDbg::LVL_WARN);
-static int               modDbgLevel = CJdDbg::LVL_MSG;//LVL_TRACE;
+
+static int               modDbgLevel = CJdDbg::LVL_STRM;
 
 /* Delay updating S3 Playlist by S3_CACHE_DELAY segments */
 #define S3_CACHE_DELAY				2
@@ -1120,7 +1120,7 @@ int CMpdPublishS3::ReceiveGop(int nGopNum, const char *pData, int nLen, int nSta
 {
 	unsigned char *pCbData;
 	CGopCb *pGop;
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
 	m_nInStreamTime += nDurarionMs;
 	m_Mutex.Acquire();
 	JDBG_LOG(CJdDbg::LVL_MSG,("Enter:Receiving Gop %d:  nLen=%d nDurarionMs=%d", nGopNum, nLen, nDurarionMs));
@@ -1135,9 +1135,8 @@ int CMpdPublishS3::ReceiveGop(int nGopNum, const char *pData, int nLen, int nSta
 	memcpy(pGop->m_pBuff, pData, nLen);
 	m_pGopFilledList.push_back(pGop);
 Exit:
-	JDBG_LOG(CJdDbg::LVL_MSG,(":Leave"));
 	m_Mutex.Release();
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 	return 0;
 }
 //=================================================================================
@@ -1363,17 +1362,17 @@ void CMpdPublishMemFile::UpLoadBroadcastPlayList()
 	int nSegmentCount;
 	int nStartTime = 0;
 	int nLen = 0;
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
 
 	CMpdRepresentation *pMdpRep = m_pMpdRepresentation;
 	char *buffer = (char *)malloc(PLAYLIST_BUFFER_SIZE);
 	UpdateSegmentList(pMdpRep, m_pszMpdFilePrefix, &m_SegmentList, m_nBcastFrontCache, m_nTimeshiftSegments, m_pSegmenter->m_nMuxType);
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
 void CMpdPublishMemFile::UpdateSlidingWindow()
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
 	int nDelSegment = 0;
 
 	// Add segment to the tail
@@ -1403,13 +1402,13 @@ void CMpdPublishMemFile::UpdateSlidingWindow()
 		unlink(szTsFilePath);
 	}
 
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
 int CMpdPublishMemFile::ReceiveInitSegment(const char *pData, int nLen)
 {
 	int res = 0;
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
 
 	if(m_fSegmentSelfInit)	{
 		m_pSegmentInitData = (char *)malloc(nLen);
@@ -1431,13 +1430,13 @@ int CMpdPublishMemFile::ReceiveInitSegment(const char *pData, int nLen)
 	}
 
 Exit:
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 	return 0;
 }
 int CMpdPublishMemFile::ReceiveGop(int nGopNum, const char *pData, int nLen, int nStartPtsMs, int nDurarionMs, CMpdEmsg *pMpdEmsg)
 {
 	int res = 0;
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
 	m_nInStreamTime += nDurarionMs;
 	
 	if(m_CrntSegmentDuration ==  0) {
@@ -1493,7 +1492,7 @@ int CMpdPublishMemFile::ReceiveGop(int nGopNum, const char *pData, int nLen, int
 		}
 	}
 Exit:
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 	return 0;
 }
 
@@ -1507,9 +1506,9 @@ void CMpdPublishS3::UpLoadFullPlayList(
 		int				nCountSegments)
 {
 	
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	//TODO
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave", __FUNCTION__));
 }
 
 
@@ -1519,7 +1518,7 @@ void CMpdPublishS3::UpLoadBroadcastPlayList()
 	int nLen = 0;
 	CMpdRepresentation *pMdpRep = m_pMpdRepresentation;
 
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 
 	int nSize = m_SegmentList.size();
 	if(nSize > m_nTimeshiftSegments) {
@@ -1536,7 +1535,7 @@ void CMpdPublishS3::UpLoadBroadcastPlayList()
 	UpdateSegmentList(pMdpRep, m_pszMpdFilePrefix, &m_SegmentList, m_nBcastFrontCache, m_nTimeshiftSegments, m_pSegmenter->m_nMuxType);
 
 Exit:
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
 /**
@@ -1551,11 +1550,11 @@ void *CMpdPublishS3::thrdStreamHttpLiveUpload(	void *pArg)
 #endif
 {
 	CMpdPublishS3 *pUpload = (CMpdPublishS3 *)pArg;
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	
 	pUpload->Process();
 
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 #ifdef WIN32
 	return 0;
 #else
@@ -1565,7 +1564,7 @@ void *CMpdPublishS3::thrdStreamHttpLiveUpload(	void *pArg)
 
 void CMpdPublishS3::Run()
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	m_pSegmenter->AddPublisher(this);
 	m_fRunState = 1;
 	m_nError = MPD_UPLOAD_STATE_RUN;
@@ -1576,21 +1575,24 @@ void CMpdPublishS3::Run()
 	pthread_create(&thrdHandle, NULL, CMpdPublishS3::thrdStreamHttpLiveUpload, this);
 #endif
 	thrdHandle = thrdHandle;
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
 void CMpdPublishS3::Stop()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	m_pSegmenter->RemovePublisher(this);
 	m_fRunState = 0;
 	m_nError = MPD_UPLOAD_STATE_STOP;
 #ifdef WIN32
 	WaitForSingleObject(thrdHandle, 3000);
 #endif
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave", __FUNCTION__));
 }
 
 void CMpdPublishS3::UpdateSlidingWindow()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	int nDeleteIdx = 0;
 	
 	/* Save the new segment */
@@ -1616,6 +1618,8 @@ void CMpdPublishS3::UpdateSlidingWindow()
 		GetSegmentNameFromIndex(szOldSegmentFileName, m_pszMpdFilePrefix, nDeleteIdx,  m_pSegmenter->m_nMuxType);
 		m_pHlsOut->Delete(m_pszParentFolder, szOldSegmentFileName);
 	}
+
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
 DWORD CMpdPublishS3::Process()
@@ -1627,9 +1631,9 @@ DWORD CMpdPublishS3::Process()
 	int fChunked = 0;
 	int fDone = 0;
 
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	CSegmentWriteBase *pHlsOut = m_pHlsOut;
 	int nSegmentDurationMs;
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
 
 	JDBG_LOG(CJdDbg::LVL_MSG,("HttpLive Request. parent url=%s\n", m_pszParentFolder));
 
@@ -1704,8 +1708,7 @@ DWORD CMpdPublishS3::Process()
 	}
 Exit:
 	m_fRunState = 0;
-	JDBG_LOG(CJdDbg::LVL_MSG,("Exiting "));
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave Exiting...", __FUNCTION__));
 	return 0;
 }
 
@@ -1724,7 +1727,7 @@ void *mpdPublishStart(
 			int         nDestType
 			)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	CMpdPublishBase *pPublisher = NULL;
 #if 1
 	int nSegmentDurationMs = 1000;
@@ -1740,20 +1743,21 @@ void *mpdPublishStart(
 	}
 	pPublisher->Run();
 	
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 	return pPublisher;
 }
 
 void mpdPublishStop(void *pUploadCtx)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	CMpdPublishBase *pHlsUpload = (CMpdPublishBase *)pUploadCtx;
 	pHlsUpload->Stop();
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
 int mpdPublishGetStats(void *pUploadCtx, int *pnState, int *pnStreamInTime, int *pnLostBufferTime,  int *pnStreamOutTime, int *pnSegmentTime)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	MPD_PUBLISH_STATS Stats;
 	CMpdPublishBase *pHlsUpload = (CMpdPublishBase *)pUploadCtx;
 	pHlsUpload->GetStats(&Stats);
@@ -1763,26 +1767,27 @@ int mpdPublishGetStats(void *pUploadCtx, int *pnState, int *pnStreamInTime, int 
 	*pnStreamInTime = Stats.nStreamInTime;
 	*pnStreamOutTime = Stats.nStreamOutTime;
 
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 	return 0;
 }
 
 
 void *mpdCreateSegmenter(CMpdRepresentation *pMpdRep)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	CMpdSegmnter *pMpdSegmenter = new CMpdSegmnter(pMpdRep);
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 	return pMpdSegmenter;
 }
 
 void mpdDeleteSegmenter(void *pSegmenter)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	
 	CMpdSegmnter *pHlsSegmenter = (CMpdSegmnter *)pSegmenter;
 	delete pHlsSegmenter;
 	
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
 
@@ -1791,7 +1796,7 @@ void mpdDeleteSegmenter(void *pSegmenter)
  */
 int mpdWriteFrameData(void *pCtx, char *pData, int nLen, int fVideo, int fDiscont,  unsigned long ulPtsMs)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	int res = 0;
 	CMpdSegmnter *pMpdLiveSgmnt = (CMpdSegmnter *)pCtx;
 	if(pMpdLiveSgmnt) {
@@ -1800,7 +1805,7 @@ int mpdWriteFrameData(void *pCtx, char *pData, int nLen, int fVideo, int fDiscon
 		JDBG_LOG(CJdDbg::LVL_ERR,("mpdWriteFrameData: Invalid Segmenter"));
 		res = -1;
 	}
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 	return res;
 }
 

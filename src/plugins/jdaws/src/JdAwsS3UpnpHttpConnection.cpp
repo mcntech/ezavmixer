@@ -32,6 +32,7 @@
 #include "JdAwsS3.h"
 #include "JdAwsS3UpnpHttpConnection.h"
 #include "../include/SegmentWriteS3.h"
+#include "JdDbg.h"
 
 #define PORT_NUMBER 			80
 #define HTTP_VERSION 			"HTTP/1.0"
@@ -84,8 +85,9 @@ typedef enum _AMZ_ACL_T
 
 #define PORT_NUMBER 			80
 
-#define JD_LOG_ERR printf
+#define DBG_TAG                      "JdAws"
 
+static int  modDbgLevel = CJdDbg::LVL_STRM;
 
 int ReadHeader(int sock, char *headerPtr);
 
@@ -201,7 +203,7 @@ JD_STATUS JdAwsMakeHttpRequest(
 	JD_STATUS res = JD_ERROR;
 
 	std::ostringstream httpReq;
-
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s : Begin\n", DBG_TAG, __FUNCTION__));
 	JDAWS_CONNECTION *pConn = (JDAWS_CONNECTION *)handle;
 	int sock = pConn->m_Sock;
 	char *host;// = pConn->m_pszHost;
@@ -229,7 +231,7 @@ JD_STATUS JdAwsMakeHttpRequest(
 	if(ret == reqbuff.length())	{
 		res = JD_OK;
 	}
-
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s : End\n",DBG_TAG, __FUNCTION__));
 	return res;
 }
 
@@ -252,7 +254,7 @@ JD_STATUS JdAwsOpenHttpConnection(const char *host, void **pHandleM, int timeout
 	}
 	hp = gethostbyname(host);
 	if(hp == NULL) {  
-		fprintf(stderr, "%s: gethostbyname %s failed\n",__FUNCTION__,host);
+		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s: gethostbyname %s failed\n",DBG_TAG, __FUNCTION__,host));
 		return JD_ERROR; 
 	}
 		
@@ -263,13 +265,13 @@ JD_STATUS JdAwsOpenHttpConnection(const char *host, void **pHandleM, int timeout
 
 	sock = socket(hp->h_addrtype, SOCK_STREAM, 0);
 	if(sock == JD_ERROR) {  
-		fprintf(stderr, "%s: socket failed\n",__FUNCTION__);
+		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s: socket failed\n", DBG_TAG, __FUNCTION__));
 		return JD_ERROR; 
 	}
 
 	ret = connect(sock, (struct sockaddr *)&sa, sizeof(sa));
 	if(ret == JD_ERROR) {
-		fprintf(stderr, "%s: connect failed\n",__FUNCTION__);
+		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s: connect failed\n",DBG_TAG, __FUNCTION__));
 		return JD_ERROR; 
 	}
 
@@ -314,20 +316,21 @@ JD_STATUS JdAwsWriteHttpRequest(
 			selectRet = select(sock+1, NULL, &wfds, NULL, NULL);
 
 		if(selectRet == 0) {
-			fprintf(stderr, "%s : select return 0\n",__FUNCTION__);
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : select return 0\n",DBG_TAG, __FUNCTION__));
 			return JD_ERROR;
 		} else if(selectRet == JD_ERROR)	{
-			fprintf(stderr, "%s : select failed\n",__FUNCTION__);
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : select failed\n",DBG_TAG, __FUNCTION__));
 			return JD_ERROR;
 		}
 
 		int ret = send(sock, pData + bytesWritten, reqlen, MSG_NOSIGNAL);
 		if(ret == -1)	{
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : send failed\n",DBG_TAG, __FUNCTION__));
 			return JD_ERROR;
 		}
 		bytesWritten += ret;
 		if(reqlen != ret){
-			fprintf(stderr, "%s : partial write reqlen=%d written=a5d\n",__FUNCTION__, reqlen, ret);
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : partial write reqlen=%d written=%d\n",DBG_TAG,__FUNCTION__, reqlen, ret));
 		}
 	}
 	return JD_OK;
@@ -360,13 +363,13 @@ int ReadHeader(int sock, char *pBuff)
 			selectRet = select(sock+1, &rfds, NULL, NULL, NULL);
 		
 		if(selectRet <= 0)	{
-			fprintf(stderr, "%s : select failed\n",__FUNCTION__);
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : select failed\n",DBG_TAG, __FUNCTION__));
 			goto Exit; 
 		}
 
 		ret = recv(sock, headerPtr, 1, 0);
 		if(ret <= 0) {  
-			fprintf(stderr, "%s : recv failed\n",__FUNCTION__);
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : recv failed\n",DBG_TAG,__FUNCTION__));
 			goto Exit; 
 		}
 		bytesRead++;
@@ -390,7 +393,7 @@ Exit:
 		headerPtr -= 3;		/* Snip the trailing LF's */
 		*headerPtr = '\0';
 	} else {
-		fprintf(stderr, "%s : no new lines. may be cgi\n",__FUNCTION__);
+		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : no new lines. may be cgi\n",DBG_TAG, __FUNCTION__));
 		pBuff[bytesRead] = 0x00;
 	}
 	return bytesRead;
@@ -416,17 +419,17 @@ JdAwsGetHttpResponse(
 	/* Grab enough of the response to get the metadata */
 	ret = ReadHeader(sock, headerBuf);	/* errorSource set within */
 	if(ret < 0) { 
-		fprintf(stderr, "%s : ReadHeader Failed\n",__FUNCTION__);
+		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : ReadHeader Failed\n",DBG_TAG, __FUNCTION__));
 		goto Exit; 
 	} else if(ret == 0) {
-		fprintf(stderr, "%s : Connection Closed\n",__FUNCTION__);
+		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : Connection Closed\n",DBG_TAG, __FUNCTION__));
 		goto Exit; 
 	}
 
 	/* Get the return code */
 	charIndex = strstr(headerBuf, "HTTP/");
 	if(charIndex == NULL) { 
-		fprintf(stderr, "%s : Header Invalid\n",__FUNCTION__);
+		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : Header Invalid\n",DBG_TAG, __FUNCTION__));
 		goto Exit; 
 	}
 
@@ -436,11 +439,11 @@ JdAwsGetHttpResponse(
 
 	ret = sscanf(charIndex, "%d", &nStatusCode);
 	if(ret != 1){
-		fprintf(stderr, "%s : Failed to get Status Code\n",__FUNCTION__);
+		JDBG_LOG(CJdDbg::LVL_ERR, ( "%s:% : Failed to get Status Code\n",DBG_TAG,__FUNCTION__));
 		goto Exit;
 	}
 	if(nStatusCode < 200 || nStatusCode > 307)	{
-		fprintf(stderr, "%s : Status Code=%d\n",__FUNCTION__,nStatusCode);
+		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s : Status Code=%d\n",DBG_TAG,__FUNCTION__,nStatusCode));
 		ret = JD_ERROR;
 	} else {
 		*httpStatus = nStatusCode;
@@ -527,11 +530,13 @@ JD_STATUS CJdAwsS3HttpConnection::MakeRequest(const CJdAwsS3Request &request,
     if (request.methodM == CJdAwsS3Request::UNDEFINED || 
         !request.pContextM ||
         !request.hostM.size() || !request.pathM.size() || !request.bucketNameM.size()) {
+    	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s:%d MakeRequest Inavlid", DBG_TAG, __FUNCTION__, __LINE__));
         return JD_ERROR_INVALID_ARG;
     }
     std::string signature;
     JD_STATUS ret = CJdAwsS3::CreateSignature(request, signature);
     if (ret != JD_OK) {
+    	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s:%d CreateSignature Failed", DBG_TAG, __FUNCTION__, __LINE__));
         return ret;
     }
     std::string uri;
@@ -566,7 +571,7 @@ JD_STATUS CJdAwsS3HttpConnection::MakeRequest(const CJdAwsS3Request &request,
 	}
     free(headers);
     if (status != JD_OK) {
-        JD_LOG_ERR("Error issuing request to uri: %s\n", uri.c_str());
+    	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:Error issuing request to uri: %s\n", DBG_TAG, uri.c_str()));
     }
 	return status;
 }
@@ -579,12 +584,12 @@ JD_STATUS CJdAwsS3HttpConnection::UploadFile(CJdAwsS3Request &request,
     request.methodM = CJdAwsS3Request::PUT;
     size_t length = get_file_size(pFilePath, NULL);
     if (length <= 0) {
-        JD_LOG_ERR("File not found: %s\n", pFilePath);
+    	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:File not found: %s\n", DBG_TAG, pFilePath));
         return JD_ERROR;
     }
     FILE* pInput = fopen(pFilePath, "rb");
     if (!pInput) {
-        JD_LOG_ERR("Error opening file: %s\n", pFilePath);
+    	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:Error opening file: %s\n", DBG_TAG, pFilePath));
         return JD_ERROR;
     }
 
@@ -622,7 +627,7 @@ JD_STATUS CJdAwsS3HttpConnection::UploadFile(CJdAwsS3Request &request,
     status = JD_ERROR;
     if (status == JD_OK) {
         if (httpStatus != 200) {
-            JD_LOG_ERR("Finished with incorrect http status: %d\n", httpStatus);
+        	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:Finished with incorrect http status: %d\n", DBG_TAG, httpStatus));
         }
         else {
             status = JD_OK;
@@ -641,6 +646,7 @@ JD_STATUS CJdAwsS3HttpConnection::UploadBuffer(CJdAwsS3Request &request,
     CJdAwsS3HttpResponse response;
     JD_STATUS status = CJdAwsS3HttpConnection::MakeRequest(request, response);
     if (status != JD_OK) {
+    	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s:%d MakeRequest Failed",DBG_TAG, __FUNCTION__, __LINE__));
         return status;
     }
     status = JD_OK;
@@ -658,7 +664,7 @@ JD_STATUS CJdAwsS3HttpConnection::UploadBuffer(CJdAwsS3Request &request,
     status = JD_ERROR;
     if (status == JD_OK) {
         if (httpStatus != 200) {
-            JD_LOG_ERR("Finished with incorrect http status: %d\n", httpStatus);
+        	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:Finished with incorrect http status: %d\n", DBG_TAG, httpStatus));
         }
         else 
             status = JD_OK;
@@ -719,6 +725,7 @@ JD_STATUS CJdAwsS3HttpConnection::Delete(CJdAwsS3Request &request)
     CJdAwsS3HttpResponse response;
     JD_STATUS status = CJdAwsS3HttpConnection::MakeRequest(request, response);
     if (status != JD_OK) {
+    	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%s:%d Delete Failed", DBG_TAG, __FUNCTION__, __LINE__));
         return status;
     }
 
@@ -735,7 +742,7 @@ JD_STATUS CJdAwsS3HttpConnection::Delete(CJdAwsS3Request &request)
     status = JD_ERROR;
     if (status == JD_OK) {
         if (httpStatus != 204) {
-            JD_LOG_ERR("Finished with incorrect http status: %d\n", httpStatus);
+        	JDBG_LOG(CJdDbg::LVL_ERR, ("%s:Finished with incorrect http status: %d\n", DBG_TAG, httpStatus));
         }
         else 
             status = JD_OK;

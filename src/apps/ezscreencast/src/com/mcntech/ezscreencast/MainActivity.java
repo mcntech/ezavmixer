@@ -209,8 +209,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	        mRecorder = new ScreenRecorder(width, height, framerate, bitrate, 1, mediaProjection, file.getAbsolutePath());
 	        //OnyxApi.initialize(true);
 	        mRecorder.start();
-	        mBtnStart.setText("Stop Firecast");
-	        Toast.makeText(this, "Firecast is running...", Toast.LENGTH_SHORT).show();
+	        mBtnStart.setText("Stop EzScreencast");
+	        Toast.makeText(this, "EzSceencast is running...", Toast.LENGTH_SHORT).show();
 	        moveTaskToBack(true);
     	}
     }

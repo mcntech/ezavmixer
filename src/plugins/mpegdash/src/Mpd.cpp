@@ -13,10 +13,9 @@
 #define snprintf _snprintf
 #endif
 
-#include <android/log.h>
-#define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
-#define TRACE_BEGIN DBGLOG("%s:%d:begin", __FILE__, __LINE__);
-#define TRACE_END DBGLOG("%s:%d:end", __FILE__, __LINE__);
+#include <JdDbg.h>
+
+static int  modDbgLevel = CJdDbg::LVL_STRM;
 
 #include "Mpd.h"
 #include "JdMpdDefs.h"
@@ -113,6 +112,7 @@ CMpdSegmentBase::CMpdSegmentBase(CMpdRepresentation *pParent, TiXmlNode *pNode)
 
 CMpdSegmentTemplate::CMpdSegmentTemplate(CMpdAdaptaionSet *pParent, TiXmlNode *pNode)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	m_pNode = NULL;
 	m_nDuration = 0;
 	m_nStartNumber = -1;
@@ -126,6 +126,7 @@ CMpdSegmentTemplate::CMpdSegmentTemplate(CMpdAdaptaionSet *pParent, TiXmlNode *p
 		m_pNode = new TiXmlElement(ELEMENT_SegmentTemplate);
 		m_pParent->m_pNode->LinkEndChild(m_pNode);
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 CMpdSegmentTemplate::~CMpdSegmentTemplate()
@@ -134,6 +135,7 @@ CMpdSegmentTemplate::~CMpdSegmentTemplate()
 
 void CMpdSegmentTemplate::Setup(int nStartNumber, int nDurationMs, const char *pszTemplate)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	if(m_pNode) {
 		TiXmlElement *pElemUrl = m_pNode->ToElement();
 		pElemUrl->SetAttribute(ATTRIB_NAME_SEGTMPLT_media, pszTemplate);
@@ -142,10 +144,12 @@ void CMpdSegmentTemplate::Setup(int nStartNumber, int nDurationMs, const char *p
 		m_nStartNumber = nStartNumber;
 		m_nDuration = nDurationMs;
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 void CMpdSegmentTemplate::SetInitializationSegment(std::string *pInitializationUrl)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	if(pInitializationUrl->size())	{
 		std::string Url = *pInitializationUrl;
 		CMpdInitializationUrl *pUrl = new CMpdInitializationUrl();
@@ -153,10 +157,12 @@ void CMpdSegmentTemplate::SetInitializationSegment(std::string *pInitializationU
 		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENT_INIT_sourceURL, pInitializationUrl->c_str());
 		m_pNode->LinkEndChild(pElemUrl);
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 CMpdSegmentList::CMpdSegmentList(CMpdRepresentation *pParent, TiXmlNode *pNode)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	m_pNode = NULL;
 	m_pXlinkNode = NULL;
 	m_nDuration = 0;
@@ -172,10 +178,12 @@ CMpdSegmentList::CMpdSegmentList(CMpdRepresentation *pParent, TiXmlNode *pNode)
 		m_pNode = new TiXmlElement(ELEMENT_SegmentList);
 		m_pParent->m_pNode->LinkEndChild(m_pNode);
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 void CMpdSegmentList::Update(int nCrntTIme, int fXlink, std::list<std::string> *plistUrl, int nStatNumber)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	// Clear current list
 	TiXmlNode  *pElemNode = NULL;
 	if(fXlink) {
@@ -207,12 +215,13 @@ void CMpdSegmentList::Update(int nCrntTIme, int fXlink, std::list<std::string> *
 		pElemUrl->SetAttribute(ATTRIB_NAME_SEGTMPLT_startNumber, nStatNumber);
 		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENTLIST_presentationTimeOffset, nCrntTIme);
 		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENTLIST_timescale, 1000);
-		
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 void CMpdSegmentList::SaveXlinkList(const char *szFileName)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	if(GetXlink() != NULL && m_pXlinkNode != NULL) {
 		FILE *fdSegmentList = fopen(szFileName, "w");
 		if(fdSegmentList) {
@@ -220,10 +229,12 @@ void CMpdSegmentList::SaveXlinkList(const char *szFileName)
 			fclose(fdSegmentList);
 		}
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 void CMpdSegmentList::SetInitializationSegment(std::string *pInitializationUrl)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	if(pInitializationUrl->size())	{
 		std::string Url = *pInitializationUrl;
 		CMpdInitializationUrl *pUrl = new CMpdInitializationUrl();
@@ -231,33 +242,40 @@ void CMpdSegmentList::SetInitializationSegment(std::string *pInitializationUrl)
 		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENT_INIT_sourceURL, pInitializationUrl->c_str());
 		m_pNode->LinkEndChild(pElemUrl);
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 const char *CMpdSegmentList::GetInitializationSegment()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	const char *pszUrl = NULL;
 	TiXmlNode *pNode = m_pNode->FirstChild(ELEMENT_SegmentInitialization);
 	if(pNode) {
 		TiXmlElement *pElemUrl = pNode->ToElement();
 		pszUrl = pElemUrl->Attribute(ATTRIB_NAME_SEGMENT_INIT_sourceURL);
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pszUrl;
 }
 
 const char *CMpdSegmentList::GetXlink()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	const char *pszXlinkUrl = NULL;
 	TiXmlElement *pElem = m_pNode->ToElement();
 	pszXlinkUrl = pElem->Attribute(ATTRIB_NAME_XLINK_HREF);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pszXlinkUrl;
 }
 
 CMpdSegmentList::~CMpdSegmentList()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	for(SEGMETN_URL_LIST_T::iterator it = m_listSegmentUrl.begin(); it != m_listSegmentUrl.end(); it++){
 		CMpdSegmentUrl *pUrl = *it;
 		// TODO delete
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent)
@@ -268,29 +286,35 @@ CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent)
 
 const char *CMpdRepresentation::GetId()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	const char *pszId;
 	TiXmlElement *pElem = m_pNode->ToElement();
 	pszId = pElem->Attribute(ATTRIB_NAME_REPRESENTATION_id);
 	if(pszId == NULL) {
 		// TODO: Generate ID
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pszId;
 }
 
 
 int CMpdRepresentation::GetMimeType()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
+	int nMimeType = MPD_MUX_TYPE_TS;
 	TiXmlElement *pElem = m_pNode->ToElement();
 	const char *pszMimetype = pElem->Attribute(ATTRIB_NAME_REPRESENTATION_mimetype);
 	if(pszMimetype) {
 		if(strcmp(pszMimetype,ATTRIB_VAL_REPRESENTATION_MIMETYPE_video_mp4) == 0) {
-			return MPD_MUX_TYPE_VIDEO_MP4;
+			nMimeType = MPD_MUX_TYPE_VIDEO_MP4;
 		} else {
-			return MPD_MUX_TYPE_TS;
+			nMimeType = MPD_MUX_TYPE_TS;
 		}
 	} else {
-		return m_pParent->GetMimeType();
+		nMimeType = m_pParent->GetMimeType();
 	}
+	return nMimeType;
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 #define DEFUALT_MOOF_LEN  500
@@ -298,6 +322,7 @@ int CMpdRepresentation::GetMimeType()
 #define MIN_MOOF_LEN      500
 int CMpdRepresentation::GetCutomAttribMoofLength()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	int nMoofLen = DEFUALT_MOOF_LEN;
 	TiXmlElement *pElem = m_pNode->ToElement();
 	const char *pszVal = pElem->Attribute(ATTRIB_NAME_MCN_REPRESENTATION_moofLength);
@@ -308,11 +333,13 @@ int CMpdRepresentation::GetCutomAttribMoofLength()
 		else if (nMoofLen < MIN_MOOF_LEN)
 			nMoofLen = MIN_MOOF_LEN;
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return nMoofLen;
 }
 
 void CMpdRepresentation::UpdateSegmentList(int nStartTime, int nSegmentDuration, int nStartNum, std::list<std::string> *plistUrl)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	const char *pszXlinkListFile = m_pSegmentList->GetXlink();
 
 	if(pszXlinkListFile != NULL) {
@@ -327,10 +354,12 @@ void CMpdRepresentation::UpdateSegmentList(int nStartTime, int nSegmentDuration,
 		m_pSegmentList->Update(nStartTime, 0, plistUrl, nStartNum);
 		m_pParent->CallbackChildUpdate(this);
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 void CMpdRepresentation::SetInitializationSegment(std::string *pUrl)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	m_pSegmentList->SetInitializationSegment(pUrl);
 	m_pParent->CallbackChildUpdate(this);
 }
@@ -343,11 +372,13 @@ const char *CMpdRepresentation::GetInitializationSegment()
 
 void CMpdRepresentation::SetStreamParams(int nWith, int nHeight, int nFrameRate, int nBandwidth)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	TiXmlElement *pElem = m_pNode->ToElement();
 	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_width, nWith);
 	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_height, nHeight);
 	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_rameRate, nFrameRate);
 	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_bandwidth, nBandwidth);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 CMpdRoot *CMpdRepresentation::GetMpd()
@@ -410,6 +441,7 @@ int CMpdAdaptaionSet::IsSegmentTemplate()
 
 const char *CMpdAdaptaionSet::GetBaseURL()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	const char *pszBaseURL = NULL;
 	TiXmlElement *pElem = m_pNode->ToElement();
 	TiXmlNode* pNod = pElem->FirstChild(ELEMENT_BaseURL);
@@ -417,11 +449,13 @@ const char *CMpdAdaptaionSet::GetBaseURL()
 		TiXmlElement *pElem = pNod->ToElement();
 		pszBaseURL = pElem->GetText();
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pszBaseURL;
 }
 
 const char *CMpdAdaptaionSet::GetInitializationSegmentUrl()
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	const char *pszURL = NULL;
 	TiXmlElement *pElem = m_pNode->ToElement();
 	TiXmlNode* pNod = pElem->FirstChild(ELEMENT_SegmentTemplate);
@@ -429,6 +463,7 @@ const char *CMpdAdaptaionSet::GetInitializationSegmentUrl()
 		TiXmlElement *pElem = pNod->ToElement();
 		pszURL = pElem->Attribute(ATTRIB_NAME_SEGTMPLT_initialization);
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pszURL;
 }
 
@@ -439,6 +474,7 @@ CMpdRoot *CMpdAdaptaionSet::GetMpd()
 
 int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	TiXmlElement *pRepElem = new TiXmlElement( ELEMENT_Representation );
 	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this);
 	pRepresentation->m_pNode = pRepElem;
@@ -455,22 +491,21 @@ int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate
 	pRepresentation->m_szId = szId;
 	//pRepresentation->m_inputSwitch = szSwitchId;
 	m_listRepresentations.push_back(pRepresentation);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return 0;
 }
 
 CMpdRepresentation *CMpdAdaptaionSet::FindRepresentation(std::string szId)
 {
-	DBGLOG("%s:%d:%s", __FILE__, __LINE__, szId.c_str());
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	CMpdRepresentation *pRep = NULL;
 	for (std::vector<CMpdRepresentation *>::iterator it = m_listRepresentations.begin(); it !=  m_listRepresentations.end(); it++) {
-		DBGLOG("%s:%d", __FILE__, __LINE__);
 		pRep = *it;
 		if(pRep->m_szId == szId){
-			DBGLOG("%s:%d:%s", __FILE__, __LINE__, pRep->m_szId.c_str());
 			return pRep;
 		}
 	}
-	DBGLOG("%s:%d", __FILE__, __LINE__);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return NULL;
 }
 
@@ -499,6 +534,7 @@ CMpdRoot *CMpdPeriod::GetMpd()
 
 CMpdAdaptaionSet *CMpdPeriod::CreateAdaptationSet(std::string szId)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	TiXmlElement *pAdaptElem;
 	TiXmlNode* pAdaptNode = NULL;
 
@@ -517,6 +553,7 @@ CMpdAdaptaionSet *CMpdPeriod::CreateAdaptationSet(std::string szId)
 
 	//while(pRepNode = pAdaptNode->IterateChildren(ELEMENT_Representation, pRepNode))
 	m_listAdaptionSets.push_back(pAdaptaionSet);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 CMpdAdaptaionSet *CMpdPeriod::FindAdaptationSet(std::string szId)
@@ -545,6 +582,7 @@ unsigned int osalGetSystemTime()
 
 CMpdPeriod *CMpdRoot::CreatePeriod(std::string szId)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	TiXmlElement *pPeriodElem;
 	TiXmlNode* pPeriodNode = NULL;
 
@@ -557,12 +595,15 @@ CMpdPeriod *CMpdRoot::CreatePeriod(std::string szId)
 	pPeriod->m_pParent = this;
 	pPeriod->m_szId = szId;
 	m_listPeriods.push_back(pPeriod);
+
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pPeriod;
 }
 
 
 CMpdRoot::CMpdRoot(const char *pszConfFile)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	char szDaration[MAX_TIME_STRING];
 	const char *pszCfgVal = NULL;
 	m_pDoc = new TiXmlDocument( pszConfFile );
@@ -720,6 +761,7 @@ CMpdRoot::CMpdRoot(const char *pszConfFile)
 	m_nUpdateTime = 0;
     m_nUpdateInterval = 1000; // default 1 Sec
 Exit:
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return;
 }
 
@@ -856,22 +898,19 @@ int CMpdRoot::IsDynamic()
 
 CMpdRoot::CMpdRoot(int fDynamic)
 {
-	DBGLOG("%s:%d", __FILE__, __LINE__);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	m_pDoc = new TiXmlDocument( );
-	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	char szDaration[128];
 	TiXmlElement *pElem  = new TiXmlElement( ELEMENT_MPD );
-	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	m_pNode = pElem;
 	pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS_XSI, ATTRIB_VAL_MPD_XMLNS_XSI);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS, ATTRIB_NAME_MPD_XMLNS);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XSI_SCHEMA_LOCN, ATTRIB_VAL_MPD_XSI_SCHEMA_LOCN);
 
-	DBGLOG("%s:%d", __FILE__, __LINE__);
-
 	if(fDynamic)	{
-		DBGLOG("%s:%d", __FILE__, __LINE__);
 		struct tm ast_time;
 		time_t    time_now;
 		char availability_start_time[MAX_TIME_STRING];
@@ -900,22 +939,22 @@ CMpdRoot::CMpdRoot(int fDynamic)
 	nTimeShiftBufferDepth = DEFAULT_TIME_SHIFT_BUFFER; //12 * 1000;
 	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_timeShiftBufferDepth, szDaration);
-	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	int nSuggestedPresentationDelay = 4000;
 	FormatTime(nSuggestedPresentationDelay, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_suggestedPresentationDelay, szDaration);
-	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	int nMaxSegmentDuration = DEFAULT_SEGMENT_DURATION; //4000;
 	FormatTime(nMaxSegmentDuration, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_MPD_maxSegmentDuration, szDaration);
-	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	int nMaxSubsegmentDuration = 4000;
 	FormatTime(nMaxSubsegmentDuration, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_MPD_maxSubsegmentDuration, szDaration);
-	DBGLOG("%s:%d", __FILE__, __LINE__);
+
 	m_nUpdateTime = 0;
     m_nUpdateInterval = 1000; // default 1 Sec
-
+    JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 CMpdPeriod *CMpdRoot::FindPeriod(std::string szPeriod)
@@ -931,6 +970,7 @@ CMpdPeriod *CMpdRoot::FindPeriod(std::string szPeriod)
 
 int CMpdRoot::CreateRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep, int fTmplate)
 {
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	char szDaration[MAX_TIME_STRING];
 	int numAdaptations = 1;
 	int numPeriods = 1;
@@ -945,6 +985,7 @@ int CMpdRoot::CreateRepresentation(std::string szPeriod, std::string szAdapt, st
 				pAdaptaionSet->CreateRepresentation(szRep, fTmplate);
 			}
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return 0;
 }
 

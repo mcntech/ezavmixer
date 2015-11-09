@@ -29,6 +29,9 @@
 #include "ServerNode.h"
 #include "StreamUtil.h"
 
+#define STRM_CONN_VID 1
+#define STRM_CONN_AUD 2
+
 class CPublishClntBase
 {
 public:

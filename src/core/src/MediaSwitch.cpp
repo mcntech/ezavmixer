@@ -16,13 +16,7 @@
 #include <time.h>
 
 
-#ifdef NO_DEBUG_LOG
-#define DBG_PRINT(...)
-#else
-#define DBG_PRINT(...)   if (1) { printf(__VA_ARGS__); }
-#endif
-
-static int  modDbgLevel = CJdDbg::LVL_TRACE;
+static int  modDbgLevel = CJdDbg::LVL_STRM;
 CMediaSwitch::CMediaSwitch(const char *pszName)
 {
 	m_pVidConnSrc = NULL;
@@ -256,7 +250,7 @@ void CMediaSwitch::ShowStats()
 {
 	unsigned long clk = ClockGet();
 	if(clk > PrevClk + TIME_SECOND) {
-		DBG_PRINT("EncOut %s: vid=%ld aud=%ld NumOutputs=%d\n", m_pszName, vid_frames, aud_frames, m_Outputs.size());
+		JDBG_LOG(CJdDbg::LVL_STRM,("EncOut %s: vid=%ld aud=%ld NumOutputs=%d\n", m_pszName, vid_frames, aud_frames, m_Outputs.size()));
 		PrevClk = clk;
 	}
 }

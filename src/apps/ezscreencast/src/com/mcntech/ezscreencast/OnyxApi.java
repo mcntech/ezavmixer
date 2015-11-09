@@ -96,7 +96,9 @@ public class OnyxApi {
 		StartMpdPublishStream(mHandle, jPublishId);
 		//startSession(mHandle, enableAud, enabeVid);
 	}
-	
+	public static void stopSession(){
+		
+	}
 	protected void finalize() throws Throwable {
 		if(mHandle==0)
 			return;
@@ -107,17 +109,7 @@ public class OnyxApi {
 	public static OnyxApi getInstance() {
 		return mSelf;
 	}
-	
-	public static boolean stop() {
-		if(mHandle==0)
-			return false;
-		stop(mHandle);
-		synchronized (mWaitOnStop) {
-			mWaitOnStop.notify();
-		}
-		return true;
-	}
-		
+			
 	public static void setRemoteNodeHandler(RemoteNodeHandler handler) {
 		m_nodeHandler = handler;
 	}
@@ -134,8 +126,8 @@ public class OnyxApi {
 		mActiveRemoteNodes.clear();
 	}
 			
-	public static void onMpdPublishStatus(String jPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime){
-		System.out.println("jPublishId:" + "State=" + nState + " StrmInTime" + nStrmInTime + " StrmOutTime" + nStrmOutTime + " LostBufferTime=" + nLostBufferTime);
+	public static void onMpdPublishStatus(final String jPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime){
+		System.out.println("PublishId=" + jPublishId + " State=" + nState + " StrmInTime" + nStrmInTime + " StrmOutTime" + nStrmOutTime + " LostBufferTime=" + nLostBufferTime);
 	}
 
 	public static void onNativeMessage(final Object title,final Object message) {		

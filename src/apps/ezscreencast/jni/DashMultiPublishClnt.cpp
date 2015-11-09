@@ -1,11 +1,9 @@
 #include "DashMultiPublishClnt.h"
 #include "jOnyxEvents.h"
 #include <android/log.h>
-static int modDbgLevel = 0;
-#define DBGLOG(...) ((void) __android_log_print(ANDROID_LOG_DEBUG  ,"ezscreencast",  __VA_ARGS__))
 
-#define TRACE_BEGIN DBGLOG("%s:%d:begin", __FILE__, __LINE__);
-#define TRACE_END DBGLOG("%s:%d:end", __FILE__, __LINE__);
+
+static int modDbgLevel = 0;
 
 CDashMultiPublishClnt::CDashMultiPublishClnt(CPublishEventBase *pEventBase)
 {
@@ -16,28 +14,28 @@ CDashMultiPublishClnt::CDashMultiPublishClnt(CPublishEventBase *pEventBase)
 
 int CDashMultiPublishClnt::CreateMpd(std::string szId)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	CMpdRoot *pMpdRoot = new CMpdRoot(1);
 	m_listMpd[szId] = pMpdRoot;
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return 0;
 }
 int CDashMultiPublishClnt::CreatePeriod(std::string szmpdId, std::string szperiodId)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	int res = -1;
 	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
 	if(pMpdRoot) {
 		CMpdPeriod *pPeriod = pMpdRoot->CreatePeriod(szperiodId);
 		res = 0;
 	}
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return res;
 }
 
 int CDashMultiPublishClnt::CreateAdaptationSet(std::string szmpdId, std::string szperiodId, std::string szadaptId)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	int res = -1;
 	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
 	if(pMpdRoot) {
@@ -47,13 +45,14 @@ int CDashMultiPublishClnt::CreateAdaptationSet(std::string szmpdId, std::string 
 			res = 0;
 		}
 	}
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return res;
 }
 
 int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
+	int fSegmentTemplate = 0;
 	int res = -1;
 	CMpdRoot *pMpdRoot = m_listMpd[szmpdId];
 	if(pMpdRoot) {
@@ -61,29 +60,29 @@ int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string
 		if(pPeriod) {
 			CMpdAdaptaionSet *pAdaptationSet = pPeriod->FindAdaptationSet(szadaptId);
 			if(pAdaptationSet) {
-				res = pAdaptationSet->CreateRepresentation(szrepId, 1);
+				res = pAdaptationSet->CreateRepresentation(szrepId, fSegmentTemplate);
 			}
 		}
 	}
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return res;
 }
 
 CMpdRoot *CDashMultiPublishClnt::getMpd(std::string szmpdId)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	CMpdRoot *pMpdRoot = NULL;
 	MpdRootMap::iterator it = m_listMpd.find(szmpdId);
 	if(it != m_listMpd.end()){
 		pMpdRoot = it->second;
 	}
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pMpdRoot;
 }
 
 CMpdRepresentation *CDashMultiPublishClnt::FindRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	CMpdRepresentation *pRep = NULL;
 	MpdRootMap::iterator it = m_listMpd.find(szmpdId);
 	if(it != m_listMpd.end()){
@@ -92,13 +91,13 @@ CMpdRepresentation *CDashMultiPublishClnt::FindRepresentation(std::string szmpdI
 			pRep = pMpdRoot->FindRepresentation(szperiodId, szadaptId, szrepId);
 		}
 	}
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pRep;
 }
 
 int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId, std::string strSwitchId, std::string strServerNode)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	int res = -1;
 	CMpdRepresentation *pRepresentation = NULL;
 	CS3PublishNode *pServerNode = NULL;
@@ -106,22 +105,20 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, std::string 
 	do {
 		CMpdRoot  *pMpdRoot = getMpd(szmpdId);
 		if(pMpdRoot == NULL) {
-			DBGLOG("%s:%d notfound %s", __FILE__, __LINE__, szmpdId.c_str());
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d notfound %s", __FUNCTION__, __LINE__, szmpdId.c_str()));
 			break;
 		}
 		pRepresentation = FindRepresentation(szmpdId, szperiodId, szadaptId, szrepId);
 		if(pMpdRoot == NULL) {
-			DBGLOG("%s:%d notfound %s", __FILE__, __LINE__, szrepId.c_str());
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d notfound %s", __FUNCTION__, __LINE__, szrepId.c_str()));
 			break;
 		}
 		ServerNodeMap::iterator it = m_PublishServerList.find(strServerNode);
-		DBGLOG("%s:%d", __FILE__, __LINE__);
 		if(it == m_PublishServerList.end()) {
-			DBGLOG("%s:%d: m_PublishServerList is empty", __FILE__, __LINE__);
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d: m_PublishServerList is empty", __FUNCTION__, __LINE__));
 			break;
 		}
 		pServerNode = (CS3PublishNode *)it->second;
-		DBGLOG("%s:%d", __FILE__, __LINE__);
 		if(pServerNode) {
 			pSwitch =  getSwitch(strSwitchId);
 			if(pSwitch) {
@@ -130,36 +127,37 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, std::string 
 		}
 	} while(0);
 Exit:
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return res;
 }
 
 int CDashMultiPublishClnt::SatrtMpdPublishStream(std::string szPublishId)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	int res = -1;
 	CMpdSrvBridgeChan *pOutBridge = m_pMpdSrvBridge->getChannel(szPublishId);
 	if(pOutBridge) {
 		res = pOutBridge->Run(m_pOutputStream);
 	}
 	return res;
-	TRACE_END
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
 int CDashMultiPublishClnt::UpdateMpdPublishStatus(std::string szPublishId)
 {
-	TRACE_BEGIN
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	int res = -1;
 	CMpdSrvBridgeChan *pOutBridge = m_pMpdSrvBridge->getChannel(szPublishId);
 	if(pOutBridge) {
 		pOutBridge->UpdateStats();
-		int nState, nStremInTime, nLostBufferTime, nStreamOutTIme, nSegmentTime;
-		pOutBridge->GetPublishStatistics(&nState, &nStremInTime, &nLostBufferTime, &nStreamOutTIme, &nSegmentTime);
+		int nState = 0, nStremInTime = 0, nLostBufferTime = 0, nStreamOutTime = 0, nSegmentTime = 0;
+		pOutBridge->GetPublishStatistics(&nState, &nStremInTime, &nLostBufferTime, &nStreamOutTime, &nSegmentTime);
 		COnyxEvents *pCallback = (COnyxEvents *)m_EventCallback;
-		pCallback->onMpdPublishStatus(szPublishId.c_str(),nState, nStremInTime, nStreamOutTIme, nStreamOutTIme);
+		pCallback->onMpdPublishStatus(szPublishId.c_str(),nState, nStremInTime, nStreamOutTime, nStreamOutTime);
+		res = 0;
 	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return res;
-	TRACE_END
 }
 int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pMpdRoot, CMediaSwitch *pPublishSwitch, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode)
 {
@@ -170,7 +168,7 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 	int nMuxType;
 	int fFileUpdate = 0;
 
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	nSegmentTimeMs = pMpdRoot->GetMaxSegmentDuration();
 	nTimeShiftBufferMs = pMpdRoot->GetTimeShiftBuffer();
 	nStartIndex = time(NULL);
@@ -195,7 +193,7 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 	} else {
 		JDBG_LOG(CJdDbg::LVL_ERR,("Failed to create OutputBridge"));
 	}
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave",__FUNCTION__));
 }
 
 

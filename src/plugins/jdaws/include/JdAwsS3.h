@@ -40,7 +40,9 @@ public:
      */ 
     static JD_STATUS CreateSignature(const CJdAwsS3Request &request,
                                      /*OUT*/ std::string &signature);
-    
+
+    JD_STATUS CreateSignatureV4(const CJdAwsS3Request &request,
+                                        /*OUT*/ std::string &signature);
     /**
      * Make a URI which contains all the headers in the query string. This is uses query string
      * authentication, and is used to generate pre-authorized URIs for use in browsers. The

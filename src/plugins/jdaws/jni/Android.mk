@@ -19,5 +19,6 @@ LOCAL_SRC_FILES += $(MY_SRCS)/JdAwsContext.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/JdAwsS3.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/SegmentWriteS3.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/JdAwsS3UpnpHttpConnection.cpp
+LOCAL_SRC_FILES += $(MY_SRCS)/awsv4.cpp
 
 include $(BUILD_STATIC_LIBRARY)

@@ -4,7 +4,7 @@
  *  Copyright 2011 MCN Technologies Inc.. All rights reserved.
  *
  */
-
+#define ENABLE_OPENSSL
 #include <assert.h>
 #include <openssl/bio.h> 
 #include <openssl/evp.h>

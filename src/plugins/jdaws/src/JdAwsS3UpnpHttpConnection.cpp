@@ -235,6 +235,53 @@ JD_STATUS JdAwsMakeHttpRequest(
 	return res;
 }
 
+
+JD_STATUS JdAwsMakeHttpRequestV4(
+    JdAws_HttpMethod method,
+	const char       *hostName,
+	const char       *bucketName,
+	const char       *objectName,
+	void             *handle,
+	char             *headers,
+	const char       *contentType,
+	int              nContentLen,
+	int              timeout)
+{
+	JD_STATUS res = JD_ERROR;
+
+	std::ostringstream httpReq;
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s : Begin\n", DBG_TAG, __FUNCTION__));
+	JDAWS_CONNECTION *pConn = (JDAWS_CONNECTION *)handle;
+	int sock = pConn->m_Sock;
+	char *host;// = pConn->m_pszHost;
+	int bufsize = REQUEST_BUF_SIZE;
+	int tempSize;
+
+	if(method == JDAWS_HTTPMETHOD_PUT) {
+		httpReq << "PUT " << objectName << " " << HTTP_VERSION << "\r\n";
+	} else if (method == JDAWS_HTTPMETHOD_DELETE) {
+		httpReq << "DELETE " << objectName << " " << HTTP_VERSION << "\r\n";
+	}
+	httpReq << headers;
+	if(nContentLen) {
+		httpReq << "Content-Length: " << nContentLen << "\r\n";
+	}
+
+	httpReq << "Connection: Close\r\n";
+	if(contentType != NULL) {
+		httpReq << "Content-Type: " << contentType << "\r\n";
+	}
+	httpReq << "\r\n";
+
+	std::string reqbuff = httpReq.str();
+	int ret = send(sock, reqbuff.c_str(), reqbuff.length(), MSG_NOSIGNAL);
+	if(ret == reqbuff.length())	{
+		res = JD_OK;
+	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s : End\n",DBG_TAG, __FUNCTION__));
+	return res;
+}
+
 JD_STATUS JdAwsOpenHttpConnection(const char *host, void **pHandleM, int timeoutM)
 {
 	int sock;										/* Socket descriptor */

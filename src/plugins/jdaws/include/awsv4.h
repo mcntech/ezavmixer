@@ -17,19 +17,72 @@
 #include "openssl/sha.h"
 #include "openssl/hmac.h"
 
-class CAwsV4
+
+class URI
 {
 public:
-	CAwsV4();
+	URI();
+	URI(const URI& uri);
+	URI(const std::string& uri);
+	void parse(const std::string& uri);
+	void parsePathEtc(std::string::const_iterator& it, const std::string::const_iterator& end);
+	void parsePath(std::string::const_iterator& it, const std::string::const_iterator& end);
+	void parseFragment(std::string::const_iterator& it, const std::string::const_iterator& end);
+	void parseQuery(std::string::const_iterator& it, const std::string::const_iterator& end);
+	void parseAuthority(std::string::const_iterator& it, const std::string::const_iterator& end);
+	void parseHostAndPort(std::string::const_iterator& it, const std::string::const_iterator& end);
+
+	void setScheme(const std::string& scheme);
+
+	static void decode(const std::string& str, std::string& decodedStr, bool plusAsSpace = false);
+	static void encode(const std::string& str, const std::string& reserved, std::string& encodedStr);
+
+	std::string getQuery() const;
+
+	inline const std::string& URI::getHost() const
+	{
+		return _host;
+	}
+
+	
+	inline const std::string& URI::getPath() const
+	{
+		return _path;
+	}
+
+	
+	inline const std::string& URI::getRawQuery() const
+	{
+		return _query;
+	}
+
+	
+	inline const std::string& URI::getFragment() const
+	{
+		return _fragment;
+	}
+
+	static const std::string ILLEGAL;
+
+private:
+	std::string    _scheme;
+	std::string    _userInfo;
+	std::string    _host;
+	unsigned short _port;
+	std::string    _path;
+	std::string    _query;
+	std::string    _fragment;
+};
+
     void sha256(const std::string str, unsigned char outputBuffer[SHA256_DIGEST_LENGTH]);
     
     const std::string sha256_base16(const std::string);
 
     //const std::string canonicalize_uri(const Poco::URI& uri) noexcept;
-    const std::string canonicalize_uri(const std::string &uri);
+    const std::string canonicalize_uri(const URI &uri);
     
     //const std::string canonicalize_query(const Poco::URI& uri) noexcept;
-    const std::string canonicalize_query(const std::string& uri);
+    const std::string canonicalize_query(const URI& uri);
     
     const std::map<std::string,std::string> canonicalize_headers(const std::vector<std::string>& headers);
     
@@ -62,7 +115,4 @@ public:
                                           const std::string region,
                                           const std::string service,
                                           const std::string string_to_sign);
-    
-};
-
 #endif

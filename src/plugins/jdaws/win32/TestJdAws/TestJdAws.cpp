@@ -5,7 +5,7 @@
  *
  */
 
-
+#include <WinSock2.h>
 #include <assert.h>
 #include <openssl/ssl.h>
 #include <sstream>
@@ -25,6 +25,9 @@
 #undef JD_DEBUG_PRINT
 #define JD_DEBUG_PRINT(format, ...)
 #endif
+
+#define TEST_SIGNATURE_V4
+extern int TestV4Signature();
 
 //ithread_cond_t gCond;
 //ithread_mutex_t gMutex;
@@ -337,6 +340,7 @@ public:
 #endif
 };
 
+extern int TestV4Signature();
 #if 0
 class CTestDelete
 {
@@ -384,6 +388,7 @@ public:
 
 int main(int argc, const char *argv[])
 {
+#ifdef TEST_PUT_V2
 	const char *pszConfigFile = argv[1];
     char *pBuf = "blahblahblah";
     size_t size = strlen(pBuf) + 1;
@@ -397,12 +402,18 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "WSAStartup failed: %d\n", iResult);
         return 1;
     }
+#endif
 #if 0
     CJdAwsContext context(pId, pSecKey, NULL, "s3.amazonaws.com");
 	CTestPut::Run(&context);
 #endif
+#ifdef TEST_PUT_V2
 	CSegmentWriteS3 HlsOut(JdAwsConfig.m_Bucket.c_str(), JdAwsConfig.m_Host.c_str(), JdAwsConfig.m_AccessId.c_str(), JdAwsConfig.m_SecKey.c_str());
 	HlsOut.Send("Folder1", "File1", pBuf, size, CONTENT_STR_DEF, 30);
+#endif
+#ifdef TEST_SIGNATURE_V4
+	TestV4Signature();
+#endif
 	return 0;
 }
 

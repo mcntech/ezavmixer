@@ -60,7 +60,7 @@ public:
      */
     static JD_STATUS MakeRequest(const CJdAwsS3Request &request,
                                  /*OUT*/ CJdAwsS3HttpResponse &response);
-    
+
     /**
      * Uploads a file to the Amazon S3 service. 
      *

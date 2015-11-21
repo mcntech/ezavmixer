@@ -15,7 +15,7 @@ CSegmentWriteS3::CSegmentWriteS3(
 int CSegmentWriteS3::Start(
 			const char *pszParent,
 			const char *pszFile,
-			int        nTotalLen,	/* Totoal length of content including subsequent continue */
+			int        nTotalLen,	/* Total length of content including subsequent continue */
 			char       *pData,
 			int        nLen,		/* Length of data of this call */
 			const char *pContentType

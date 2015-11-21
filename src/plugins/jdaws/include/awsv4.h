@@ -39,25 +39,25 @@ public:
 
 	std::string getQuery() const;
 
-	inline const std::string& URI::getHost() const
+	inline const std::string& getHost() const
 	{
 		return _host;
 	}
 
 	
-	inline const std::string& URI::getPath() const
+	inline const std::string& getPath() const
 	{
 		return _path;
 	}
 
 	
-	inline const std::string& URI::getRawQuery() const
+	inline const std::string& getRawQuery() const
 	{
 		return _query;
 	}
 
 	
-	inline const std::string& URI::getFragment() const
+	inline const std::string& getFragment() const
 	{
 		return _fragment;
 	}

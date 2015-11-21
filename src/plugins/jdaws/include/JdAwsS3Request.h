@@ -21,7 +21,12 @@
 class CJdAwsS3Request
 {
 public:
-    enum EJdAwsS3RequestMethod {
+    enum EJdAwsSignatureVersion {
+        V2,
+        V4,
+    };
+
+	enum EJdAwsS3RequestMethod {
         PUT,
         GET,
         REMOVE,
@@ -34,9 +39,14 @@ public:
     hostM(pContextM->GetDefaultHost()),
     fUseHttpsM(true), 
     fIncludeResponseHeadersM(false),
-    contentLengthM(0), timeoutM(30), fUseRestM(true) 
+    contentLengthM(0), timeoutM(30), fUseRestM(true),
+	signatureVresionM(V4)
 	{
 	}
+
+    /** The type of method to use to make the request */
+    EJdAwsSignatureVersion  signatureVresionM;
+
     /** The type of method to use to make the request */
     EJdAwsS3RequestMethod methodM;  
     /** The AWS context which contains the id, and secret key. 

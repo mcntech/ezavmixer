@@ -1048,9 +1048,9 @@ const std::string join(const std::vector<std::string>& ss,const std::string deli
 
     // create a map of the "canonicalized" headers
     // will return empty map on malformed input.
-    const std::map<std::string,std::string> canonicalize_headers(const std::vector<std::string>& headers)   {
+    void  canonicalize_headers(const std::vector<std::string>& headers, std::map<std::string,std::string> &header_key2val)   {
         const std::string header_delim = ":";
-        std::map<std::string,std::string> header_key2val;
+        //std::map<std::string,std::string> header_key2val;
 
         for (std::vector<std::string>::const_iterator it = headers.begin(); it != headers.end();it++) {
         	std::string h = *it;
@@ -1058,19 +1058,19 @@ const std::string join(const std::vector<std::string>& ss,const std::string deli
             if (pair.count() != 2) { 
                 std::cerr << "malformed header: " << h << std::endl;
                 header_key2val.clear();
-                return header_key2val;
+                return ;//header_key2val;
             }
             std::string key = pair[0];
             const std::string val = pair[1];
             if (key.empty() || val.empty()) {
                 std::cerr << "malformed header: " << h << std::endl;
                 header_key2val.clear();
-                return header_key2val;
+                return ;//header_key2val;
             }
             std::transform(key.begin(), key.end(), key.begin(),::tolower);
             header_key2val[key] = val;
         }
-        return header_key2val;
+        return ;//header_key2val;
     }
 
     // get a string representation of header:value lines
@@ -1104,7 +1104,7 @@ const std::string join(const std::vector<std::string>& ss,const std::string deli
             canonical_query_string + ENDL + 
             canonical_headers + ENDL + 
             signed_headers + ENDL +
-            sha256_base16(payload);
+            payload/*sha256_base16(payload)*/;
     }
 
     // -----------------------------------------------------------------------------------

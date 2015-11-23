@@ -78,29 +78,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\awsv4.cpp" />
+    <ClCompile Include="..\src\Iam.cpp" />
     <ClCompile Include="..\src\JdAwsConfig.cpp" />
     <ClCompile Include="..\src\JdAwsContext.cpp" />
+    <ClCompile Include="..\src\JdAwsRest.cpp" />
     <ClCompile Include="..\src\JdAwsS3.cpp" />
-    <ClCompile Include="..\src\JdAwsS3UpnpHttpConnection.cpp" />
     <ClCompile Include="..\src\SegmentWriteS3.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\awsv4.h" />
+    <ClInclude Include="..\include\Iam.h" />
     <ClInclude Include="..\include\JdAwsConfig.h" />
     <ClInclude Include="..\include\JdAwsContext.h" />
+    <ClInclude Include="..\include\JdAwsRest.h" />
     <ClInclude Include="..\include\JdAwsS3.h" />
     <ClInclude Include="..\include\JdAwsS3Request.h" />
-    <ClInclude Include="..\include\JdAwsS3UpnpHttpConnection.h" />
-    <ClInclude Include="..\include\NumberFormatter.h" />
-    <ClInclude Include="..\include\NumberParser.h" />
-    <ClInclude Include="..\include\NumericString.h" />
     <ClInclude Include="..\include\SegmentWriteS3.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

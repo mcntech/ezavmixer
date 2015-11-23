@@ -15,7 +15,7 @@ public:
 	virtual int Start(const char *pszParent, const char *pszFile, int nTotalLen, char *pData, int nLen, const char *pContentType) = 0;
 	virtual int Continue(char *pData, int nLen) = 0;
 	virtual int End(char *pData, int nLen) = 0;
-	virtual int Send(const char *pszParent, const char *pszFile, char *pData, int nLen, const char *pContentType, int nTimeOut) = 0;
+	virtual int Send(const char *pszParent, const char *pszFile, const std::time_t request_date, char *pData, int nLen, const char *pContentType, int nTimeOut) = 0;
 	virtual int Delete(const char *pszParentUrl, const char *pszFile) = 0;
 
 public:

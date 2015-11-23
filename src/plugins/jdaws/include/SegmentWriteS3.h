@@ -25,7 +25,7 @@
 #include <sstream>
 #include "JdAwsS3.h"
 #include "SegmentWriteBase.h"
-#include "JdAwsS3UpnpHttpConnection.h"
+#include "JdAwsRest.h"
 
 class CSegmentWriteS3 : public CSegmentWriteBase
 {
@@ -35,7 +35,7 @@ public:
 	int Start(const char *pszParent, const char *pszFile, int nTotalLen, char *pData, int nLen, const char *pContentType);
 	int Continue(char *pData, int nLen);
 	int End(char *pData, int nLen);
-	int Send(const char *pszParent, const char *pszFile, char *pData, int nLen, const char *pContentType, int nTimeOut);
+	int Send(const char *pszParent, const char *pszFile, const std::time_t request_date, char *pData, int nLen, const char *pContentType, int nTimeOut);
 	int Delete(const char *pszParentUrl, const char *pszFile);
 
 private:

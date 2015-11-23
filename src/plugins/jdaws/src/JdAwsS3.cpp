@@ -15,11 +15,6 @@
 
 #define ENABLE_OPENSSL
 
-char *jd_url_encode(const char *)
-{
-	return NULL;
-}
-
 static inline const char* MethodToStr(const CJdAwsS3Request::EJdAwsS3RequestMethod &method) 
 {
     switch (method)
@@ -86,7 +81,7 @@ JD_STATUS CJdAwsS3::CreateSignature(const CJdAwsS3Request &request,
 	if (request.expiresM.size()) 
         ss << request.expiresM;
     else 
-        ss << request.dateM;
+        ss << ISO8601_date(request.dateM);
     ss << "\n";
 
     if (request.amzHeaderNamesM.size() > 0) {
@@ -132,8 +127,9 @@ JD_STATUS CJdAwsS3::CreateSignature(const CJdAwsS3Request &request,
 }
 
 JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
-                                    /*OUT*/ std::string &signature)
+                                    /*OUT*/ std::string &authorization)
 {
+	std::string signature;
     /*
     Step 1 is to define the verb (GET, POST, etc.)--already done.
     StringToSign = HTTP-Verb + "\n" +
@@ -141,6 +137,8 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
     std::string method;
 	if(request.methodM == request.PUT) {
 		method = "PUT";
+	} else if (request.methodM == request.GET) {
+		method = "GET";
 	} else if (request.methodM == request.REMOVE) {
 		method = "DLETE";
 	}
@@ -154,10 +152,10 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
     /*
 	Step 3: Create the canonical query string.
     */
-    const std::string query_args("");
+    const std::string query_args(request.queryStringM);
 
 
-    const std::string uri_str(base_uri + path + "?" + query_args);
+    const std::string uri_str(/*base_uri +*/ path + "?" + query_args);
     URI uri;
     uri = URI(uri_str);
     //uri.normalize();
@@ -173,9 +171,11 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
     std::vector<std::string> headers;
     headers.push_back("host:" + request.hostM);
     headers.push_back("Content-type:" + request.contentTypeM);
-    headers.push_back("x-amz-date:" + request.dateM);
+    headers.push_back("x-amz-date:" + ISO8601_date(request.dateM));
+	headers.push_back("x-amz-content-sha256:" + request.contentSha256);
 
-    const std::map<std::string,std::string> canonical_headers_map = canonicalize_headers(headers);
+    std::map<std::string,std::string> canonical_headers_map;
+	canonicalize_headers(headers, canonical_headers_map);
 
     std::string headers_string = map_headers_string(canonical_headers_map);
 
@@ -191,8 +191,8 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
 
     // Step 6: Create payload hash
     //
-    std::string payload = "UNSIGNED-PAYLOAD";
-    std::string sha256_payload = sha256_base16(payload);
+    //std::string payload = "UNSIGNED-PAYLOAD";
+    std::string sha256_payload = request.contentSha256;
 
 
     // Step 7: Combine elements to create create canonical request
@@ -227,6 +227,7 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
     //Step 8. Create a digest (hash) of the canonical request by using the same algorithm that you used to hash
     //the payload.The hashed canonical request must be represented as a string of lowercase hexademical
     //characters.
+	// f536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59
     std::string hashed_canonical_request = sha256_base16(canonical_request);
 
 
@@ -247,9 +248,7 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
     20110909T233600Z\n
     */
 
-    struct std::tm t;
-    //TODO Get time
-    const std::time_t request_date = std::mktime(&t);
+    const std::time_t request_date = request.dateM;
 
     /*
     2.3 Append the credential scope value, followed by a newline character.This value is a string that includes
@@ -258,8 +257,8 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
     service name strings must be UTF-8 encoded.
     20110909/us-east-1/iam/aws4_request\n
 	*/
-    const std::string region("us-east-1");
-    const std::string service("s3");
+    const std::string region(request.regionM);
+    const std::string service(request.serviceM);
 
     std::string my_credential_scope = credential_scope(request_date,region,service);
 
@@ -292,11 +291,10 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
 	kService = HMAC(kRegion, Service)
 	kSigning = HMAC(kService, "aws4_request")
 
-	HMAC(HMAC(HMAC(HMAC("AWS4" + kSecret,"20110909"),"us-east-
-1"),"iam"),"aws4_request")
+	HMAC(HMAC(HMAC(HMAC("AWS4" + kSecret,"20110909"),"us-east-1"),"iam"),"aws4_request")
 
-	152 241 216 137 254 196 244 66 26 220 82 43 171 12 225 248 46 105 41 194 98
-237 21 229 169 76 144 239 209 227 176 231
+	196 175 177 204 87 113 216 113 118 58 57 62 68 183 3 87 27 85 204 40 66 77
+	26 94 134 218 110 211 193 84 164 185
 	*/
     /*
     3.2 Calculate the signature. To do this, use the signing key that you derived and the string to sign as
@@ -304,7 +302,7 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
     value to a hexadecimal representation.
 	signature = HexEncode(HMAC(derived-signing-key, string-to-sign))
 
-	e.g. ced6826de92d2bdeed8f846f0bf508e8559e98e4b0199114b84c54174deb456c
+	e.g. 5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7
     */
 
     const std::string secret = request.pContextM->GetSecretKey();//"wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
@@ -329,9 +327,16 @@ JD_STATUS CJdAwsS3::CreateSignatureV4(const CJdAwsS3Request &request,
 	Authorization: AWS4-HMAC-SHA256
 	Credential=AKIDEXAMPLE/20110909/us-east-1/iam/aws4_request,
 	SignedHeaders=content-type;host;x-amz-date,
-	Signature=ced6826de92d2bdeed8f846f0bf508e8559e98e4b0199114b84c54174deb456c
+	Signature=5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7
 
 	*/
+	std::string delim_space = " ";
+	std::string delim_comma = ",";
+	authorization = "AUTHORIZATION: AWS4-HMAC-SHA256" + delim_space;
+		authorization += "Credential=" +  my_credential_scope + delim_comma;
+		authorization += "SignedHeaders=" + signed_headers + delim_comma;
+		authorization += "Signature=" + signature;
+
 	return JD_OK;
 }
 
@@ -342,11 +347,12 @@ JD_STATUS CJdAwsS3::MakeQueryStringUri(const CJdAwsS3Request &request,
         return JD_ERROR_INVALID_ARG;
     }
     std::string signature;
+	std::string authorization;
     JD_STATUS status = JD_ERROR;
     if(request.signatureVresionM == request.V2)
     	status = CJdAwsS3::CreateSignature(request, signature);
     else if (request.signatureVresionM == request.V4)
-    	status = CJdAwsS3::CreateSignature(request, signature);
+    	status = CJdAwsS3::CreateSignatureV4(request, authorization);
     if (status != JD_OK) {
         return status;
     }
@@ -376,18 +382,18 @@ JD_STATUS CJdAwsS3::MakeQueryStringUri(const CJdAwsS3Request &request,
         if (size > 0) {
             for (int i = 0; i < size; i++) {
                 ss << request.amzHeaderNamesM[i] << "=";
-                char *pEncoded = jd_url_encode(request.amzHeaderValuesM[i].c_str());
-                ss << pEncoded << "&";
-                free(pEncoded);
+				std::string Encoded;
+				URI::encode(request.amzHeaderNamesM[i],"",Encoded);
+                ss << Encoded << "&";
             }
         }
     }
     /* insert aws credentials */
     ss << "AWSAccessKeyId=" << request.pContextM->GetId() << "&";
     {
-        char *pEncoded = jd_url_encode(signature.c_str());
-        ss << "Signature=" << pEncoded << "&";
-        free(pEncoded);
+		std::string Encoded;
+		URI::encode(signature,"",Encoded);
+        ss << "Signature=" << Encoded << "&";
     }
     ss << "Expires=" << request.expiresM;
     queryString = ss.str();
@@ -421,11 +427,13 @@ JD_STATUS CJdAwsS3::MakeStandardUri(const CJdAwsS3Request &request,
         ss << "https://";
     else 
         ss << "http://";
-    ss << request.bucketNameM << "." << request.hostM  <<  request.pathM;
+	if(request.bucketNameM.length())
+		ss << request.bucketNameM << "." ;
+	ss << request.hostM  <<  request.pathM;
     if (queryString.size()) {
-        char *pEncode = jd_url_encode(queryString.c_str());
-        ss << "?" << pEncode;
-        free(pEncode);
+		std::string Encode;
+		URI::encode(queryString,"",Encode);
+        ss << "?" << Encode;
     }
     uri = ss.str();
     return JD_OK;
@@ -436,7 +444,9 @@ JD_STATUS CJdAwsS3::MakeHost(const CJdAwsS3Request &request,
 {
     std::ostringstream ss;
 
-    ss << request.bucketNameM << "." << request.hostM;
+	if(request.bucketNameM.length())
+		ss << request.bucketNameM << "." ;
+	ss << request.hostM;
     host = ss.str();
     return JD_OK;
 }

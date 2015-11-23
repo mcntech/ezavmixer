@@ -45,7 +45,8 @@ int TestV4Signature() {
 			"x-amz-date: 20110909T233600Z"};
     const std::vector<std::string> headers(c_headers, end(c_headers));
     
-    const auto canonical_headers_map = canonicalize_headers(headers);
+    std::map<std::string,std::string> canonical_headers_map;
+	canonicalize_headers(headers, canonical_headers_map);
     if (canonical_headers_map.empty()) {
         std::cerr << "headers malformed" << std::endl;
         std::exit(1);

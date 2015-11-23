@@ -1,5 +1,5 @@
 /*
- *  JdAwsS3UpnpHttpConnectionTest.cpp
+ *  TestJdAws.cpp
  *
  *  Copyright 2011 MCN Technologies Inc. All rights reserved.
  *
@@ -11,11 +11,19 @@
 #include <sstream>
 #include <string>
 #include <time.h>
+#include <ctime>
 
+// #define TEST_PUT_V4
+//#define TEST_IAM_GET
+#define TEST_S3_PUT_V4
 #include "../../include/SegmentWriteS3.h"
 
+#ifdef TEST_IAM_GET
+#include "../../include/Iam.h"
+#endif
+
 #include "JdAwsS3.h"
-#include "JdAwsS3UpnpHttpConnection.h"
+#include "JdAwsRest.h"
 #include "JdHttpClnt2.h"
 #include "JdAwsConfig.h"
 
@@ -26,7 +34,8 @@
 #define JD_DEBUG_PRINT(format, ...)
 #endif
 
-#define TEST_SIGNATURE_V4
+
+//#define TEST_SIGNATURE_V4
 extern int TestV4Signature();
 
 //ithread_cond_t gCond;
@@ -287,7 +296,9 @@ public:
         request.contentTypeM.assign(contentType);
         request.contentLengthM = size;
         request.fUseHttpsM = gUseHttps;
+		/*
         CJdAwsContext::GetCurrentDate(request.dateM);
+		*/
         CJdAwsS3HttpResponse response;
         JD_STATUS status = CJdAwsS3HttpConnection::MakeRequest(request, response);
         assert(status == JD_OK);
@@ -301,6 +312,7 @@ public:
         assert(status == JD_OK);
         assert(httpStatus == 200);
     }
+
 #if 0
     static void Run2(CJdAwsContext *pContext)
     {
@@ -388,7 +400,16 @@ public:
 
 int main(int argc, const char *argv[])
 {
-#ifdef TEST_PUT_V2
+
+		WSADATA wsaData;
+	int iResult;
+    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (iResult != 0) {
+        fprintf(stderr, "WSAStartup failed: %d\n", iResult);
+        return 1;
+    }
+
+#if defined(TEST_PUT_V2) || defined(TEST_PUT_V4) 
 	const char *pszConfigFile = argv[1];
     char *pBuf = "blahblahblah";
     size_t size = strlen(pBuf) + 1;
@@ -410,6 +431,24 @@ int main(int argc, const char *argv[])
 #ifdef TEST_PUT_V2
 	CSegmentWriteS3 HlsOut(JdAwsConfig.m_Bucket.c_str(), JdAwsConfig.m_Host.c_str(), JdAwsConfig.m_AccessId.c_str(), JdAwsConfig.m_SecKey.c_str());
 	HlsOut.Send("Folder1", "File1", pBuf, size, CONTENT_STR_DEF, 30);
+#endif
+
+#ifdef TEST_IAM_GET
+
+	//20110909T233600
+    struct std::tm t;
+    t.tm_sec = 0; t.tm_min = 36; t.tm_hour = 4;
+    t.tm_mon = 8 - 1; t.tm_year = 2015 - 1900; t.tm_isdst = 0; t.tm_mday = 30;   
+    const std::time_t request_date = std::mktime(&t);
+	const char *pPayload = "";
+	CIam iam("iam.amazonaws.com", "AKIDEXAMPLE%2F20150830", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY");
+	iam.Get("Action=ListUsers&Version=2010-05-08", "application/x-www-form-urlencoded; charset=utf-8", request_date, pPayload, strlen(pPayload), 10);
+#endif
+#ifdef TEST_S3_PUT_V4
+    const std::time_t request_date = std::time(nullptr);
+	char *pPayload = "TestPayLoad";
+	CSegmentWriteS3 S3("educast", "s3.amazonaws.com", "AKIAIDBKBQLSL6W7W2SA", "bQMJdOWWe/nKrVhVEFMybCJcZNxg0tZVhU99Agbc");
+	S3.Send("TestFolderV4", "TestFile", request_date, pPayload, strlen(pPayload), CONTENT_STR_DEF, 30);
 #endif
 #ifdef TEST_SIGNATURE_V4
 	TestV4Signature();

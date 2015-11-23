@@ -1,5 +1,6 @@
 
 #include "../include/SegmentWriteS3.h"
+#include "awsv4.h"
 
 CSegmentWriteS3::CSegmentWriteS3(
 			const char *pszBucket,
@@ -46,7 +47,7 @@ int CSegmentWriteS3::Start(
 	request.contentLengthM = nTotalLen;
 	request.fUseHttpsM = false; //gUseHttps;
 
-	CJdAwsContext::GetCurrentDate(request.dateM);
+	//CJdAwsContext::GetCurrentDate(request.dateM);
 
 	JD_STATUS status = CJdAwsS3HttpConnection::MakeRequest(request, m_SessionContext);
 	if(status != JD_OK) goto Exit;
@@ -90,7 +91,7 @@ Exit:
     return(status == JD_OK);
 }
 
-int CSegmentWriteS3::Send(const char *pszParent, const char *pszFile, char *pData, int nLen, const char *pContentType, int nTimeOut)
+int CSegmentWriteS3::Send(const char *pszParent, const char *pszFile, const std::time_t request_date, char *pData, int nLen, const char *pContentType, int nTimeOut)
 {
 	int result = JD_OK;
     int httpStatus;
@@ -101,13 +102,17 @@ int CSegmentWriteS3::Send(const char *pszParent, const char *pszFile, char *pDat
 
 	request.methodM = CJdAwsS3Request::PUT;
 	request.pContextM = &m_AwsContext;
-	request.hostM.assign("s3.amazonaws.com");
+	//request.hostM.assign("s3.amazonaws.com");
+	request.contentSha256 = sha256_base16(pData);
 
 	if(pContentType != NULL && strlen(pContentType)){
 		request.contentTypeM.assign(pContentType);
 	} else {
 		request.contentTypeM.assign(CONTENT_STR_DEF);
 	}
+
+	request.serviceM = "s3";
+	request.queryStringM = "";
 
 	if (pszParent) {
 		std::ostringstream objectname;
@@ -120,8 +125,7 @@ int CSegmentWriteS3::Send(const char *pszParent, const char *pszFile, char *pDat
 
 	request.contentLengthM = size;
 	request.fUseHttpsM = false; //gUseHttps;
-
-	CJdAwsContext::GetCurrentDate(request.dateM);
+	request.dateM = request_date;
 
 	CJdAwsS3HttpResponse response;
 	JD_STATUS status = CJdAwsS3HttpConnection::MakeRequest(request, response);
@@ -169,9 +173,10 @@ int CSegmentWriteS3::Delete(const char *pszParent, const char *pszFile)
 	request.bucketNameM.assign(m_Bucket);
 
 	request.fUseHttpsM = false; //gUseHttps;
-
+	/*
+	TODO
 	CJdAwsContext::GetCurrentDate(request.dateM);
-
+		*/
 	JD_STATUS status = CJdAwsS3HttpConnection::MakeRequest(request, m_SessionContext);
 
 	JdAwsCloseHttpConnection(m_SessionContext.pHandleM);

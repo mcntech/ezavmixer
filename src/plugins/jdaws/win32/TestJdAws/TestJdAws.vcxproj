@@ -59,7 +59,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>jdaws.lib;libeay32.lib;ssleay32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Projects\dlna\jdaws\win32\Debug;C:\Projects\dlna\jdaws\win32\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Projects\ezavmixer\src\plugins\jdaws\win32\Debug;C:\Projects\ezavmixer\src\plugins\jdaws\win32\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>

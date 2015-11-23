@@ -84,7 +84,7 @@ private:
     //const std::string canonicalize_query(const Poco::URI& uri) noexcept;
     const std::string canonicalize_query(const URI& uri);
     
-    const std::map<std::string,std::string> canonicalize_headers(const std::vector<std::string>& headers);
+    void canonicalize_headers(const std::vector<std::string>& headers, std::map<std::string,std::string> &header_key2val);
     
     const std::string map_headers_string(const std::map<std::string,std::string>& header_key2val);
     

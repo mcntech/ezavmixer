@@ -55,7 +55,7 @@ using namespace std;
 #ifdef EN_S3_UPLOAD
 #include "JdAwsS3.h"
 #include "SegmentWriteBase.h"
-#include "JdAwsS3UpnpHttpConnection.h"
+#include "JdAwsRest.h"
 #include "JdAwsConfig.h"
 #endif
 #define  MEM_FILE_DEFAULT_FRONT_CACHE   0

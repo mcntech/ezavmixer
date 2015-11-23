@@ -10,7 +10,7 @@
 
 #include <string>
 #include <vector>
-
+#include <ctime>
 #include "JdAwsContext.h"
 
 /**
@@ -40,12 +40,19 @@ public:
     fUseHttpsM(true), 
     fIncludeResponseHeadersM(false),
     contentLengthM(0), timeoutM(30), fUseRestM(true),
-	signatureVresionM(V4)
+	signatureVresionM(V4),dateM(0), regionM("us-east-1"), serviceM("s3")
 	{
 	}
 
     /** The type of method to use to make the request */
     EJdAwsSignatureVersion  signatureVresionM;
+
+    /** The type of method to use to make the request */
+    std::string             regionM;
+
+    /** The type of method to use to make the request */
+    std::string             serviceM;
+
 
     /** The type of method to use to make the request */
     EJdAwsS3RequestMethod methodM;  
@@ -80,7 +87,7 @@ public:
      *
      * Optional.
      */
-    std::string dateM;
+    std::time_t dateM;
     /** The expiration time. Application only for making requests using query string authentication.
      * If non-empty then query string authentication will be used. 
      *
@@ -130,6 +137,13 @@ public:
      * Optional
      */
     std::string contentMd5M;
+
+    /** The sha256 HASH of content being sent.
+     *
+     * Optional
+     */
+    std::string contentSha256;
+
     /** The length of the content being sent.
      *
      * Optional

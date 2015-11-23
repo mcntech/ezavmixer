@@ -281,7 +281,7 @@ public:
 		return res;
 	}
 
-	int Send(const char *pszParentFolder, const char *pszFile, char *pData, int nLen, const char *pContentType, int nTimeOut)
+	int Send(const char *pszParentFolder, const char *pszFile, std::time_t req_time, char *pData, int nLen, const char *pContentType, int nTimeOut)
 	{
 		int res = 0;
 		char szFile[256];

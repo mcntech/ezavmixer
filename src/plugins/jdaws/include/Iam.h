@@ -24,7 +24,6 @@
 #include <assert.h>
 //#include <openssl/hmac.h>
 #include <sstream>
-#include "JdAwsS3.h"
 #include "JdAwsRest.h"
 #include "Iam.h"
 

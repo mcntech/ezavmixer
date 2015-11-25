@@ -7,7 +7,7 @@ CIam::CIam(
 			const char *pszHost,
 			const char *pszAccessId,
 			const char *pszSecKey)
-		: m_AwsContext(pszAccessId, pszSecKey, NULL, pszHost)
+		: m_AwsContext(pszAccessId, pszSecKey, 4, NULL, pszHost)
 {
 
 }

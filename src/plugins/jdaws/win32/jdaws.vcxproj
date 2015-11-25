@@ -82,7 +82,6 @@
     <ClCompile Include="..\src\JdAwsConfig.cpp" />
     <ClCompile Include="..\src\JdAwsContext.cpp" />
     <ClCompile Include="..\src\JdAwsRest.cpp" />
-    <ClCompile Include="..\src\JdAwsS3.cpp" />
     <ClCompile Include="..\src\SegmentWriteS3.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -91,7 +90,6 @@
     <ClInclude Include="..\include\JdAwsConfig.h" />
     <ClInclude Include="..\include\JdAwsContext.h" />
     <ClInclude Include="..\include\JdAwsRest.h" />
-    <ClInclude Include="..\include\JdAwsS3.h" />
     <ClInclude Include="..\include\JdAwsS3Request.h" />
     <ClInclude Include="..\include\SegmentWriteS3.h" />
   </ItemGroup>

@@ -22,7 +22,6 @@
 #include "../../include/Iam.h"
 #endif
 
-#include "JdAwsS3.h"
 #include "JdAwsRest.h"
 #include "JdHttpClnt2.h"
 #include "JdAwsConfig.h"
@@ -447,7 +446,7 @@ int main(int argc, const char *argv[])
 #ifdef TEST_S3_PUT_V4
     const std::time_t request_date = std::time(nullptr);
 	char *pPayload = "TestPayLoad";
-	CSegmentWriteS3 S3("educast", "s3.amazonaws.com", "AKIAIDBKBQLSL6W7W2SA", "bQMJdOWWe/nKrVhVEFMybCJcZNxg0tZVhU99Agbc");
+	CSegmentWriteS3 S3("educast", "s3.amazonaws.com", "AKIAIDBKBQLSL6W7W2SA", "bQMJdOWWe/nKrVhVEFMybCJcZNxg0tZVhU99Agbc", 1);
 	S3.Send("TestFolderV4", "TestFile", request_date, pPayload, strlen(pPayload), CONTENT_STR_DEF, 30);
 #endif
 #ifdef TEST_SIGNATURE_V4

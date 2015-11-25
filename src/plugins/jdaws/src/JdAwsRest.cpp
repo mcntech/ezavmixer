@@ -869,9 +869,13 @@ JD_STATUS CJdAwsS3HttpConnection::MakeHttpHeaders(const CJdAwsS3Request &request
     ss.str("");
     ss <<  "HOST: " << host << "\r\n";
 
-    if (request.dateM) {
+	if(request.signatureVresionM == request.V4) {
         ss <<  "DATE: " << ISO8601_date(request.dateM) << "\r\n";
-    }
+	} else {
+		std::string dateOut;
+		CJdAwsContext::GetCurrentDate(dateOut);
+		ss <<  "DATE: " << dateOut << "\r\n";
+	}
 	if(request.signatureVresionM == request.V4) {
 		ss << signature << "\r\n";
 	} else {

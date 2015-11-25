@@ -64,6 +64,7 @@ void CJdAwsContext::GetCurrentDate(/*OUT*/ std::string &dateOut)
 
 CJdAwsContext::CJdAwsContext(const char *pId,
                              const char *pSecretKey,
+							 int         signatureVersion,
                              const char *pUserAgent,
                              const char *pDefaultHost,
                              const char *pUserToken,
@@ -72,6 +73,7 @@ CJdAwsContext::CJdAwsContext(const char *pId,
     assert(pId && pSecretKey && pDefaultHost);
     idM.assign(pId);
     secretKeyM.assign(pSecretKey);
+    signatureVersionM = signatureVersion;
     defaultHostM.assign(pDefaultHost);
     if (pUserAgent) userAgentM.assign(pUserAgent);
     if (pUserToken) userTokenM.assign(pUserToken);

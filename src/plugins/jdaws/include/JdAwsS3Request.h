@@ -40,8 +40,12 @@ public:
     fUseHttpsM(true), 
     fIncludeResponseHeadersM(false),
     contentLengthM(0), timeoutM(30), fUseRestM(true),
-	signatureVresionM(V4),dateM(0), regionM("us-east-1"), serviceM("s3")
+	dateM(0), regionM("us-east-1"), serviceM("s3")
 	{
+    	if(pContext->GetSignatureVersion() == 4)
+    		signatureVresionM = V4;
+    	else
+    		signatureVresionM = V2;
 	}
 
     /** The type of method to use to make the request */

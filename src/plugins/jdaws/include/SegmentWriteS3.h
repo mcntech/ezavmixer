@@ -23,7 +23,6 @@
 #include <assert.h>
 //#include <openssl/hmac.h>
 #include <sstream>
-#include "JdAwsS3.h"
 #include "SegmentWriteBase.h"
 #include "JdAwsRest.h"
 
@@ -31,7 +30,7 @@ class CSegmentWriteS3 : public CSegmentWriteBase
 {
 public:
 	CSegmentWriteS3(const char *pszCfgFile);
-	CSegmentWriteS3( const char *pszBucket, const char *pszHost, const char *pszAccessId, const char *pszSecKey);
+	CSegmentWriteS3( const char *pszBucket, const char *pszHost, const char *pszAccessId, const char *pszSecKey, int nSignVersion);
 	int Start(const char *pszParent, const char *pszFile, int nTotalLen, char *pData, int nLen, const char *pContentType);
 	int Continue(char *pData, int nLen);
 	int End(char *pData, int nLen);

@@ -31,6 +31,7 @@ public:
      */
     CJdAwsContext(const char *pId,
                   const char *pSecretKey,
+				  int         signatureVersion,
                   const char *pUserAgent,
                   const char *pDefaulthost,
                   const char *pUserToken = NULL,
@@ -43,7 +44,7 @@ public:
     const std::string& GetDefaultHost() const { return defaultHostM; }
     const std::string& GetUserToken() const { return userTokenM; }
     const std::string& GetProductToken() const { return productTokenM; }
-    
+    int GetSignatureVersion() const { return signatureVersionM; }
 private:
     std::string idM;
     std::string secretKeyM;
@@ -54,6 +55,8 @@ private:
     std::string userTokenM;
     /* product token for Amazon DevPay */
     std::string productTokenM;
+    /* product token for Amazon DevPay */
+    int signatureVersionM;
 };
 
 #endif // __JD_AWS_CONTEXT_H__

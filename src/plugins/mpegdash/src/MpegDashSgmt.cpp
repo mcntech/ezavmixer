@@ -53,7 +53,6 @@ using namespace std;
 #define EN_S3_UPLOAD
 
 #ifdef EN_S3_UPLOAD
-#include "JdAwsS3.h"
 #include "SegmentWriteBase.h"
 #include "JdAwsRest.h"
 #include "JdAwsConfig.h"
@@ -1000,7 +999,7 @@ public:
 		// TODO: Pass as parameter
 		m_nSegmentDurationMs = nSegmentDuration;
 		if (nDestType == MPD_UPLOADER_TYPE_S3) {
-			m_pHlsOut = new CSegmentWriteS3(pszBucket, pszHost, szAccessId, szSecKey);
+			m_pHlsOut = new CSegmentWriteS3(pszBucket, pszHost, szAccessId, szSecKey, 2);
 			
 		} else if (nDestType == MPD_UPLOADER_TYPE_DISC) {
 			m_pHlsOut = new CMpdOutFs;
@@ -1622,6 +1621,7 @@ void CMpdPublishS3::UpdateSlidingWindow()
 	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
+#if 0
 DWORD CMpdPublishS3::Process()
 {
 	int len, lfd;
@@ -1707,6 +1707,109 @@ DWORD CMpdPublishS3::Process()
 		//UpLoadFullPlayList(m_pszMpdFilePrefix, m_nSegmentStartIndex, SegmentCount());
 	}
 Exit:
+	m_fRunState = 0;
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave Exiting...", __FUNCTION__));
+	return 0;
+}
+#endif
+
+
+#define MAX_SEGMENT_SIZE 8*1024*1024
+DWORD CMpdPublishS3::Process()
+{
+	int len, lfd;
+	char *ChunkStart;
+	char *buffer;
+	int offset;
+	int nContentLen = 0;
+	int fChunked = 0;
+	int fDone = 0;
+
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
+	CSegmentWriteBase *pHlsOut = m_pHlsOut;
+	int nSegmentDurationMs;
+
+	JDBG_LOG(CJdDbg::LVL_MSG,("HttpLive Request. parent url=%s\n", m_pszParentFolder));
+
+	char szTsFileName[MAX_FILE_NAME];
+	buffer = (char *)malloc(MAX_SEGMENT_SIZE);
+	while(!fDone){
+		int lTimeout = m_nSegmentDurationMs * 2;
+		int nCrntDuration = 0;
+		while(GetAvailBuffDuration() < m_nSegmentDurationMs && /*lTimeout > 0 &&*/ m_fRunState) {
+			lTimeout -= 100;
+			OSAL_WAIT(100);
+		}
+
+		if(/*lTimeout <= 0 ||*/ !m_fRunState){
+			JDBG_LOG(CJdDbg::LVL_MSG,("Timeout(%d) while waiting for filled buffer", m_nSegmentDurationMs * 2));
+			fDone = true;
+			continue;
+		}
+
+		/* Segment Available */
+		GetSegmentNameFromIndex(szTsFileName, m_pszMpdFilePrefix, m_nSegmentIndex,  m_pSegmenter->m_nMuxType);
+		int nTotlaLen = GetSegmentLen();
+		int nBytesSent = 0;
+		JDBG_LOG(CJdDbg::LVL_MSG,("m_nSegmentIndex=%d nTotlaLen=%d: numGops=%d SegDurationMs=%d nCrntDuration=%d",m_nSegmentIndex, nTotlaLen, m_pGopFilledList.size()));
+		//if( m_pHlsOut->Start(m_pszParentFolder,szTsFileName,nTotlaLen, NULL,0,CONTENT_STR_MP2T) == JD_ERROR){
+		//	JDBG_LOG(CJdDbg::LVL_MSG,(":Start: Exiting due to error writing: %s", szTsFileName));
+		//	m_nError = MPD_UPLOAD_ERROR_CONN_FAIL;
+		//	goto Exit;
+		//}
+		offset = 0;
+		nSegmentDurationMs = m_nSegmentDurationMs;
+		// TODO: Handle discont
+		while(nCrntDuration < nSegmentDurationMs) {
+			m_Mutex.Acquire();
+			JDBG_LOG(CJdDbg::LVL_MSG,(":Uploading Segment %d: numGops=%d SegDurationMs=%d nCrntDuration=%d",  m_nSegmentIndex, m_pGopFilledList.size(), nSegmentDurationMs, nCrntDuration));
+
+			if(m_pGopFilledList.size() <= 0) {
+				JDBG_LOG(CJdDbg::LVL_MSG,("Error:Unexpected Size %d!!!",m_pGopFilledList.size()));
+			}
+			CGopCb *pGop = m_pGopFilledList.front();
+			nBytesSent += pGop->m_nLen;
+			m_pGopFilledList.pop_front();
+			m_Mutex.Release();
+
+			//if(m_pHlsOut->Continue((char *)pGop->m_pBuff, pGop->m_nLen) == JD_ERROR) {
+			//	JDBG_LOG(CJdDbg::LVL_MSG,(":Continue: Exiting due to error writing: %s", szTsFileName));
+			//	m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
+			//	goto Exit;
+			//}
+			if(offset + pGop->m_nLen < MAX_SEGMENT_SIZE ) {
+				memcpy(buffer+offset, (char *)pGop->m_pBuff, pGop->m_nLen);
+				offset += pGop->m_nLen;
+			} else {
+				// Buffer overrun
+			}
+			nCrntDuration += pGop->m_DurationMs;
+			m_nOutStreamTime += pGop->m_DurationMs;
+			m_Mutex.Acquire();
+			m_pCb->Free(pGop->m_pBuff, pGop->m_nLen);
+			m_Mutex.Release();
+			delete pGop;;
+		}
+		m_nSegmentTime += nSegmentDurationMs;
+
+		//if(m_pHlsOut->End(NULL, 0) == JD_ERROR){
+		//	JDBG_LOG(CJdDbg::LVL_MSG,(":End: Exiting due to error writing: %s", szTsFileName));
+		//	m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
+		//	goto Exit;
+		//}
+		std::time_t req_time = std::time(NULL);
+		m_pHlsOut->Send(m_pszParentFolder,szTsFileName, req_time, buffer, nTotlaLen, CONTENT_STR_MP2T, 30);
+		UpdateSlidingWindow();
+
+		m_nSegmentIndex++;
+	}
+	if(SegmentCount() > 0 && !m_fLiveOnly){
+		//TODO:
+		//UpLoadFullPlayList(m_pszMpdFilePrefix, m_nSegmentStartIndex, SegmentCount());
+	}
+Exit:
+	if(buffer)
+		free(buffer);
 	m_fRunState = 0;
 	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave Exiting...", __FUNCTION__));
 	return 0;

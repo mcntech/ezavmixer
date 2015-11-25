@@ -1,6 +1,8 @@
 #define	HLS_OUTPUT_FS               2
-#ifndef __HLS_OUT_BASE_H__
-#define __HLS_OUT_BASE_H__
+#ifndef __SEGMENT_WRITE_BASE_H__
+#define __SEGMENT_WRITE_BASE_H__
+
+#include <ctime>
 
 #define CONTENT_STR_TYPE			"Content-Type"
 #define CONTENT_STR_HTML			"text/html"

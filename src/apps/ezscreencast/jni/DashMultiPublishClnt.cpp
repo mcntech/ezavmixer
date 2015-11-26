@@ -1,7 +1,7 @@
 #include "DashMultiPublishClnt.h"
 #include "jOnyxEvents.h"
 #include <android/log.h>
-
+#include "JdAwsContext.h"
 
 static int modDbgLevel = 0;
 
@@ -178,11 +178,12 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 
 	//pszFilePrefix = pRepresentation->GetId();
 	//pszMimetype = pRepresentation->GetMimetTpe();
-
+	CJdAwsContext JdAwsContext;
 	pOutBridge = m_pMpdSrvBridge->CreateChannel(szId, pRepresentation,
 			nStartIndex, nSegmentTimeMs, nTimeShiftBufferMs,
 			pServerNode->m_szFilePefix.c_str(), pServerNode->m_szFolder.c_str(), pServerNode->m_szBucket.c_str(),
-			pServerNode->m_szHost.c_str(), pServerNode->m_szAccesId.c_str(), pServerNode->m_szSecKey.c_str(),
+			&pServerNode->m_AwsContext,
+			/*pServerNode->m_szHost.c_str(), pServerNode->m_szAccesId.c_str(), pServerNode->m_szSecKey.c_str(),*/
 			nMuxType);
 
 	if(pOutBridge) {

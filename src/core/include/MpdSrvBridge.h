@@ -15,6 +15,7 @@
 #include "Mp4MuxIf.h"
 #include <string>
 #include <map>
+#include "JdAwsContext.h"
 
 class CMpdSrvBridgeChan : public CStrmOutBridge
 {
@@ -33,7 +34,8 @@ public:
 		const char *pszFilePrefix, 
 		const char *pszParentFolder, 
 		const char *pszBucketOrServerRoot,
-		const char *pszHost, const char *pszAccessId, const char *pszSecKey);
+		CJdAwsContext *pAwsContext
+		/*const char *pszHost, const char *pszAccessId, const char *pszSecKey*/);
 	
 	int GetPublishStatistics(int *pnState, int *pnStreamInTime, int *pnLostBufferTime,  int *pnStreamOutTime, int *pnSegmentTime)
 	{
@@ -57,11 +59,12 @@ public:
 	char            m_szFilePrefix[256];
 	char            m_szParentFolder[256];
 	char            m_szBucketOrServerRoot[256];  
-
+/*
 	char	        m_szHost[256];
 	char	        m_szAccessId[256];
 	char	        m_szSecKey[256];
-
+*/
+	CJdAwsContext   m_AwsContext;
 	int             m_fEnableServer;
 	int             m_fEnablePublish;
 	COsalMutex      m_Mutex;
@@ -86,7 +89,8 @@ public:
 			const char *pszFilePrefix,
 			const char *pszParentFolder,
 			const char *pszBucketOrServerRoot,
-			const char *pszHost, const char *pszAccessId, const char *pszSecKey,
+			CJdAwsContext       *pJdAwsContext,
+			/*const char *pszHost, const char *pszAccessId, const char *pszSecKey,*/
 			int        nMimeType);
 
 	CMpdSrvBridgeChan *getChannel(std::string szId);

@@ -3,12 +3,13 @@
 #include "awsv4.h"
 
 CSegmentWriteS3::CSegmentWriteS3(
-			const char *pszBucket,
-			const char *pszHost,
+			CJdAwsContext *pAwsContext,
+			const char *pszBucket
+			/*const char *pszHost,
 			const char *pszAccessId,
 			const char *pszSecKey,
-			int         signVersion)
-		: m_AwsContext(pszAccessId, pszSecKey, signVersion, NULL, pszHost)
+			int         signVersion*/)
+		: m_AwsContext(*pAwsContext/*pszAccessId, pszSecKey, signVersion, NULL, pszHost*/)
 {
 	m_Bucket.assign(pszBucket);
 }

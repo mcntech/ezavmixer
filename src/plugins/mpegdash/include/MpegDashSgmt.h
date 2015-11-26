@@ -15,6 +15,7 @@
 #define MPD_FLAG_HAS_SPS                0x00000001
 #define MPD_FLAG_DISCONT                0x00010000
 #include "Mpd.h"
+#include "JdAwsContext.h"
 
 int mpdWriteFrameData(void *pCtx, char *pData, int nLen, int fVideo, int fDisCont,  unsigned long ulPtsMs);
 int mpdEndOfSeq(void *pCtx);
@@ -26,9 +27,10 @@ void *mpdPublishStart(
 		const char	*pszSrcM3u8Url,             ///< Play list file name
 		const char	*pszDestParentUrl,			///< Network folder name
 		const char	*pszBucketOrSvrRoot, 
-		const char	*pszHost,
-		const char	*szAccessId,
-		const char	*szSecKey,
+		//const char	*pszHost,
+		//const char	*szAccessId,
+		//const char	*szSecKey,
+		CJdAwsContext  *pServerCtxt,
 		int         fLiveOnly,
 		int         nStartIndex,
 		int         nDestType

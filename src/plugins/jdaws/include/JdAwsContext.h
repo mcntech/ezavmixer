@@ -36,8 +36,11 @@ public:
                   const char *pDefaulthost,
                   const char *pUserToken = NULL,
                   const char *pProductToken = NULL);
-    
+    CJdAwsContext(){}
+    CJdAwsContext(CJdAwsContext &JdAwsContext)
+    {
 
+    }
     const std::string& GetId() const { return idM; }
     const std::string& GetSecretKey() const { return secretKeyM; }
     const std::string& GetUserAgent() const { return userAgentM; }
@@ -45,7 +48,8 @@ public:
     const std::string& GetUserToken() const { return userTokenM; }
     const std::string& GetProductToken() const { return productTokenM; }
     int GetSignatureVersion() const { return signatureVersionM; }
-private:
+
+public:
     std::string idM;
     std::string secretKeyM;
     std::string userAgentM;

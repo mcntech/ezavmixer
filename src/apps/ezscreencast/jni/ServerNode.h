@@ -34,6 +34,7 @@
 #include "MediaSwitch.h"
 #include "RtspPublishBridge.h"
 #include "ConfigBase.h"
+#include "JdAwsContext.h"
 
 class CServerNode
 {
@@ -67,9 +68,9 @@ public:
 	CS3PublishNode(	std::string szHost, std::string szAccesId, std::string szSecKey,
 			std::string szBucket, std::string szFolder, std::string szFilePefix)
 	{
-		m_szHost = szHost;
-		m_szAccesId = szAccesId;
-		m_szSecKey = szSecKey;
+		m_AwsContext.defaultHostM = szHost;
+		m_AwsContext.idM = szAccesId;
+		m_AwsContext.secretKeyM = szSecKey;
 		m_szBucket = szBucket;
 		m_szFolder = szFolder;
 		m_szFilePefix = szFilePefix;
@@ -78,9 +79,7 @@ public:
 	void stop(){}
 
 public:
-	std::string m_szHost;
-	std::string m_szAccesId;
-	std::string m_szSecKey;
+	CJdAwsContext m_AwsContext;
 
 	std::string m_szBucket;
 	std::string m_szFolder;

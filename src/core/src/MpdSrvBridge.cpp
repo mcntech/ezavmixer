@@ -126,9 +126,9 @@ int CMpdSrvBridgeChan::SetServerConfig(
 	const char *pszFilePrefix, 
 	const char *pszParentFolder, 
 	const char *pszBucketOrServerRoot,
-	const char *pszHost, const char *pszAccessId, const char *pszSecKey)
+	CJdAwsContext *pServerCtx/*const char *pszHost, const char *pszAccessId, const char *pszSecKey*/)
 { 
-	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s:%s:%s:%s", pszFilePrefix,pszParentFolder,pszBucketOrServerRoot, pszHost, pszAccessId));
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s:%s", pszFilePrefix,pszParentFolder,pszBucketOrServerRoot));
 	m_fEnableServer = 1;
 	m_pMpdRepresentation = pMpdRepresentation;
 	if(pszFilePrefix)
@@ -138,14 +138,15 @@ int CMpdSrvBridgeChan::SetServerConfig(
 	if(pszBucketOrServerRoot)
 		strcpy(m_szBucketOrServerRoot,pszBucketOrServerRoot);
 
-	if(pszHost)
-		strcpy(m_szHost, pszHost);
+	//if(pszHost)
+	//	strcpy(m_szHost, pszHost);
 
-	if(pszAccessId)
-		strcpy(m_szAccessId, pszAccessId);
+	//if(pszAccessId)
+	//	strcpy(m_szAccessId, pszAccessId);
 
-	if(pszSecKey)
-		strcpy(m_szSecKey, pszSecKey);
+	//if(pszSecKey)
+	//	strcpy(m_szSecKey, pszSecKey);
+	m_AwsContext = *pServerCtx;
 	return 0;
 }
 
@@ -157,7 +158,7 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 		nUpLoadType = MPD_UPLOADER_TYPE_MEM;
 		char szM3u8File[128];
 		//hlsSetDebugLevel(m_pPublishCfg->m_nDdebugLevel);
-		if(m_szHost)
+		if(m_AwsContext.defaultHostM.length() > 0)
 			nUpLoadType = MPD_UPLOADER_TYPE_S3;
 		else
 			nUpLoadType = MPD_UPLOADER_TYPE_MEM;
@@ -169,10 +170,13 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 			m_pMpdRepresentation, 
 			m_szFilePrefix, 
 			m_szParentFolder, 
-			m_szBucketOrServerRoot,  
+			m_szBucketOrServerRoot,
+			&m_AwsContext,
+			/*
 			m_szHost,
 			m_szAccessId,
 			m_szSecKey,
+			*/
 			m_pMpdRepresentation->IsLive(), 
 			m_nSegmentStart, nUpLoadType);
 	}
@@ -208,11 +212,12 @@ CMpdSrvBridgeChan *CMpdSrvBridge::CreateChannel(
 		const char *pszFilePrefix, 
 		const char *pszParentFolder, 
 		const char *pszBucketOrServerRoot,
-		const char *pszHost, const char *pszAccessId, const char *pszSecKey,
+		CJdAwsContext *pAwsContext,
+		/*const char *pszHost, const char *pszAccessId, const char *pszSecKey,*/
 		int        nMimeType)
 {
 	CMpdSrvBridgeChan *pChan = new CMpdSrvBridgeChan(nMimeType, nSegmentStart, nSegemtTimeMs, nTimeShiftBuffer);
-	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, pszHost, pszAccessId, pszSecKey);
+	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, pAwsContext/*pszHost, pszAccessId, pszSecKey*/);
 
 	m_listChan[szId] = pChan;
 	return pChan;

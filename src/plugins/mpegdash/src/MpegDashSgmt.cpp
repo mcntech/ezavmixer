@@ -974,6 +974,8 @@ public:
 /******************************************************************************
  * Uploads data from segmenter to http site or local file system
  */
+#define TRANSFER_TYPE_PARTIAL 1
+#define TRANSFER_TYPE_FULL    2
 
 class CMpdPublishS3 : public CMpdPublishBase
 {
@@ -984,10 +986,13 @@ public:
 		CMpdRepresentation        *pCfgRepresenation,
 		const char	*pszSegmentPrefix,
 		const char	*pszParentFolder,
-		const char	*pszBucket, 
+		const char	*pszBucket,
+		CJdAwsContext *pAwsContext,
+		/*
 		const char	*pszHost,
 		const char	*szAccessId,
 		const char	*szSecKey,
+		*/
 		int         fLiveOnly,
 		int         nStartIndex,
 		int         nSegmentDuration,
@@ -999,7 +1004,8 @@ public:
 		// TODO: Pass as parameter
 		m_nSegmentDurationMs = nSegmentDuration;
 		if (nDestType == MPD_UPLOADER_TYPE_S3) {
-			m_pHlsOut = new CSegmentWriteS3(pszBucket, pszHost, szAccessId, szSecKey, 2);
+			m_TransferType = TRANSFER_TYPE_PARTIAL;
+			m_pHlsOut = new CSegmentWriteS3(pAwsContext,pszBucket/*, pszHost, szAccessId, szSecKey, 2*/);
 			
 		} else if (nDestType == MPD_UPLOADER_TYPE_DISC) {
 			m_pHlsOut = new CMpdOutFs;
@@ -1109,6 +1115,7 @@ static void *thrdStreamHttpLiveUpload(void *pArg);
 	CMpdSegmnter		*m_pSegmenter;
 	int                 m_fDiscont;
 	CMpdRepresentation  *m_pMpdRepresentation;
+	int                 m_TransferType;
 };
 
 int CMpdPublishS3::ReceiveInitSegment(const char *pData, int nLen)
@@ -1752,12 +1759,15 @@ DWORD CMpdPublishS3::Process()
 		int nTotlaLen = GetSegmentLen();
 		int nBytesSent = 0;
 		JDBG_LOG(CJdDbg::LVL_MSG,("m_nSegmentIndex=%d nTotlaLen=%d: numGops=%d SegDurationMs=%d nCrntDuration=%d",m_nSegmentIndex, nTotlaLen, m_pGopFilledList.size()));
-		//if( m_pHlsOut->Start(m_pszParentFolder,szTsFileName,nTotlaLen, NULL,0,CONTENT_STR_MP2T) == JD_ERROR){
-		//	JDBG_LOG(CJdDbg::LVL_MSG,(":Start: Exiting due to error writing: %s", szTsFileName));
-		//	m_nError = MPD_UPLOAD_ERROR_CONN_FAIL;
-		//	goto Exit;
-		//}
-		offset = 0;
+		if(m_TransferType == TRANSFER_TYPE_PARTIAL) {
+			if( m_pHlsOut->Start(m_pszParentFolder,szTsFileName,nTotlaLen, NULL,0,CONTENT_STR_MP2T) == JD_ERROR){
+				JDBG_LOG(CJdDbg::LVL_MSG,(":Start: Exiting due to error writing: %s", szTsFileName));
+				m_nError = MPD_UPLOAD_ERROR_CONN_FAIL;
+				goto Exit;
+			}
+		} else {
+			offset = 0;
+		}
 		nSegmentDurationMs = m_nSegmentDurationMs;
 		// TODO: Handle discont
 		while(nCrntDuration < nSegmentDurationMs) {
@@ -1771,17 +1781,19 @@ DWORD CMpdPublishS3::Process()
 			nBytesSent += pGop->m_nLen;
 			m_pGopFilledList.pop_front();
 			m_Mutex.Release();
-
-			//if(m_pHlsOut->Continue((char *)pGop->m_pBuff, pGop->m_nLen) == JD_ERROR) {
-			//	JDBG_LOG(CJdDbg::LVL_MSG,(":Continue: Exiting due to error writing: %s", szTsFileName));
-			//	m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
-			//	goto Exit;
-			//}
-			if(offset + pGop->m_nLen < MAX_SEGMENT_SIZE ) {
-				memcpy(buffer+offset, (char *)pGop->m_pBuff, pGop->m_nLen);
-				offset += pGop->m_nLen;
+			if(m_TransferType == TRANSFER_TYPE_PARTIAL) {
+				if(m_pHlsOut->Continue((char *)pGop->m_pBuff, pGop->m_nLen) == JD_ERROR) {
+					JDBG_LOG(CJdDbg::LVL_MSG,(":Continue: Exiting due to error writing: %s", szTsFileName));
+					m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
+					goto Exit;
+				}
 			} else {
-				// Buffer overrun
+				if(offset + pGop->m_nLen < MAX_SEGMENT_SIZE ) {
+					memcpy(buffer+offset, (char *)pGop->m_pBuff, pGop->m_nLen);
+					offset += pGop->m_nLen;
+				} else {
+					// Buffer overrun
+				}
 			}
 			nCrntDuration += pGop->m_DurationMs;
 			m_nOutStreamTime += pGop->m_DurationMs;
@@ -1791,12 +1803,13 @@ DWORD CMpdPublishS3::Process()
 			delete pGop;;
 		}
 		m_nSegmentTime += nSegmentDurationMs;
-
-		//if(m_pHlsOut->End(NULL, 0) == JD_ERROR){
-		//	JDBG_LOG(CJdDbg::LVL_MSG,(":End: Exiting due to error writing: %s", szTsFileName));
-		//	m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
-		//	goto Exit;
-		//}
+		if(m_TransferType == TRANSFER_TYPE_PARTIAL) {
+			if(m_pHlsOut->End(NULL, 0) == JD_ERROR){
+				JDBG_LOG(CJdDbg::LVL_MSG,(":End: Exiting due to error writing: %s", szTsFileName));
+				m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
+				goto Exit;
+			}
+		}
 		std::time_t req_time = std::time(NULL);
 		m_pHlsOut->Send(m_pszParentFolder,szTsFileName, req_time, buffer, nTotlaLen, CONTENT_STR_MP2T, 30);
 		UpdateSlidingWindow();
@@ -1822,9 +1835,10 @@ void *mpdPublishStart(
 			const char	*pszSegmentPrefix,
 			const char	*pszParentFolder,
  			const char	*pszBucketOrSvrRoot, 
-			const char	*pszHost,
+			/*const char	*pszHost,
  			const char	*szAccessId,
-			const char	*szSecKey,
+			const char	*szSecKey,*/
+			CJdAwsContext  *pServerCtxt,
 			int         fLiveOnly,
 			int         nStartIndex,
 			int         nDestType
@@ -1838,7 +1852,7 @@ void *mpdPublishStart(
 		if(nTotalTimeMs == -1)
 			nTotalTimeMs = MAX_UPLOAD_TIME;
 		pPublisher = new CMpdPublishS3(nTotalTimeMs, pSegmenter, pMpdRep, pszSegmentPrefix, pszParentFolder,
-			pszBucketOrSvrRoot, pszHost, szAccessId, szSecKey,  fLiveOnly, nStartIndex, nSegmentDurationMs, nDestType);
+			pszBucketOrSvrRoot, /*pszHost, szAccessId, szSecKey,*/ pServerCtxt, fLiveOnly, nStartIndex, nSegmentDurationMs, nDestType);
 	} else 
 #endif
 	{

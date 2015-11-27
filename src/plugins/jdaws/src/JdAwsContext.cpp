@@ -47,19 +47,21 @@ void CJdAwsContext::ToBase64(const char* aContent,
 #endif
 }
 
-void CJdAwsContext::GetCurrentDate(/*OUT*/ std::string &dateOut)
+std::string CJdAwsContext::GetUTCString(std::time_t reqDate)
 {
+	std::string dateOut;
     char tempbuf[128];
     struct tm *date;
-    time_t currTime = time(NULL);
-    date = gmtime(&currTime);
+
+    date = gmtime(&reqDate);
     sprintf(tempbuf,
-            "%s, %02d %s %d %02d:%02d:%02d GMT",
+            "%s, %02d %s %d %02d:%02d:%02d +0000",
             &gpWeekdayStr[date->tm_wday * 4],
             date->tm_mday, &gpMonthStr[date->tm_mon * 4],
             date->tm_year + 1900, date->tm_hour,
             date->tm_min, date->tm_sec);
     dateOut.assign(tempbuf); 
+	return dateOut;
 }
 
 CJdAwsContext::CJdAwsContext(const char *pId,

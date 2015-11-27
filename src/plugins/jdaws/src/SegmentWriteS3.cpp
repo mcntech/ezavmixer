@@ -9,8 +9,8 @@ CSegmentWriteS3::CSegmentWriteS3(
 			const char *pszAccessId,
 			const char *pszSecKey,
 			int         signVersion*/)
-		: m_AwsContext(*pAwsContext/*pszAccessId, pszSecKey, signVersion, NULL, pszHost*/)
 {
+	m_AwsContext = *pAwsContext;
 	m_Bucket.assign(pszBucket);
 }
 

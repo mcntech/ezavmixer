@@ -444,10 +444,42 @@ int main(int argc, const char *argv[])
 	iam.Get("Action=ListUsers&Version=2010-05-08", "application/x-www-form-urlencoded; charset=utf-8", request_date, pPayload, strlen(pPayload), 10);
 #endif
 #ifdef TEST_S3_PUT_V4
-    const std::time_t request_date = std::time(nullptr);
+	CJdAwsContext JdAwsContext;
+	// mcnt
+	JdAwsContext.defaultHostM = "s3.amazonaws.com";
+#if 1
+	JdAwsContext.idM = "AKIAIDBKBQLSL6W7W2SA";
+	JdAwsContext.secretKeyM = "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";
+	const char *szBucket = "educast";
+	const char *szFolder = "TestFolderV4";
+	const char *szFile = "TestFile";
+	const char *szContentType = CONTENT_STR_DEF;
 	char *pPayload = "TestPayLoad";
-	CSegmentWriteS3 S3("educast", "s3.amazonaws.com", "AKIAIDBKBQLSL6W7W2SA", "bQMJdOWWe/nKrVhVEFMybCJcZNxg0tZVhU99Agbc", 1);
-	S3.Send("TestFolderV4", "TestFile", request_date, pPayload, strlen(pPayload), CONTENT_STR_DEF, 30);
+	int         nContentLen = strlen(pPayload);
+	const std::time_t request_date = std::time(nullptr);
+#endif
+#if 0
+	//S3 Example doc
+	JdAwsContext.idM = "AKIAIOSFODNN7EXAMPLE";
+	JdAwsContext.secretKeyM = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+	const char *szBucket = "johnsmith";
+	const char *szFolder = "photos";
+	const char *szFile = "puppy.jpg";
+	const char *szContentType = "image/jpeg";
+	char *pPayload = (char *)malloc(94328);
+	int   nContentLen = 94328;
+
+    struct std::tm t;
+    t.tm_sec = 45; t.tm_min = 15; t.tm_hour = 21 - 8;
+    t.tm_mon = 3 - 1; t.tm_year = 2007 - 1900; t.tm_isdst = 0; t.tm_mday = 27;   
+    const std::time_t request_date = std::mktime(&t);
+
+#endif
+
+	JdAwsContext.signatureVersionM = 2;
+
+	CSegmentWriteS3 S3(&JdAwsContext, szBucket);
+	S3.Send(szFolder, szFile, request_date, pPayload, nContentLen, szContentType, 30);
 #endif
 #ifdef TEST_SIGNATURE_V4
 	TestV4Signature();

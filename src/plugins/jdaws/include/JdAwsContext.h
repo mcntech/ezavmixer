@@ -9,6 +9,7 @@
 #define __JD_AWS_CONTEXT_H__
 
 #include <string>
+#include <ctime>
 
 class CJdAwsContext {
 public:
@@ -20,8 +21,8 @@ public:
      * @return The current date formatted for the 'DATE' header in a HTTP
      *         request.
      */
-    static void GetCurrentDate(/*OUT*/ std::string &date);
-    
+    static std::string GetUTCString(std::time_t reqDate);
+
     /**
      * @param pId The AWS id
      * @param pSecretKey The AWS secret key
@@ -37,10 +38,7 @@ public:
                   const char *pUserToken = NULL,
                   const char *pProductToken = NULL);
     CJdAwsContext(){}
-    CJdAwsContext(CJdAwsContext &JdAwsContext)
-    {
-
-    }
+ 
     const std::string& GetId() const { return idM; }
     const std::string& GetSecretKey() const { return secretKeyM; }
     const std::string& GetUserAgent() const { return userAgentM; }

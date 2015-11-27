@@ -36,9 +36,9 @@
 #include "awsv4.h"
 
 #define PORT_NUMBER 			80
-#define HTTP_VERSION 			"HTTP/1.0"
+#define HTTP_VERSION 			"HTTP/1.1"
 #define DEFAULT_USER_AGENT		"HTTP OnyxCloudRecorder"
-#define VERSION					"1.0"
+#define VERSION					"1.1"
 #define DEFAULT_READ_TIMEOUT	30		/* Seconds to wait before giving up
 										 *	when no data is arriving */
 #define DEFAULT_WRITE_TIMEOUT	30
@@ -162,8 +162,10 @@ JD_STATUS CJdAwsS3::CreateSignature(const CJdAwsS3Request &request,
 
 	if (request.expiresM.size())
         ss << request.expiresM;
-    else
-        ss << ISO8601_date(request.dateM);
+    else {
+		std::string reqDate = CJdAwsContext::GetUTCString(request.dateM);
+        ss << reqDate;
+	}
     ss << "\n";
 
     if (request.amzHeaderNamesM.size() > 0) {
@@ -189,31 +191,15 @@ JD_STATUS CJdAwsS3::CreateSignature(const CJdAwsS3Request &request,
     //
     // Compute signature
     //
-#if 0
-	printf("Signature Plain:%s\n", signature.c_str());
-#endif
-#ifdef ENABLE_OPENSSL
+
     HMAC(EVP_sha1(), request.pContextM->GetSecretKey().c_str(),
          request.pContextM->GetSecretKey().size(),
          (const unsigned char*) signature.c_str(), signature.size(),
          pEncryptedResult, &encryptedResultSize);
-#else
-	// TODO enable openssl
-#endif
 	CJdAwsContext::ToBase64((const char*) pEncryptedResult, encryptedResultSize, signature);
-#if 0
-	printf("Key %s\n", request.pContextM->GetSecretKey().c_str());
-	printf("Signature Encrypt: %s\n", signature.c_str());
-#endif
 
 	authorization = "AUTHORIZATION: AWS ";
-	authorization += request.pContextM->GetId() + ":" + signature + "\r\n";
-	if (request.amzHeaderNamesM.size()) {
-		int size = request.amzHeaderNamesM.size();
-		for (int i = 0; i < size; i++) {
-			authorization += request.amzHeaderNamesM[i] + ": " + request.amzHeaderValuesM[i] + "\r\n";
-		}
-	}
+	authorization += request.pContextM->GetId() + ":" + signature;
 	return JD_OK;
 }
 
@@ -611,6 +597,7 @@ JD_STATUS JdAwsMakeHttpRequest(
 	httpReq << "\r\n";
 
 	std::string reqbuff = httpReq.str();
+	printf("%s\n", reqbuff.c_str());
 	int ret = send(sock, reqbuff.c_str(), reqbuff.length(), MSG_NOSIGNAL);
 	if(ret == reqbuff.length())	{
 		res = JD_OK;
@@ -873,18 +860,14 @@ JD_STATUS CJdAwsS3HttpConnection::MakeHttpHeaders(const CJdAwsS3Request &request
         ss <<  "DATE: " << ISO8601_date(request.dateM) << "\r\n";
 	} else {
 		std::string dateOut;
-		CJdAwsContext::GetCurrentDate(dateOut);
+		dateOut = CJdAwsContext::GetUTCString(request.dateM);
 		ss <<  "DATE: " << dateOut << "\r\n";
 	}
-	if(request.signatureVresionM == request.V4) {
-		ss << signature << "\r\n";
-	} else {
-		ss << "AUTHORIZATION: " << "AWS " << request.pContextM->GetId() << ":" << signature << "\r\n";
-		if (request.amzHeaderNamesM.size()) {
-			int size = request.amzHeaderNamesM.size();
-			for (int i = 0; i < size; i++) {
-				ss << request.amzHeaderNamesM[i] << ": " << request.amzHeaderValuesM[i] << "\r\n";
-			}
+	ss << signature << "\r\n";
+	if (request.amzHeaderNamesM.size()) {
+		int size = request.amzHeaderNamesM.size();
+		for (int i = 0; i < size; i++) {
+			ss << request.amzHeaderNamesM[i] << ": " << request.amzHeaderValuesM[i] << "\r\n";
 		}
 	}
     if (request.otherHeadersM.size()) {

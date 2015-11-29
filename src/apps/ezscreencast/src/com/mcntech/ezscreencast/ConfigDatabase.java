@@ -140,7 +140,7 @@ public class ConfigDatabase {
 
 		if(mOnyxRemoteNodeList != null) {
 			for (OnyxRemoteNode item:mOnyxRemoteNodeList){
-				list.add(item.mUrl);
+				list.add(item.mNickname);
 			}
 		}
 		String value = gson.toJson(list);

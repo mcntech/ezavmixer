@@ -1,11 +1,52 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
 
-    <Button
+    <ImageView
+        android:id="@+id/image_header"
+        android:layout_width="fill_parent"
+        android:layout_height="60dp"
+        android:src="@drawable/educast_header" />
+
+ 
+    <TextView
+        android:id="@+id/textDescript"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/button"
-        android:text="Start EzScreencast" />
-</FrameLayout>
+        android:layout_gravity="center"
+        android:text="Remote Presentation Made Easy" />
+
+       <Space
+        android:layout_width="match_parent"
+        android:layout_height="30dp" />
+    
+    <Button
+        android:id="@+id/button_startstop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Start" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="30dp" />
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:text="AWS S3 Servers" />
+
+    <ListView
+        android:id="@+id/listRemoteNodes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp" >
+
+    </ListView>
+
+</LinearLayout>

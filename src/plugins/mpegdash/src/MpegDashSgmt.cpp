@@ -1580,7 +1580,6 @@ void CMpdPublishS3::Run()
 #else
 	pthread_create(&thrdHandle, NULL, CMpdPublishS3::thrdStreamHttpLiveUpload, this);
 #endif
-	thrdHandle = thrdHandle;
 	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 

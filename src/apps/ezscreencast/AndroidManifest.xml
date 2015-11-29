@@ -39,7 +39,13 @@
             android:name="com.mcntech.ezscreencast.RemoteNodeDialog"
             android:label="@string/server_list" >
             android:theme="@android:style/Theme.Dialog" />
-        </activity>                
+        </activity>     
+     <activity
+            android:name="com.mcntech.ezscreencast.ConfigMpdSession"
+            android:label="@string/server_config" >
+            android:theme="@android:style/Theme.Dialog" />
+        </activity>             
+                   
     </application>
 
 </manifest>

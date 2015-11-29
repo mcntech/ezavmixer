@@ -13,6 +13,7 @@
     <string name="video_resolution">Video Resolution</string>         
     <string name="audio_source">Audio Source</string>
     <string name="server_list">Publish Server List</string>
+    <string name="server_config">Publish Server Configuration</string>    
     <string name="node_add">Add Server</string>
     <string name="node_clear_all">Clear All</string>    
      

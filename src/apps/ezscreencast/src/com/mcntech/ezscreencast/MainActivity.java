@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -28,6 +29,7 @@ import com.mcntech.ezscreencast.R;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends Activity implements View.OnClickListener {
 	private static final String TAG = "ezscreencast";
@@ -53,7 +55,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		boolean isSystemApp = (getApplicationInfo().flags
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
 		ConfigDatabase.loadSavedPreferences(this, isSystemApp);
-	    LinearLayout mediaLayout = new LinearLayout(this);
+        
+		setContentView(R.layout.activity_main);
+		mBtnStart = (Button) findViewById(R.id.button_startstop);
+		mBtnStart.setText("Start");
+		mBtnStart.setOnClickListener(this);
+		mBtnStart.setTag(BTN_ID_START);
+/*		
+		LinearLayout mediaLayout = new LinearLayout(this);
 	    mediaLayout.setOrientation(LinearLayout.VERTICAL);
 		setContentView(mediaLayout);        
 		
@@ -74,11 +83,35 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		lableParams.setMargins(40, 40, 40, 40);
 		label.setLayoutParams(lableParams);
 		mediaLayout.addView(label);
-
+*/
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		
         mOnyxRemoteNodeList = ConfigDatabase.mOnyxRemoteNodeList;
-	    mRemoteNodeListView =  new ListView(mediaLayout.getContext());
+        mRemoteNodeListView =  (ListView)findViewById(R.id.listRemoteNodes);
+
+	    mListAdapter = new ArrayAdapter<OnyxRemoteNode>(getApplicationContext(), 
+				android.R.layout.simple_list_item_checked, mOnyxRemoteNodeList); 
+		mRemoteNodeListView.setAdapter(mListAdapter ); 
+		mRemoteNodeListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+		mRemoteNodeListView.setOnItemClickListener(new AdapterView.OnItemClickListener()
+		{
+		    @Override
+		    public void onItemClick(AdapterView<?> parent, View item,
+		            int position, long id)
+		    {
+		    	//boolean checked = false;
+		    	OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(position); 
+		    	doEditRemoteNode(node);
+		    	//if(mRemoteNodeListView.isItemChecked(position)){
+				//	mRemoteNodeListView.setItemChecked(position, checked);
+		    	//}else{
+				//	mRemoteNodeListView.setItemChecked(position, !checked);
+		    	//}
+		    }
+		});
+
+        /*
+        mRemoteNodeListView =  new ListView(mediaLayout.getContext());
 	    mRemoteNodeListView.setLayoutParams(new
 				LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
 						ViewGroup.LayoutParams.WRAP_CONTENT)); 
@@ -103,7 +136,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         });
 		
 		mediaLayout.addView(mRemoteNodeListView);	        
-        
+*/        
         mDeviceHandler = new RemoteNodeHandler(){
     		@Override
     		public void onConnectRemoteNode(final String url) {
@@ -121,7 +154,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     			runOnUiThread(new Runnable() {
                     public void run(){
                 		for(int i=0;i<mOnyxRemoteNodeList.size();i++){
-                			if(mOnyxRemoteNodeList.get(i).mUrl == url){
+                			if(mOnyxRemoteNodeList.get(i).mNickname == url){
                 				//mOnyxRemoteNodeList.remove(i);
                 				// TODO : Upda
                 			}
@@ -148,8 +181,25 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
     	};        
     	//ConfigDatabase.loadSavedPreferences(this, isSystemApp);
+    	int recordCount = new DatabaseHandler(this).count();
+   	if(recordCount <= 0){
+    		// Initialize Database
+        	OnyxRemoteNode node1 = new OnyxRemoteNode("educast server-1");
+        	OnyxRemoteNode node2 = new OnyxRemoteNode("educast server-2");
+        	new DatabaseHandler(this).createRow(node1);
+        	new DatabaseHandler(this).createRow(node2);
+    	}
         OnyxApi.initialize(OnyxApi.PROTOCOL_MPD);
         OnyxApi.setRemoteNodeHandler(mDeviceHandler);
+        
+        
+        List<OnyxRemoteNode> RemoteNodes = new DatabaseHandler(this).read();
+        
+        if (RemoteNodes.size() > 0) {
+            for (OnyxRemoteNode obj : RemoteNodes) {
+            	mOnyxRemoteNodeList.add(obj);
+            }
+        }
     }
     
     @Override
@@ -186,6 +236,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
         startActivityForResult(intent, NODE_LIST_DIALOG_CODE);
     }  
     
+    public void doEditRemoteNode(OnyxRemoteNode node) {
+        Intent intent = new Intent(this, ConfigMpdSession.class);
+        intent.setType("text/plain");
+        intent.putExtra("nickname",node.mNickname); 
+        startActivityForResult(intent, NODE_LIST_DIALOG_CODE);
+    } 
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

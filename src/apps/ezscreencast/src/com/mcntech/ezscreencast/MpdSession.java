@@ -1,6 +1,9 @@
 package com.mcntech.ezscreencast;
 
 public class MpdSession {
+	public void setNodeParams(OnyxRemoteNode node) {
+		mNode = node;
+	}
 	public static String mPublishId = "publish0";	
 	public static String mServerId = "server0";
 	public static String mSwcitchId = "switch0";
@@ -13,12 +16,5 @@ public class MpdSession {
 	public static String mPeriodId = "period0";
 	public static String mAdaptId = "adapt0";
 	public static String mRepId = "rep0";
-
-	public static String mFilePrefix = "test";
-	public static String mFolder = "test";
-	public static String mBucket = "educast";	
-	
-	public static String mHost = "s3.amazonaws.com";
-	public static String mAccessId = "AKIAJQNTUBGBH374IY5Q";
-	public static String mSecKey = "YwEA6bhJLmosVq6u6zEqrhIoWLVecqpK68ESjY3e";	
+	OnyxRemoteNode mNode;
 }

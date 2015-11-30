@@ -61,8 +61,8 @@ public class ScreenRecorder extends Thread {
     private long mStartExtVClkUs = 0;
     
     private boolean mfSlaveToExtClock = false;
-    MpdSession mMpdSession = new MpdSession();
-    public ScreenRecorder(int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
+    MpdSession mMpdSession = null;
+    public ScreenRecorder(MpdSession mpdSession, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
         super(TAG);
         mWidth = width;
         mHeight = height;

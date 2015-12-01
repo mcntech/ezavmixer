@@ -72,13 +72,15 @@ public class OnyxApi {
 		CreateSwitch(mHandle, jswitchId);
 		ConnectSwitchInput(mHandle, jswitchId, jinputId);
 		
-		String jserverId = MpdSession.mServerId;
-		String jhost = MpdSession.mHost;
-		String jaccessId = MpdSession.mAccessId;
-		String jsecKey = MpdSession.mSecKey;
-		String jbucket = MpdSession.mBucket;
-		String jfolder = MpdSession.mFolder;
-		String jfilePerfix = MpdSession.mFilePrefix;
+		OnyxRemoteNode node = mpdSession.mNode;
+		String jserverId = node.mNickname;
+		String jhost = node.mHost;
+		String jaccessId = node.mAccessid;
+		String jsecKey = node.mSecuritykey;
+		String jbucket = node.mBucket;
+		String jfolder = node.mFolder;
+		String jfilePerfix = node.mFileprefix;
+		
 		addS3PublishNode(mHandle, jserverId,
 				jhost, jaccessId, jsecKey,
 				jbucket, jfolder, jfilePerfix);

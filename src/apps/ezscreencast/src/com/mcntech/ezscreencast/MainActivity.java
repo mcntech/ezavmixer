@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -28,13 +29,14 @@ import com.mcntech.ezscreencast.R;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends Activity implements View.OnClickListener {
 	private static final String TAG = "ezscreencast";
     private static final int MEDIAPROJECTION_REQUEST_CODE = 1;
     private static final int SETTING_DIALOG_CODE = 2;
     private static final int NODE_LIST_DIALOG_CODE = 3;
-    
+    private static final String DEF_MPD_SERVER1 = "educast server-1";
     private static final int BTN_ID_START = 1;
     
     private MediaProjectionManager mMediaProjectionManager;
@@ -53,57 +55,33 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		boolean isSystemApp = (getApplicationInfo().flags
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
 		ConfigDatabase.loadSavedPreferences(this, isSystemApp);
-	    LinearLayout mediaLayout = new LinearLayout(this);
-	    mediaLayout.setOrientation(LinearLayout.VERTICAL);
-		setContentView(mediaLayout);        
-		
-		LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, 
-                LayoutParams.WRAP_CONTENT);
-		btnParams.setMargins(40, 40, 40, 40);
-		mBtnStart =  new Button(mediaLayout.getContext());
-		mBtnStart.setTag(BTN_ID_START);
+        
+		setContentView(R.layout.activity_main);
+		mBtnStart = (Button) findViewById(R.id.button_startstop);
+		mBtnStart.setText("Start");
 		mBtnStart.setOnClickListener(this);
-		mBtnStart.setText("Start Broadcast");
-		mBtnStart.setLayoutParams(btnParams);
-		mediaLayout.addView(mBtnStart);		
-
-		LinearLayout.LayoutParams lableParams = new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, 
-                LayoutParams.WRAP_CONTENT);
-		TextView label =  new TextView(mediaLayout.getContext());
-		label.setText("Publishing Servers");
-		lableParams.setMargins(40, 40, 40, 40);
-		label.setLayoutParams(lableParams);
-		mediaLayout.addView(label);
-
+		mBtnStart.setTag(BTN_ID_START);
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		
         mOnyxRemoteNodeList = ConfigDatabase.mOnyxRemoteNodeList;
-	    mRemoteNodeListView =  new ListView(mediaLayout.getContext());
-	    mRemoteNodeListView.setLayoutParams(new
-				LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-						ViewGroup.LayoutParams.WRAP_CONTENT)); 
-	    mListAdapter = new ArrayAdapter<OnyxRemoteNode>(mediaLayout.getContext(), 
-						android.R.layout.simple_list_item_checked, mOnyxRemoteNodeList); 
+        mRemoteNodeListView =  (ListView)findViewById(R.id.listRemoteNodes);
+
+	    mListAdapter = new ArrayAdapter<OnyxRemoteNode>(getApplicationContext(), 
+				android.R.layout.simple_list_item_checked, mOnyxRemoteNodeList); 
 		mRemoteNodeListView.setAdapter(mListAdapter ); 
 		mRemoteNodeListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 		mRemoteNodeListView.setOnItemClickListener(new AdapterView.OnItemClickListener()
-        {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View item,
-                    int position, long id)
-            {
-            	boolean checked = false;
-            	OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(position); 
-            	if(mRemoteNodeListView.isItemChecked(position)){
-        			mRemoteNodeListView.setItemChecked(position, checked);
-            	}else{
-        			mRemoteNodeListView.setItemChecked(position, !checked);
-            	}
-            }
-        });
-		
-		mediaLayout.addView(mRemoteNodeListView);	        
-        
+		{
+		    @Override
+		    public void onItemClick(AdapterView<?> parent, View item,
+		            int position, long id)
+		    {
+		    	//boolean checked = false;
+		    	OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(position); 
+		    	doEditRemoteNode(node);
+		    }
+		});
+
         mDeviceHandler = new RemoteNodeHandler(){
     		@Override
     		public void onConnectRemoteNode(final String url) {
@@ -121,7 +99,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     			runOnUiThread(new Runnable() {
                     public void run(){
                 		for(int i=0;i<mOnyxRemoteNodeList.size();i++){
-                			if(mOnyxRemoteNodeList.get(i).mUrl == url){
+                			if(mOnyxRemoteNodeList.get(i).mNickname == url){
                 				//mOnyxRemoteNodeList.remove(i);
                 				// TODO : Upda
                 			}
@@ -148,8 +126,23 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
     	};        
     	//ConfigDatabase.loadSavedPreferences(this, isSystemApp);
+    	int recordCount = new DatabaseHandler(this).count();
+    	if(recordCount <= 0){
+    		// Initialize Database
+        	OnyxRemoteNode node1 = new OnyxRemoteNode(DEF_MPD_SERVER1);
+        	new DatabaseHandler(this).createRow(node1);
+    	}
         OnyxApi.initialize(OnyxApi.PROTOCOL_MPD);
         OnyxApi.setRemoteNodeHandler(mDeviceHandler);
+        
+        
+        List<OnyxRemoteNode> RemoteNodes = new DatabaseHandler(this).read();
+        
+        if (RemoteNodes.size() > 0) {
+            for (OnyxRemoteNode obj : RemoteNodes) {
+            	mOnyxRemoteNodeList.add(obj);
+            }
+        }
     }
     
     @Override
@@ -167,9 +160,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
             case R.id.action_settings:
                 doSettings();
                 return true;
+/*
             case R.id.action_nodelist:
                 doServers();
                 return true;
+*/
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -186,6 +181,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
         startActivityForResult(intent, NODE_LIST_DIALOG_CODE);
     }  
     
+    public void doEditRemoteNode(OnyxRemoteNode node) {
+        Intent intent = new Intent(this, ConfigMpdSession.class);
+        intent.setType("text/plain");
+        intent.putExtra("nickname",node.mNickname); 
+        startActivityForResult(intent, NODE_LIST_DIALOG_CODE);
+    } 
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -203,13 +204,20 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	        final int width = ConfigDatabase.getVideoWidth();
 	        final int height = ConfigDatabase.getVideoHeight();
 	        final int framerate = ConfigDatabase.getVideoFramerate();
+	        MpdSession mMpdSession = new MpdSession();
+	
+	        OnyxRemoteNode node = new DatabaseHandler(this).read(DEF_MPD_SERVER1);
+	        mMpdSession.setNodeParams(node);
+	        
 	        File file = new File(Environment.getExternalStorageDirectory(),
 	                "record-" + width + "x" + height + "-" + System.currentTimeMillis() + ".mp4");
 	        final int bitrate = ConfigDatabase.mVideoBitrate;
-	        mRecorder = new ScreenRecorder(this, width, height, framerate, bitrate, 1, mediaProjection, file.getAbsolutePath());
-	        //OnyxApi.initialize(true);
+
+	        mRecorder = new ScreenRecorder(this, mMpdSession, width, height, framerate, bitrate, 1, mediaProjection, file.getAbsolutePath());
+
+	        mBtnStart.setText("Stop");
 	        mRecorder.start();
-	        mBtnStart.setText("Stop EzScreencast");
+	
 	        Toast.makeText(this, "EzSceencast is running...", Toast.LENGTH_SHORT).show();
 	        moveTaskToBack(true);
     	}
@@ -240,18 +248,5 @@ public class MainActivity extends Activity implements View.OnClickListener {
             mRecorder.quit();
             mRecorder = null;
         }
-    }   
-	
-	public void refreshDeviceView(int i){
-		if(mRemoteNodeListView == null)
-			return;
-		OnyxRemoteNode device = (OnyxRemoteNode) mRemoteNodeListView.getItemAtPosition(i);
-		final int deviceIndex = i;
-		//final boolean checked = OnyxApi.isRemoteNodeActive(device.mUrl);
-		//runOnUiThread(new Runnable() {
-		//	public void run() {	
-		//		mRemoteNodeListView.setItemChecked(deviceIndex, checked);
-		//	}
-		//});
-	} 
+    }   	
 }

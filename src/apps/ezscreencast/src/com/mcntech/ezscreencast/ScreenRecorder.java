@@ -67,6 +67,7 @@ public class ScreenRecorder extends Thread {
     public ScreenRecorder(Context context, MpdSession mpdSession, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
         super(TAG);
         mContext = context;
+        mMpdSession = mpdSession; 
         mWidth = width;
         mHeight = height;
         mBitRate = bitrate;

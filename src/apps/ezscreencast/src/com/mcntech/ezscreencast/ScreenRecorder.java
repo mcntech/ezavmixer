@@ -1,5 +1,6 @@
 package com.mcntech.ezscreencast;
 
+import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.AudioRecord;
@@ -12,6 +13,7 @@ import android.media.projection.MediaProjection;
 import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,11 +61,12 @@ public class ScreenRecorder extends Thread {
     private int mAudFormat = android.media.AudioFormat.ENCODING_PCM_16BIT;
     private long mStartPtsUs = 0;
     private long mStartExtVClkUs = 0;
-    
+    private Context mContext = null;
     private boolean mfSlaveToExtClock = false;
     MpdSession mMpdSession = new MpdSession();
-    public ScreenRecorder(int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
+    public ScreenRecorder(Context context, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
         super(TAG);
+        mContext = context;
         mWidth = width;
         mHeight = height;
         mBitRate = bitrate;
@@ -100,7 +103,11 @@ public class ScreenRecorder extends Thread {
                 	mMuxer = new MediaMuxer(mDstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
                 }
                 if(ConfigDatabase.mEnableVideo || ConfigDatabase.mEnableAudio) {
-                	OnyxApi.startSession(mMpdSession, ConfigDatabase.mEnableAudio, ConfigDatabase.mEnableVideo);
+                	boolean result = OnyxApi.startSession(mMpdSession, ConfigDatabase.mEnableAudio, ConfigDatabase.mEnableVideo);
+                	if(!result) {
+                		Toast.makeText(mContext, OnyxApi.mError, Toast.LENGTH_SHORT).show();
+                		return;
+                	}
                 	Log.d(TAG, "ezscreencast startSession: Waiting for 2 secs");
                 	try {
 						Thread.sleep(2000);
@@ -122,7 +129,6 @@ public class ScreenRecorder extends Thread {
             	satrtAudRecording();
             }
             recordVirtualDisplay();
-            
         } finally {
             release();
         }

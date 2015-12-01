@@ -16,6 +16,7 @@ public class OnyxApi {
 
 	public static final int PROTOCOL_MPD = 2;	
 	public static final int PROTOCOL_RTSP = 1;
+	public static String mError = "";
 	
 	public interface RemoteNodeHandler {
 		void onConnectRemoteNode(String url);
@@ -59,8 +60,9 @@ public class OnyxApi {
 		UpdateMpdPublishStatus(mHandle, MpdSession.mPublishId);
 	}
 	
-	public static void startSession(MpdSession mpdSession, boolean enableAud, boolean enabeVid) {
+	public static boolean startSession(MpdSession mpdSession, boolean enableAud, boolean enabeVid) {
 
+		boolean result = true;
 		String jPublishId = MpdSession.mPublishId;
 		String jswitchId = MpdSession.mSwcitchId;
 		String jinputId = MpdSession.mInputId;
@@ -80,22 +82,52 @@ public class OnyxApi {
 		addS3PublishNode(mHandle, jserverId,
 				jhost, jaccessId, jsecKey,
 				jbucket, jfolder, jfilePerfix);
+		
 		String jmpdId = MpdSession.mMpdId;
-		CreateMpd(mHandle, jmpdId);
+		result = CreateMpd(mHandle, jmpdId);
+		if(!result) {
+			mError = "Failed to create MPD";
+			return result;
+		}
+
 		String jperiodId = MpdSession.mPeriodId;
-		CreatePeriod(mHandle, jmpdId, jperiodId);
+		result = CreatePeriod(mHandle, jmpdId, jperiodId);
+		if(!result) {
+			mError = "Failed to create PERIOD";
+			return result;
+		}
+
 		String jadaptId = MpdSession.mAdaptId;		
-		CreateAdaptationSet(mHandle, jmpdId, jperiodId, jadaptId);
+		result  = CreateAdaptationSet(mHandle, jmpdId, jperiodId, jadaptId);
+		if(!result) {
+			mError = "Failed to create ADAPTATION";
+			return result;
+		}
+		
 		String jrepId = MpdSession.mRepId;		
-		CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId);
+		result  = CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId);
+		if(!result) {
+			mError = "Failed to create Representation";
+			return result;
+		}
 
 		String jserverNode = MpdSession.mServerId;
-		CreateMpdPublishStream(mHandle, jPublishId, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverNode);
+		result = CreateMpdPublishStream(mHandle, jPublishId, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverNode);
+		if(!result) {
+			mError = "Failed to create PublishStream";
+			return result;
+		}
 
-		StartSwitch(mHandle, jswitchId);
-		StartMpdPublishStream(mHandle, jPublishId);
-		//startSession(mHandle, enableAud, enabeVid);
+		result = StartSwitch(mHandle, jswitchId);
+		result= StartMpdPublishStream(mHandle, jPublishId);
+		if(!result) {
+			mError = "Failed to StartPublishStream";
+			return result;
+		}
+		mError = "Succcess";
+		return result;
 	}
+
 	public static void stopSession(){
 		
 	}

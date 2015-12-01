@@ -157,6 +157,7 @@ int CPublishClntBase::ConnectSwitchInput(const char *pszSwitchId, const char *sz
 			pSwitchpInput->mpInputBridge->StartStreaming();
 		}
 		pPublishSwitch->m_pSwitchInput = pSwitchpInput;
+		res = 0;
 	} while(0);
 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));

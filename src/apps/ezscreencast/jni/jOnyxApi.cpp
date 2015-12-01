@@ -232,7 +232,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *en
 	std::string strServerNode= szServerNode;
 
 
-	pDash->CreateMpdPublishStream(tmpId, tmpmpdId, tmpperiodId, tmpadaptId, tmprepId, strSwitchId, strServerNode);
+	result = pDash->CreateMpdPublishStream(tmpId, tmpmpdId, tmpperiodId, tmpadaptId, tmprepId, strSwitchId, strServerNode);
 
 	env->ReleaseStringUTFChars(jId, szId);
 	env->ReleaseStringUTFChars(jadaptId, szadaptId);
@@ -243,7 +243,10 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *en
 	env->ReleaseStringUTFChars(jswitchId, szSwitchId);
 	env->ReleaseStringUTFChars(jserverNode, szServerNode);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	if(result == 0)
+		return JNI_TRUE;
+	else
+		return JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jId)
@@ -255,11 +258,11 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartMpdPublishStream(JNIEnv *env
 	const char * szId = env->GetStringUTFChars(jId, 0);
 	std::string tmpId = szId;
 
-	pDash->SatrtMpdPublishStream(tmpId);
+	result = pDash->SatrtMpdPublishStream(tmpId);
 
 	env->ReleaseStringUTFChars(jId, szId);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_UpdateMpdPublishStatus(JNIEnv *env, jobject self, jlong handle,  jstring jId)
@@ -284,13 +287,13 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateInputStream(JNIEnv *env, jo
 	const char * szId = env->GetStringUTFChars(jid, 0);
 	const char * szInputType = env->GetStringUTFChars(jInputType, 0);
 	const char * szUrl = env->GetStringUTFChars(jUrl, 0);
-	_publisher->CreateInputStrm(szId, szInputType, szUrl);
+	result = _publisher->CreateInputStrm(szId, szInputType, szUrl);
 
 	env->ReleaseStringUTFChars(jid, szId);
 	env->ReleaseStringUTFChars(jInputType, szId);
 	env->ReleaseStringUTFChars(jUrl, szUrl);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateSwitch(JNIEnv *env, jobject self, jlong handle, jstring jid)
@@ -299,11 +302,11 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateSwitch(JNIEnv *env, jobject
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
 	const char * szId = env->GetStringUTFChars(jid, 0);
-	_publisher->CreateSwitch(szId);
+	result = _publisher->CreateSwitch(szId);
 
 	env->ReleaseStringUTFChars(jid, szId);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartSwitch(JNIEnv *env, jobject self, jlong handle, jstring jid)
@@ -313,11 +316,11 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartSwitch(JNIEnv *env, jobject 
 	CPublishClntBase* _publisher = (CPublishClntBase*)handle;
 	const char * szId = env->GetStringUTFChars(jid, 0);
 
-	_publisher->startSwitch(szId);
+	result = _publisher->startSwitch(szId);
 
 	env->ReleaseStringUTFChars(jid, szId);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, jobject self, jlong handle, jstring jSwitchId, jstring jInputId)
@@ -330,12 +333,12 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, j
 	const char * szSwitchId = env->GetStringUTFChars(jSwitchId, 0);
 	const char * szInputId = env->GetStringUTFChars(jInputId, 0);
 
-	_publisher->ConnectSwitchInput(szSwitchId, szInputId);
+	result = _publisher->ConnectSwitchInput(szSwitchId, szInputId);
 
 	env->ReleaseStringUTFChars(jSwitchId, szSwitchId);
 	env->ReleaseStringUTFChars(jInputId, szInputId);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jint Java_com_mcntech_ezscreencast_OnyxApi_sendAudioData(JNIEnv *env, jobject self, jlong publisher, jstring jInputId, jbyteArray pcmBytes,jint numBytes, long Pts, int Flags)

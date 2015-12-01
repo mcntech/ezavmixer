@@ -206,7 +206,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	        File file = new File(Environment.getExternalStorageDirectory(),
 	                "record-" + width + "x" + height + "-" + System.currentTimeMillis() + ".mp4");
 	        final int bitrate = ConfigDatabase.mVideoBitrate;
-	        mRecorder = new ScreenRecorder(width, height, framerate, bitrate, 1, mediaProjection, file.getAbsolutePath());
+	        mRecorder = new ScreenRecorder(this, width, height, framerate, bitrate, 1, mediaProjection, file.getAbsolutePath());
 	        //OnyxApi.initialize(true);
 	        mRecorder.start();
 	        mBtnStart.setText("Stop EzScreencast");

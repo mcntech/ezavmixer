@@ -6,19 +6,20 @@ static int modDbgLevel = CJdDbg::LVL_STRM;
 
 int CPublishClntBase::AddPublishServer(std::string url, std::string appName, int localRtpPort, int remoteRtpPort, int serverPort)
 {
-
+	return -1; // Not implemented
 }
 
 int CPublishClntBase::AddS3PublishNode(std::string szId, std::string szHost, std::string szAccessId, std::string szSecKey,
 		std::string szBucket, std::string szFolder, std::string szFilePerfix)
 {
+	int result = 0;
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
 
 	CS3PublishNode *pNode = new CS3PublishNode(szHost, szAccessId, szSecKey,
 			szBucket, szFolder, szFilePerfix);
 	m_PublishServerList[szId] = pNode;
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-
+	return result;
 }
 
 int CPublishClntBase::RemovePublishServer(std::string url)

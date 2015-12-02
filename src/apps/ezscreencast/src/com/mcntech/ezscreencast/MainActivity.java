@@ -205,9 +205,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	        final int height = ConfigDatabase.getVideoHeight();
 	        final int framerate = ConfigDatabase.getVideoFramerate();
 	        MpdSession mMpdSession = new MpdSession();
-	
+	        int mpdSessionId = 0;
 	        OnyxRemoteNode node = new DatabaseHandler(this).read(DEF_MPD_SERVER1);
-	        mMpdSession.setNodeParams(node);
+	        mMpdSession.setNodeParams(node, mpdSessionId);
 	        
 	        File file = new File(Environment.getExternalStorageDirectory(),
 	                "record-" + width + "x" + height + "-" + System.currentTimeMillis() + ".mp4");

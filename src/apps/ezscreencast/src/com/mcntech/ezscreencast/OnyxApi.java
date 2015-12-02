@@ -63,11 +63,11 @@ public class OnyxApi {
 	public static boolean startSession(MpdSession mpdSession, boolean enableAud, boolean enabeVid) {
 
 		boolean result = true;
-		String jPublishId = MpdSession.mPublishId;
-		String jswitchId = MpdSession.mSwcitchId;
-		String jinputId = MpdSession.mInputId;
-		String jInputType = MpdSession.mInputType;
-		String jUrl = MpdSession.mInputUrl;		
+		String jPublishId = mpdSession.mPublishId;
+		String jswitchId = mpdSession.mSwcitchId;
+		String jinputId = mpdSession.mInputId;
+		String jInputType = mpdSession.mInputType;
+		String jUrl = mpdSession.mInputUrl;		
 		CreateInputStream(mHandle, jinputId, jInputType, jUrl);
 		CreateSwitch(mHandle, jswitchId);
 		ConnectSwitchInput(mHandle, jswitchId, jinputId);
@@ -85,36 +85,36 @@ public class OnyxApi {
 				jhost, jaccessId, jsecKey,
 				jbucket, jfolder, jfilePerfix);
 		
-		String jmpdId = MpdSession.mMpdId;
+		String jmpdId = mpdSession.mMpdId;
 		result = CreateMpd(mHandle, jmpdId);
 		if(!result) {
 			mError = "Failed to create MPD";
 			return result;
 		}
 
-		String jperiodId = MpdSession.mPeriodId;
+		String jperiodId = mpdSession.mPeriodId;
 		result = CreatePeriod(mHandle, jmpdId, jperiodId);
 		if(!result) {
 			mError = "Failed to create PERIOD";
 			return result;
 		}
 
-		String jadaptId = MpdSession.mAdaptId;		
+		String jadaptId = mpdSession.mAdaptId;		
 		result  = CreateAdaptationSet(mHandle, jmpdId, jperiodId, jadaptId);
 		if(!result) {
 			mError = "Failed to create ADAPTATION";
 			return result;
 		}
 		
-		String jrepId = MpdSession.mRepId;		
+		String jrepId = mpdSession.mRepId;		
 		result  = CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId);
 		if(!result) {
 			mError = "Failed to create Representation";
 			return result;
 		}
 
-		String jserverNode = MpdSession.mServerId;
-		result = CreateMpdPublishStream(mHandle, jPublishId, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverNode);
+		//String jserverNode = MpdSession.mServerId;
+		result = CreateMpdPublishStream(mHandle, jPublishId, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverId);
 		if(!result) {
 			mError = "Failed to create PublishStream";
 			return result;
@@ -161,7 +161,10 @@ public class OnyxApi {
 	}
 			
 	public static void onMpdPublishStatus(final String jPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime){
-		System.out.println("PublishId=" + jPublishId + " State=" + nState + " StrmInTime" + nStrmInTime + " StrmOutTime" + nStrmOutTime + " LostBufferTime=" + nLostBufferTime);
+		if(m_nodeHandler != null){
+			String statusMsg = " State=" + nState + " StrmInTime" + nStrmInTime + " StrmOutTime" + nStrmOutTime + " LostBufferTime=" + nLostBufferTime;
+			m_nodeHandler.onStatusRemoteNode(jPublishId, statusMsg);
+		}
 	}
 
 	public static void onNativeMessage(final Object title,final Object message) {		

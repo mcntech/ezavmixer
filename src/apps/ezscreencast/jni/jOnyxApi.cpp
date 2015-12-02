@@ -50,7 +50,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_deinit(JNIEnv *env, jobject self,
 	CPublishClntBase* _publisher = (CPublishClntBase*)publisher;
 	pthread_mutex_unlock(&g_mutex);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return true;
+	return JNI_TRUE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_addRtspPublishNode(JNIEnv *env, jobject self, jlong handle, jstring url, jstring jappName)
@@ -63,11 +63,11 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_addRtspPublishNode(JNIEnv *env, j
 	std::string tmpUrl = szUrl;
 	const char *szAppName = env->GetStringUTFChars(jappName, 0);
 	std::string tmpAppName = szAppName;
-	_publisher->AddPublishServer(tmpUrl, tmpAppName);
+	result = _publisher->AddPublishServer(tmpUrl, tmpAppName);
 	env->ReleaseStringUTFChars(url, szUrl);
 	env->ReleaseStringUTFChars(jappName, szAppName);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_addS3PublishNode(JNIEnv *env, jobject self, jlong handle, jstring jid,
@@ -97,7 +97,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_addS3PublishNode(JNIEnv *env, job
 	const char *szfilePerfix = env->GetStringUTFChars(jfilePerfix, 0);
 	std::string tmpfilePerfix = szfilePerfix;
 
-	_publisher->AddS3PublishNode(tmpId, tmphost, tmpaccessId, tmpsecKey, tmpbucket, tmpfolder, tmpfilePerfix);
+	result = _publisher->AddS3PublishNode(tmpId, tmphost, tmpaccessId, tmpsecKey, tmpbucket, tmpfolder, tmpfilePerfix);
 
 	env->ReleaseStringUTFChars(jid, szId);
 	env->ReleaseStringUTFChars(jhost, szhost);
@@ -110,7 +110,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_addS3PublishNode(JNIEnv *env, job
 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpd(JNIEnv *env, jobject self, jlong handle, jstring jid)
@@ -122,11 +122,11 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpd(JNIEnv *env, jobject se
 	const char * szId = env->GetStringUTFChars(jid, 0);
 	std::string tmpId = szId;
 
-	pDash->CreateMpd(tmpId);
+	result = pDash->CreateMpd(tmpId);
 
 	env->ReleaseStringUTFChars(jid, szId);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreatePeriod(JNIEnv *env, jobject self, jlong handle, jstring jmpdId, jstring jperiodId)
@@ -140,13 +140,13 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreatePeriod(JNIEnv *env, jobject
 	const char * szperiodId = env->GetStringUTFChars(jperiodId, 0);
 	std::string tmpperiodId = szperiodId;
 
-	pDash->CreatePeriod(tmpmpdId, tmpperiodId);
+	result = pDash->CreatePeriod(tmpmpdId, tmpperiodId);
 
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);
 	env->ReleaseStringUTFChars(jperiodId, szperiodId);
 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateAdaptationSet(JNIEnv *env, jobject self, jlong handle, jstring jmpdId, jstring jperiodId, jstring jadaptId)
@@ -164,13 +164,13 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateAdaptationSet(JNIEnv *env, 
 	const char * szadaptId = env->GetStringUTFChars(jadaptId, 0);
 	std::string tmpadaptId = szadaptId;
 
-	pDash->CreateAdaptationSet(tmpmpdId, tmpperiodId, tmpadaptId);
+	result = pDash->CreateAdaptationSet(tmpmpdId, tmpperiodId, tmpadaptId);
 
 	env->ReleaseStringUTFChars(jadaptId, szadaptId);
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);
 	env->ReleaseStringUTFChars(jperiodId, szperiodId);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env, jobject self, jlong handle,  jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId)
@@ -191,7 +191,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env,
 	const char * szrepId = env->GetStringUTFChars(jrepId, 0);
 	std::string tmprepId = szrepId;
 
-	pDash->CreateRepresentation(tmpmpdId, tmpperiodId, tmpadaptId, tmprepId);
+	result = pDash->CreateRepresentation(tmpmpdId, tmpperiodId, tmpadaptId, tmprepId);
 
 	env->ReleaseStringUTFChars(jadaptId, szadaptId);
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);
@@ -201,7 +201,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env,
 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 
-	return JNI_TRUE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jId, jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId, jstring jswitchId, jstring jserverNode)
@@ -243,10 +243,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *en
 	env->ReleaseStringUTFChars(jswitchId, szSwitchId);
 	env->ReleaseStringUTFChars(jserverNode, szServerNode);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	if(result == 0)
-		return JNI_TRUE;
-	else
-		return JNI_FALSE;
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jId)

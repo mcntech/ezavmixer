@@ -1,20 +1,34 @@
 package com.mcntech.ezscreencast;
 
 public class MpdSession {
-	public void setNodeParams(OnyxRemoteNode node) {
+	public void setNodeParams(OnyxRemoteNode node, int sessionId) {
 		mNode = node;
+
+		mPublishId = "publish" + sessionId;	
+		//public static String mServerId = "server0";
+		mSwcitchId = "switch" + sessionId;
+		
+		mInputId = "input" + sessionId;
+		mInputType = "inproc";
+		mInputUrl = "none";
+		
+		mMpdId = "mpd" + sessionId;
+		mPeriodId = "period" + sessionId;
+		mAdaptId = "adapt" + sessionId;
+		mRepId = "rep" + sessionId;
+	
 	}
-	public static String mPublishId = "publish0";	
-	public static String mServerId = "server0";
-	public static String mSwcitchId = "switch0";
+	public String mPublishId;	
+	//public static String mServerId = "server0";
+	public String mSwcitchId;
 	
-	public static String mInputId = "input0";
-	public static String mInputType = "inproc";
-	public static String mInputUrl = "none";
+	public String mInputId;
+	public String mInputType;
+	public String mInputUrl;
 	
-	public static String mMpdId = "mpd0";
-	public static String mPeriodId = "period0";
-	public static String mAdaptId = "adapt0";
-	public static String mRepId = "rep0";
+	public String mMpdId;
+	public String mPeriodId;
+	public String mAdaptId;
+	public String mRepId;
 	OnyxRemoteNode mNode;
 }

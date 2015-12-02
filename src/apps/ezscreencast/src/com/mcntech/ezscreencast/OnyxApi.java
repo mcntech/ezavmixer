@@ -17,6 +17,7 @@ public class OnyxApi {
 	public static final int PROTOCOL_MPD = 2;	
 	public static final int PROTOCOL_RTSP = 1;
 	public static String mError = "";
+	public static MpdSession mMpdSession = null;
 	
 	public interface RemoteNodeHandler {
 		void onConnectRemoteNode(String url);
@@ -57,12 +58,15 @@ public class OnyxApi {
 	}
 	
 	public static void UpdateStatus() {
-		UpdateMpdPublishStatus(mHandle, MpdSession.mPublishId);
+		if(mMpdSession != null) {
+			UpdateMpdPublishStatus(mHandle, mMpdSession.mPublishId);
+		}
 	}
 	
 	public static boolean startSession(MpdSession mpdSession, boolean enableAud, boolean enabeVid) {
 
 		boolean result = true;
+		mMpdSession = mpdSession;
 		String jPublishId = mpdSession.mPublishId;
 		String jswitchId = mpdSession.mSwcitchId;
 		String jinputId = mpdSession.mInputId;

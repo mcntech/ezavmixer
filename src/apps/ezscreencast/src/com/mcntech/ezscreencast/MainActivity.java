@@ -111,7 +111,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     		@Override
     		public void onStatusRemoteNode(final String url, String Msg) {
     			// TODO Auto-generated method stub
-    			
+    			Log.d(TAG, url + ":" + Msg);
     		}
 
     		@Override

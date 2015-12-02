@@ -161,6 +161,7 @@ int CDashMultiPublishClnt::UpdateMpdPublishStatus(std::string szPublishId)
 }
 int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pMpdRoot, CMediaSwitch *pPublishSwitch, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode)
 {
+	int result = 0;
 	int nStartIndex;
 	int nSegmentTimeMs = 0;
 	int nTimeShiftBufferMs = 0;
@@ -193,10 +194,11 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 		pRepresentation->SetStreamParams(nWith, nHeight, nFrameRate, nBandwidth);
 	} else {
 		JDBG_LOG(CJdDbg::LVL_ERR,("Failed to create OutputBridge"));
+		result = -1;
 	}
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave",__FUNCTION__));
+	return result;
 }
-
 
 CPublishClntBase *CDashMultiPublishClnt::openInstance(CPublishEventBase *pEventBase)
 {

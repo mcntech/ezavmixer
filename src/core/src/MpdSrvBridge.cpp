@@ -129,7 +129,8 @@ int CMpdSrvBridgeChan::SetServerConfig(
 	CJdAwsContext *pServerCtx/*const char *pszHost, const char *pszAccessId, const char *pszSecKey*/)
 { 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s:%s", pszFilePrefix,pszParentFolder,pszBucketOrServerRoot));
-	m_fEnableServer = 1;
+	m_fEnableServer = 0; // TODO
+	m_fEnablePublish = 1;
 	m_pMpdRepresentation = pMpdRepresentation;
 	if(pszFilePrefix)
 		strcpy(m_szFilePrefix, pszFilePrefix);
@@ -153,7 +154,7 @@ int CMpdSrvBridgeChan::SetServerConfig(
 int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("Enter"));
-	if(m_fEnableServer){
+	if(m_fEnablePublish){
 		int nUpLoadType;
 		nUpLoadType = MPD_UPLOADER_TYPE_MEM;
 		char szM3u8File[128];
@@ -165,7 +166,7 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 
 		m_pSegmenter = mpdCreateSegmenter(m_pMpdRepresentation);
 
-		m_pUploaderForExtHttpSrv = mpdPublishStart(
+		m_pUploader = mpdPublishStart(
 			-1, m_pSegmenter, 
 			m_pMpdRepresentation, 
 			m_szFilePrefix, 
@@ -179,6 +180,9 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 			*/
 			m_pMpdRepresentation->IsLive(), 
 			m_nSegmentStart, nUpLoadType);
+	}
+	if(m_fEnableServer){
+		// TODO
 	}
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("Leave"));
 	return 0;

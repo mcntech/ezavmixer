@@ -1627,105 +1627,13 @@ void CMpdPublishS3::UpdateSlidingWindow()
 	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
-#if 0
-DWORD CMpdPublishS3::Process()
-{
-	int len, lfd;
-	char *ChunkStart;
-	char *buffer;
-	int nContentLen = 0;
-	int fChunked = 0;
-	int fDone = 0;
-
-	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
-	CSegmentWriteBase *pHlsOut = m_pHlsOut;
-	int nSegmentDurationMs;
-
-	JDBG_LOG(CJdDbg::LVL_MSG,("HttpLive Request. parent url=%s\n", m_pszParentFolder));
-
-	char szTsFileName[MAX_FILE_NAME];
-
-	while(!fDone){
-		int lTimeout = m_nSegmentDurationMs * 2;
-		int nCrntDuration = 0;
-		while(GetAvailBuffDuration() < m_nSegmentDurationMs && /*lTimeout > 0 &&*/ m_fRunState) {
-			lTimeout -= 100;
-			OSAL_WAIT(100);
-		}
-
-		if(/*lTimeout <= 0 ||*/ !m_fRunState){
-			JDBG_LOG(CJdDbg::LVL_MSG,("Timeout(%d) while waiting for filled buffer", m_nSegmentDurationMs * 2));
-			fDone = true;
-			continue;
-		}
-		
-		/* Segment Available */
-		GetSegmentNameFromIndex(szTsFileName, m_pszMpdFilePrefix, m_nSegmentIndex,  m_pSegmenter->m_nMuxType);
-		int nTotlaLen = GetSegmentLen();
-		int nBytesSent = 0;
-		JDBG_LOG(CJdDbg::LVL_MSG,("m_nSegmentIndex=%d nTotlaLen=%d: numGops=%d SegDurationMs=%d nCrntDuration=%d",m_nSegmentIndex, nTotlaLen, m_pGopFilledList.size()));
-		if( m_pHlsOut->Start(m_pszParentFolder,szTsFileName,nTotlaLen, NULL,0,CONTENT_STR_MP2T) == JD_ERROR){
-			JDBG_LOG(CJdDbg::LVL_MSG,(":Start: Exiting due to error writing: %s", szTsFileName));
-			m_nError = MPD_UPLOAD_ERROR_CONN_FAIL;
-			goto Exit;
-		}
-
-		nSegmentDurationMs = m_nSegmentDurationMs;
-		// TODO: Handle discont
-		while(nCrntDuration < nSegmentDurationMs) {
-			m_Mutex.Acquire();
-			JDBG_LOG(CJdDbg::LVL_MSG,(":Uploading Segment %d: numGops=%d SegDurationMs=%d nCrntDuration=%d",  m_nSegmentIndex, m_pGopFilledList.size(), nSegmentDurationMs, nCrntDuration));
-			
-			if(m_pGopFilledList.size() <= 0) {
-				JDBG_LOG(CJdDbg::LVL_MSG,("Error:Unexpected Size %d!!!",m_pGopFilledList.size()));
-			}
-			CGopCb *pGop = m_pGopFilledList.front();
-			nBytesSent += pGop->m_nLen;
-			m_pGopFilledList.pop_front();
-			m_Mutex.Release();
-			
-			if(m_pHlsOut->Continue((char *)pGop->m_pBuff, pGop->m_nLen) == JD_ERROR) {
-				JDBG_LOG(CJdDbg::LVL_MSG,(":Continue: Exiting due to error writing: %s", szTsFileName));
-				m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
-				goto Exit;
-			}
-			nCrntDuration += pGop->m_DurationMs;
-			m_nOutStreamTime += pGop->m_DurationMs;
-			m_Mutex.Acquire();
-			m_pCb->Free(pGop->m_pBuff, pGop->m_nLen);
-			m_Mutex.Release();
-			delete pGop;;
-		}
-		m_nSegmentTime += nSegmentDurationMs;
-
-		if(m_pHlsOut->End(NULL, 0) == JD_ERROR){
-			JDBG_LOG(CJdDbg::LVL_MSG,(":End: Exiting due to error writing: %s", szTsFileName));
-			m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
-			goto Exit;
-		}
-		
-		UpdateSlidingWindow();
-
-		m_nSegmentIndex++;
-	}
-	if(SegmentCount() > 0 && !m_fLiveOnly){
-		//TODO:
-		//UpLoadFullPlayList(m_pszMpdFilePrefix, m_nSegmentStartIndex, SegmentCount());
-	}
-Exit:
-	m_fRunState = 0;
-	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave Exiting...", __FUNCTION__));
-	return 0;
-}
-#endif
-
 
 #define MAX_SEGMENT_SIZE 8*1024*1024
 DWORD CMpdPublishS3::Process()
 {
 	int len, lfd;
 	char *ChunkStart;
-	char *buffer;
+	char *buffer = 0;
 	int offset;
 	int nContentLen = 0;
 	int fChunked = 0;
@@ -1738,7 +1646,9 @@ DWORD CMpdPublishS3::Process()
 	JDBG_LOG(CJdDbg::LVL_MSG,("HttpLive Request. parent url=%s\n", m_pszParentFolder));
 
 	char szTsFileName[MAX_FILE_NAME];
-	buffer = (char *)malloc(MAX_SEGMENT_SIZE);
+	if(m_TransferType == TRANSFER_TYPE_FULL) {
+		buffer = (char *)malloc(MAX_SEGMENT_SIZE);
+	}
 	while(!fDone){
 		int lTimeout = m_nSegmentDurationMs * 2;
 		int nCrntDuration = 0;
@@ -1808,9 +1718,10 @@ DWORD CMpdPublishS3::Process()
 				m_nError = MPD_UPLOAD_ERROR_XFR_FAIL;
 				goto Exit;
 			}
+		} else {
+			std::time_t req_time = std::time(NULL);
+			m_pHlsOut->Send(m_pszParentFolder,szTsFileName, req_time, buffer, nTotlaLen, CONTENT_STR_MP2T, 30);
 		}
-		std::time_t req_time = std::time(NULL);
-		m_pHlsOut->Send(m_pszParentFolder,szTsFileName, req_time, buffer, nTotlaLen, CONTENT_STR_MP2T, 30);
 		UpdateSlidingWindow();
 
 		m_nSegmentIndex++;

@@ -153,7 +153,7 @@ int CDashMultiPublishClnt::UpdateMpdPublishStatus(std::string szPublishId)
 		int nState = 0, nStremInTime = 0, nLostBufferTime = 0, nStreamOutTime = 0, nSegmentTime = 0;
 		pOutBridge->GetPublishStatistics(&nState, &nStremInTime, &nLostBufferTime, &nStreamOutTime, &nSegmentTime);
 		COnyxEvents *pCallback = (COnyxEvents *)m_EventCallback;
-		pCallback->onMpdPublishStatus(szPublishId.c_str(),nState, nStremInTime, nStreamOutTime, nStreamOutTime);
+		pCallback->onMpdPublishStatus(szPublishId.c_str(),nState, nStremInTime, nStreamOutTime, nLostBufferTime);
 		res = 0;
 	}
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));

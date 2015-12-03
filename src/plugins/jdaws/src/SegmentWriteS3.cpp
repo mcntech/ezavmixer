@@ -18,6 +18,7 @@ CSegmentWriteS3::CSegmentWriteS3(
 int CSegmentWriteS3::Start(
 			const char *pszParent,
 			const char *pszFile,
+			const std::time_t request_date,
 			int        nTotalLen,	/* Total length of content including subsequent continue */
 			char       *pData,
 			int        nLen,		/* Length of data of this call */
@@ -48,6 +49,7 @@ int CSegmentWriteS3::Start(
 
 	request.contentLengthM = nTotalLen;
 	request.fUseHttpsM = false; //gUseHttps;
+	request.dateM = request_date;
 
 	//CJdAwsContext::GetCurrentDate(request.dateM);
 

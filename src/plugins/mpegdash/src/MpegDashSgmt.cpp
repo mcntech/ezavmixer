@@ -234,7 +234,7 @@ static char *GetMpdBaseName(const char *pszFile)
 class CMpdOutFs : public CSegmentWriteBase
 {
 public:
-	int Start(const char *pszParentFolder, const char *pszFile, int nTotalLen, char *pData, int nLen, const char *pContentType)
+	int Start(const char *pszParentFolder, const char *pszFile, const std::time_t request_date, int nTotalLen, char *pData, int nLen, const char *pContentType)
 	{
 		char szFile[256];
 		sprintf(szFile, "%s/%s",pszParentFolder, pszFile);
@@ -1012,7 +1012,7 @@ public:
 		// TODO: Pass as parameter
 		m_nSegmentDurationMs = nSegmentDuration;
 		if (nDestType == MPD_UPLOADER_TYPE_S3) {
-			m_TransferType = TRANSFER_TYPE_PARTIAL;
+			m_TransferType = TRANSFER_TYPE_FULL;
 			m_pHlsOut = new CSegmentWriteS3(pAwsContext,pszBucket/*, pszHost, szAccessId, szSecKey, 2*/);
 			
 		} else if (nDestType == MPD_UPLOADER_TYPE_DISC) {
@@ -1682,7 +1682,8 @@ DWORD CMpdPublishS3::Process()
 		int nBytesSent = 0;
 		JDBG_LOG(CJdDbg::LVL_MSG,("m_nSegmentIndex=%d nTotlaLen=%d: numGops=%d SegDurationMs=%d nCrntDuration=%d",m_nSegmentIndex, nTotlaLen, m_pGopFilledList.size()));
 		if(m_TransferType == TRANSFER_TYPE_PARTIAL) {
-			if( m_pHlsOut->Start(m_pszParentFolder,szTsFileName,nTotlaLen, NULL,0,CONTENT_STR_MP2T) == JD_ERROR){
+			std::time_t req_time = std::time(NULL);
+			if( m_pHlsOut->Start(m_pszParentFolder, szTsFileName, req_time, nTotlaLen, NULL, 0, CONTENT_STR_MP2T) == JD_ERROR){
 				JDBG_LOG(CJdDbg::LVL_MSG,(":Start: Exiting due to error writing: %s", szTsFileName));
 				m_nError = MPD_UPLOAD_ERROR_CONN_FAIL;
 				goto Exit;

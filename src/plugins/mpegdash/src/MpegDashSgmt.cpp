@@ -70,6 +70,8 @@ using namespace std;
 #define MAX_PPS_SIZE    64
 #define EMSZ_MAX_SIZE	1024
 //#define TESTING_ROKU
+#define MAX_GOP_CIRC_BUFFER (10 * 1024 * 1024)
+#define MAX_SEGMENT_SIZE (8*1024*1024)
 
 static int               modDbgLevel = CJdDbg::LVL_STRM;
 
@@ -365,7 +367,7 @@ public:
 #define MAX_TS_BUFFER_SIZE		(512 * 1024)
 #define MAX_MP4_BUFFER_SIZE		(8 * 1024 * 1024)
 #define MAX_INIT_SEGMENT_SIZE 1024
-
+#define MAX_GOP_SIZE   (2 * 1024 * 1024)
 /**
  * CMpdSegmnter: Manages segment list
  */
@@ -381,7 +383,7 @@ public:
 		m_nWr = 0;
 		m_nSeqStart = 0;
 		m_fHasSps = 0;
-		m_nGopSize = 2 * 1024 * 1024; // TODO
+		m_nGopSize = MAX_GOP_SIZE; // TODO
 		m_nCrntGopNum = 0;
 		m_pMp4Mux = NULL;
 		m_pMp4moof = NULL;
@@ -875,21 +877,29 @@ CMpdPublishBase::CMpdPublishBase()
 class CGopCircBuff
 {
 public:
-	CGopCircBuff(int nBufSize) 
+	CGopCircBuff(int nBufSize, int *phr)
 	{
-		m_pData = (unsigned char *)malloc(nBufSize);
-		m_nSize  = nBufSize; /* include empty elem */
+		*phr = -1;
 		m_nRd = 0;
 		m_nWr   = 0;
+		m_nSize = 0;
+		m_pData = (unsigned char *)malloc(nBufSize);
+		if(m_pData) {
+			m_nSize  = nBufSize; /* include empty elem */
+			*phr = 0;
+		}
 	}
  
 	~CGopCircBuff() 
 	{
-		free(m_pData);
+		if(m_pData) {
+			free(m_pData);
+			m_pData = 0;
+		}
 	}
  
 	/*
-	** Allocate memory for Gop data and advance the write ptr
+	** Allocate contiguous memory for Gop data and advance the write ptr
 	*/
 	unsigned char *Alloc(int nSize) 
 	{
@@ -988,19 +998,17 @@ public:
 		const char	*pszParentFolder,
 		const char	*pszBucket,
 		CJdAwsContext *pAwsContext,
-		/*
-		const char	*pszHost,
-		const char	*szAccessId,
-		const char	*szSecKey,
-		*/
 		int         fLiveOnly,
 		int         nStartIndex,
 		int         nSegmentDuration,
-		int         nDestType
+		int         nDestType,
+		int         *phr
 		):
 			m_nTotalTimeMs(nTotalTimeMs),
 			m_fLiveOnly(fLiveOnly)
 	{
+		*phr = -1;
+		int result = 0;
 		// TODO: Pass as parameter
 		m_nSegmentDurationMs = nSegmentDuration;
 		if (nDestType == MPD_UPLOADER_TYPE_S3) {
@@ -1013,9 +1021,13 @@ public:
 		m_pszParentFolder = strdup(pszParentFolder);
 
 		m_nGopDuration = 500;
-		m_nGopSize = 1 * 1024 * 1024;
-		m_pCb = new CGopCircBuff(10 * 1024 * 1024);
+		m_nGopSize = MAX_GOP_SIZE;
+		m_pCb = new CGopCircBuff(MAX_GOP_CIRC_BUFFER, &result);
 		
+		if(result != 0) {
+			JDBG_LOG(CJdDbg::LVL_ERR,("%s:Failed to alllocate GOP Circular buffer ", __FUNCTION__, MAX_GOP_CIRC_BUFFER));
+			return;
+		}
 		m_fRunState = 0;
 
 		m_pSegmenter = (CMpdSegmnter *)pSegmenter;
@@ -1029,6 +1041,7 @@ public:
 		m_pszMpdBaseUrl = NULL;
 		m_pszMpdFilePrefix = strdup(pszSegmentPrefix);
 		m_pMpdRepresentation = pCfgRepresenation;
+		*phr = 0;
 	}
 	
 	~CMpdPublishS3()
@@ -1627,8 +1640,6 @@ void CMpdPublishS3::UpdateSlidingWindow()
 	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }
 
-
-#define MAX_SEGMENT_SIZE 8*1024*1024
 DWORD CMpdPublishS3::Process()
 {
 	int len, lfd;
@@ -1643,11 +1654,13 @@ DWORD CMpdPublishS3::Process()
 	CSegmentWriteBase *pHlsOut = m_pHlsOut;
 	int nSegmentDurationMs;
 
-	JDBG_LOG(CJdDbg::LVL_MSG,("HttpLive Request. parent url=%s\n", m_pszParentFolder));
-
 	char szTsFileName[MAX_FILE_NAME];
 	if(m_TransferType == TRANSFER_TYPE_FULL) {
 		buffer = (char *)malloc(MAX_SEGMENT_SIZE);
+		if(buffer == 0){
+			JDBG_LOG(CJdDbg::LVL_ERR,("Failed to allocate segment buffer %d for TRANSFER_TYPE_FULL", MAX_SEGMENT_SIZE));
+			goto Exit;
+		}
 	}
 	while(!fDone){
 		int lTimeout = m_nSegmentDurationMs * 2;
@@ -1709,7 +1722,7 @@ DWORD CMpdPublishS3::Process()
 			m_Mutex.Acquire();
 			m_pCb->Free(pGop->m_pBuff, pGop->m_nLen);
 			m_Mutex.Release();
-			delete pGop;;
+			delete pGop;
 		}
 		m_nSegmentTime += nSegmentDurationMs;
 		if(m_TransferType == TRANSFER_TYPE_PARTIAL) {
@@ -1759,10 +1772,13 @@ void *mpdPublishStart(
 #if 1
 	int nSegmentDurationMs = 1000;
 	if(nDestType == MPD_UPLOADER_TYPE_S3 || nDestType == MPD_UPLOADER_TYPE_DISC) {
+		int result = 0;
 		if(nTotalTimeMs == -1)
 			nTotalTimeMs = MAX_UPLOAD_TIME;
 		pPublisher = new CMpdPublishS3(nTotalTimeMs, pSegmenter, pMpdRep, pszSegmentPrefix, pszParentFolder,
-			pszBucketOrSvrRoot, /*pszHost, szAccessId, szSecKey,*/ pServerCtxt, fLiveOnly, nStartIndex, nSegmentDurationMs, nDestType);
+			pszBucketOrSvrRoot, pServerCtxt, fLiveOnly, nStartIndex, nSegmentDurationMs, nDestType, &result);
+		if (result != 0)
+			return NULL;
 	} else 
 #endif
 	{

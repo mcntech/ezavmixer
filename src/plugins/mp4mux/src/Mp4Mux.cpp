@@ -38,7 +38,7 @@
 #define MOOV_RESERVED_BYTES		(1024 * 1024)
 #define DASH_COMPLIANCE
 
-static int  modDbgLevel = CJdDbg::LVL_TRACE;
+static int  modDbgLevel = CJdDbg::LVL_ERR;
 
 class CWriterBase
 {

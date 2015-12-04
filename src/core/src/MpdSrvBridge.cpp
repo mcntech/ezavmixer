@@ -14,7 +14,7 @@
 #include "MpdSrvBridge.h"
 
 
-static int  modDbgLevel = CJdDbg::LVL_TRACE;
+static int  modDbgLevel = CJdDbg::LVL_ERR;
 
 static int HasSps(unsigned char *pData, int nLen)
 {

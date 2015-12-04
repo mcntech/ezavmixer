@@ -73,7 +73,7 @@ using namespace std;
 #define MAX_GOP_CIRC_BUFFER (10 * 1024 * 1024)
 #define MAX_SEGMENT_SIZE (8*1024*1024)
 
-static int               modDbgLevel = CJdDbg::LVL_STRM;
+static int               modDbgLevel = CJdDbg::LVL_ERR;
 
 /* Delay updating S3 Playlist by S3_CACHE_DELAY segments */
 #define S3_CACHE_DELAY				2

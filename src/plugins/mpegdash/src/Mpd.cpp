@@ -15,7 +15,7 @@
 
 #include <JdDbg.h>
 
-static int  modDbgLevel = CJdDbg::LVL_STRM;
+static int  modDbgLevel = CJdDbg::LVL_ERR;
 
 #include "Mpd.h"
 #include "JdMpdDefs.h"

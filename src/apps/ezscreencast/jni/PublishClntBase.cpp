@@ -2,7 +2,7 @@
 #include <android/log.h>
 #include "JdDbg.h"
 
-static int modDbgLevel = CJdDbg::LVL_STRM;
+static int modDbgLevel = CJdDbg::LVL_ERR;
 
 int CPublishClntBase::AddPublishServer(std::string url, std::string appName, int localRtpPort, int remoteRtpPort, int serverPort)
 {

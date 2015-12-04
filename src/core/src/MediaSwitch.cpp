@@ -16,7 +16,7 @@
 #include <time.h>
 
 
-static int  modDbgLevel = CJdDbg::LVL_STRM;
+static int  modDbgLevel = CJdDbg::LVL_ERR;
 CMediaSwitch::CMediaSwitch(const char *pszName)
 {
 	m_pVidConnSrc = NULL;

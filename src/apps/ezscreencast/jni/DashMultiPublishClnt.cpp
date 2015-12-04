@@ -3,7 +3,7 @@
 #include <android/log.h>
 #include "JdAwsContext.h"
 
-static int modDbgLevel = 0;
+static int modDbgLevel = CJdDbg::LVL_ERR;
 
 CDashMultiPublishClnt::CDashMultiPublishClnt(CPublishEventBase *pEventBase)
 {

@@ -17,6 +17,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include "JdDbg.h"
 
 #define CODEC_ID_H264		1
 #define CODEC_ID_AAC		2
@@ -36,6 +37,8 @@
 //#define USE_RESERVED_AREA
 #define MOOV_RESERVED_BYTES		(1024 * 1024)
 #define DASH_COMPLIANCE
+
+static int  modDbgLevel = CJdDbg::LVL_TRACE;
 
 class CWriterBase
 {
@@ -212,38 +215,6 @@ typedef struct _ChunkEntry {
     int64_t      m_Cts;
     int64_t      m_llDts;
 } ChunkEntry;
-
-#define DBG_LVL_STRM	5
-#define DBG_LVL_TRACE	4
-#define DBG_LVL_MSG		3
-#define DBG_LVL_SETUP	2
-#define DBG_LVL_WARN	1
-#define DBG_LVL_ERR		0
-
-#ifdef NO_DEBUG_LOG
-#define DbgOut(DbgLevel, x)
-#else
-static int modDbgLevel = DBG_LVL_ERR;
-static void dbg_printf (const char *format, ...)
-{
-	char buffer[1024 + 1];
-	va_list arg;
-	va_start (arg, format);
-	vsprintf (buffer, format, arg);
-#ifdef WIN32
-	OutputDebugStringA(buffer);
-#else
-	fprintf(stderr, ":%s", buffer);
-#endif
-}
-
-#define DbgOut(DbgLevel, x) do { if(DbgLevel <= modDbgLevel) { \
-									fprintf(stderr,"%s:%s:%d:", __FILE__, __FUNCTION__, __LINE__); \
-									dbg_printf x;                                          \
-									fprintf(stderr,"\n");                                          \
-								}                                                                  \
-							} while(0);
-#endif
 
 
 static unsigned short getAdtsFrameLen(unsigned char *pAdts)
@@ -996,14 +967,14 @@ int WriteMovieHeader()
 /* Supports only 32 bit size */
 int WriteMovieTrailer()
 {
-	DbgOut(DBG_LVL_TRACE,("%s Enter", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s Enter", __FUNCTION__));
 	
 	int64_t llPos = GetPos();
 	
 	SeekPos(m_llMdatPos);
 	WriteBE32(m_lMdatSize + 8);
 
-	DbgOut(DBG_LVL_MSG,("%s m_llMdatPos=%llx m_lMdatSize=%x: Enter", __FUNCTION__,m_llMdatPos, m_lMdatSize));
+	JDBG_LOG(CJdDbg::LVL_MSG,("%s m_llMdatPos=%llx m_lMdatSize=%x: Enter", __FUNCTION__,m_llMdatPos, m_lMdatSize));
 
 	/* Update movie duration */
 	for (std::map<int, CTrack *>::iterator it  = m_Tracks.begin(); it  != m_Tracks.end();it++) {
@@ -1096,7 +1067,7 @@ int WriteMoovBox()
 	int64_t llPos = GetPos();
 	WriteBE32(0);		/* for size */
 	WriteTag("moov");	/* Header */
-	DbgOut(DBG_LVL_MSG,("%s : moov pos=%llx ", __FUNCTION__,llPos));
+	JDBG_LOG(CJdDbg::LVL_MSG,("%s : moov pos=%llx ", __FUNCTION__,llPos));
 	WriteMvhdBox();
 
 	for (std::map<int, CTrack *>::iterator it  = m_Tracks.begin(); it  != m_Tracks.end();it++) {
@@ -1178,14 +1149,14 @@ int WriteMvhdBox()
 
 int WriteTrakBox(CTrack *track)
 {
-	DbgOut(DBG_LVL_TRACE,("%s track=%d : Enter", __FUNCTION__,track->trackID));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s track=%d : Enter", __FUNCTION__,track->trackID));
     int64_t llPos = GetPos();
     WriteBE32(0);			/* size */
     WriteTag("trak");
     WriteTkhdBox(track);
     WriteMdiaBox(track);
     int ret = UpdateSize(llPos);
-	DbgOut(DBG_LVL_TRACE,("%s track=%d : Leave", __FUNCTION__,track->trackID));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s track=%d : Leave", __FUNCTION__,track->trackID));
 	return ret;
 }
 
@@ -1888,7 +1859,7 @@ virtual void AddChunkInfo(
 	m_lMdatSize += nChunkSize;
 	{
 		long lPtsMs = llPts * ((double)m_lMovieTimescale / pTrk->m_lTimescale / 90);
-		DbgOut(DBG_LVL_TRACE,("trackID=%d pts=%lld(%d ms)", pTrk->trackID, llPts, lPtsMs));
+		JDBG_LOG(CJdDbg::LVL_TRACE,("trackID=%d pts=%lld(%d ms)", pTrk->trackID, llPts, lPtsMs));
 	}
 }
 

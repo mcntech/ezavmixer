@@ -223,6 +223,8 @@ static char *GetMpdBaseName(const char *pszFile)
 	if(pIdx) {
 		int nLen = pIdx - pszFile;
 		if (nLen > 0) {
+			if(nLen > 256)
+				nLen = 256;
 			char *pszBase = (char *)malloc(nLen + 1);
 			memcpy(pszBase, pszFile, nLen);
 			pszBase[nLen] = 0x00;
@@ -336,7 +338,12 @@ public:
 	CGop( int nMaxLen)
 	{
 		m_pBuff = (unsigned char *)malloc(nMaxLen);
-		m_nMaxLen = nMaxLen;
+		if(m_pBuff) {
+			m_nMaxLen = nMaxLen;
+		} else {
+			JDBG_LOG(CJdDbg::LVL_ERR,(" %s:!!! Failed to allocate memory!!!\n",__FUNCTION__));
+			m_nMaxLen = 0;
+		}
 		m_nLen = 0;
 		m_DurationMs = 500;
 	}
@@ -374,12 +381,14 @@ public:
 class CMpdSegmnter
 {
 public:
-	CMpdSegmnter(CMpdRepresentation *pMpdRep)
+	CMpdSegmnter(CMpdRepresentation *pMpdRep, int *phr)
 	{
+		*phr = 0;
 		int nMuxType = pMpdRep->GetMimeType();
 		int nMoofDurationMs = pMpdRep->GetCutomAttribMoofLength();
 		int fEnableVid = 1;
 		int fEnableAud = 0;
+
 		m_nWr = 0;
 		m_nSeqStart = 0;
 		m_fHasSps = 0;
@@ -391,13 +400,26 @@ public:
 		m_pCrntGop = new CGop(m_nGopSize);
 		if(nMuxType == MPD_MUX_TYPE_TS) {
 			m_pMuxBuffer = (char *)malloc(MAX_TS_BUFFER_SIZE);
+			if(m_pMuxBuffer == NULL) {
+				*phr = -1;
+				return;
+			}
 		} else {
 			fEnableVid = nMuxType == MPD_MUX_TYPE_VIDEO_MP4;
 			fEnableAud = nMuxType == MPD_MUX_TYPE_AUDIO_MP4;
 			m_pMp4Mux = CreateMp4Segmenter(fEnableAud, fEnableVid);
 			m_pMuxBuffer = (char *)malloc(MAX_MP4_BUFFER_SIZE);
+			if(m_pMuxBuffer == NULL) {
+				*phr = -1;
+				return;
+			}
+
 			m_nSegmentInitLen = 0;
 			m_pSegmentInitData = (char *)malloc(MAX_INIT_SEGMENT_SIZE);
+			if(m_pSegmentInitData == NULL) {
+				*phr = -1;
+				return;
+			}
 		}
 		m_nMuxType = nMuxType;
 		m_fMp4InitSegment = 0;
@@ -416,6 +438,7 @@ public:
 		m_nPpsSize = 0;//MAX_PPS_SIZE;
 		m_pMpdEmsg = new CMpdEmsg(pMpdRep->GetMpd());
 	}
+
 	~CMpdSegmnter()
 	{
 		delete m_pCrntGop;
@@ -425,8 +448,10 @@ public:
 		if(m_pMp4Mux){
 			delete	m_pMp4Mux;
 		}
-		free(m_pSpsData);
-		free(m_pPpsData);
+		if(m_pSpsData)
+			free(m_pSpsData);
+		if(m_pPpsData)
+			free(m_pPpsData);
 	}
 
 	int IsFilling( int nFileIdx)
@@ -1818,10 +1843,14 @@ int mpdPublishGetStats(void *pUploadCtx, int *pnState, int *pnStreamInTime, int 
 
 void *mpdCreateSegmenter(CMpdRepresentation *pMpdRep)
 {
+	int result = 0;
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
-	CMpdSegmnter *pMpdSegmenter = new CMpdSegmnter(pMpdRep);
+	CMpdSegmnter *pMpdSegmenter = new CMpdSegmnter(pMpdRep, &result);
+	if(result != 0) {
+		JDBG_LOG(CJdDbg::LVL_ERR,("%s:Failed to create segmenter", __FUNCTION__));
+	}
 	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
-	return pMpdSegmenter;
+	return result == 0 ? pMpdSegmenter : NULL;
 }
 
 void mpdDeleteSegmenter(void *pSegmenter)

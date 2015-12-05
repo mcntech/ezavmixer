@@ -103,6 +103,7 @@ public:
 	CMpdEmsg(CMpdRoot  *pMpd)
 	{
 		m_pBuffer = (char *)malloc(EMSZ_MAX_SIZE);
+		assert(m_pBuffer != NULL);
 		m_presentation_time_delta = 0;
 		m_fActive = 0;
 		m_pMpd = pMpd;
@@ -217,22 +218,6 @@ void UpdateSegmentList(CMpdRepresentation *pMdpRep, const char *pszRepId, std::l
 	pMdpRep->UpdateSegmentList(nStartTime, nDuration, nSeqStart, &listUrl);
 }
 
-static char *GetMpdBaseName(const char *pszFile)
-{
-	const char *pIdx  = strstr(pszFile,".mpd");
-	if(pIdx) {
-		int nLen = pIdx - pszFile;
-		if (nLen > 0) {
-			if(nLen > 256)
-				nLen = 256;
-			char *pszBase = (char *)malloc(nLen + 1);
-			memcpy(pszBase, pszFile, nLen);
-			pszBase[nLen] = 0x00;
-			return pszBase;
-		}
-	}
-	return NULL;
-}
 class CMpdOutFs : public CSegmentWriteBase
 {
 public:
@@ -1410,6 +1395,7 @@ void CMpdPublishMemFile::UpLoadBroadcastPlayList()
 
 	CMpdRepresentation *pMdpRep = m_pMpdRepresentation;
 	char *buffer = (char *)malloc(PLAYLIST_BUFFER_SIZE);
+	assert(buffer != NULL);
 	UpdateSegmentList(pMdpRep, m_pszMpdFilePrefix, &m_SegmentList, m_nBcastFrontCache, m_nTimeshiftSegments, m_pSegmenter->m_nMuxType);
 	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
 }

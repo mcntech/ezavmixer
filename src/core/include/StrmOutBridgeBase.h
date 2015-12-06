@@ -26,10 +26,10 @@ public:
 	{
 		// TODO ini_gets(pszOutputSection, "stream_name", "", m_szStreamName, 128, pszConfFile);
 	}
-	COutputStream(const char *szStreamName){strncpy(m_szStreamName, szStreamName,128);}
+	COutputStream(const char *szStreamName){m_szStreamName = szStreamName;}
 
 public:
-	char m_szStreamName[128];
+	std::string m_szStreamName;
 };
 
 
@@ -185,6 +185,6 @@ public:
 	int        m_nVidStrmTime;
 	int        m_nAudStrmTime;
 	int        m_nErrors;
-	char       m_szId[MAX_ID_SIZE];
+	std::string       m_szId;
 };
 #endif

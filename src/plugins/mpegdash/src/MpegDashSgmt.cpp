@@ -97,6 +97,7 @@ static void GetSegmentNameFromIndex(char *pszSegmentFileName, const char *pszBas
 	sprintf(pszSegmentFileName,"%s_%d.%s", pszBaseName, nSegmentIdx, szSegmentExt);
 }
 
+
 class CMpdEmsg
 {
 public:
@@ -407,9 +408,9 @@ public:
 			}
 		}
 		m_nMuxType = nMuxType;
-		m_fMp4InitSegment = 0;
-		m_fMp4VidInit = 0;
-		m_fMp4AudInit = 0;
+		m_fMp4InitSgmntDone = 0;
+		m_fMp4VidInitDone = 0;
+		m_fMp4AudInitDone = 0;
 		m_fVidEnable = 1; // TODO
 		m_fAudEnable = 0;
 		m_nMoofDurationMs = nMoofDurationMs;
@@ -585,9 +586,9 @@ public:
 	int        m_nSpsSize;
 	int        m_nPpsSize;
 
-	int        m_fMp4InitSegment; // Flag to indicate if MP4 init segment is generated
-	int        m_fMp4VidInit;     // Flag to indicate if MP4 video is initialized
-	int        m_fMp4AudInit;     // Flag to indicate if MP4 video is initialized
+	int        m_fMp4InitSgmntDone; // Flag to indicate if MP4 init segment is generated
+	int        m_fMp4VidInitDone;     // Flag to indicate if MP4 video is initialized
+	int        m_fMp4AudInitDone;     // Flag to indicate if MP4 video is initialized
 	int        m_fVidEnable;
 	int        m_fAudEnable;
 
@@ -691,24 +692,24 @@ int CMpdSegmnter::GenerateMp4InitSegment(char *pInData, int nInLen, int fVideo)
 	unsigned long dwWritten;
 	CPacket Packet;
 	//TODO: Add support of IBO
-	if(!m_fMp4InitSegment) {
-		// TODO
-		if(fVideo && !m_fMp4VidInit) {
+	if(!m_fMp4InitSgmntDone) {
+
+		if(fVideo && !m_fMp4VidInitDone) {
 			char *pIndex = NULL;
 			GetSpsPpsData(pInData,nInLen);
 			if(m_nSpsSize && m_nPpsSize) {
 				m_pMp4Mux->InitVideoTrack((unsigned char *)m_pSpsData, m_nSpsSize, (unsigned char *)m_pPpsData, m_nPpsSize);
-				m_fMp4VidInit = 1;
+				m_fMp4VidInitDone = 1;
 			}
-		} else if(!fVideo && !m_fMp4AudInit) {
+		} else if(!fVideo && !m_fMp4AudInitDone) {
 			char ConfigData[2];
 			GetAacConfigFromAdts(pInData, ConfigData);
 			m_pMp4Mux->InitAudioTrack((unsigned char *)ConfigData, 2);
-			m_fMp4AudInit = 1;
+			m_fMp4AudInitDone = 1;
 		}
-		if((m_fMp4AudInit || !m_fAudEnable) && (!m_fVidEnable || m_fMp4VidInit)) {
+		if((m_fMp4AudInitDone || !m_fAudEnable) && (!m_fVidEnable || m_fMp4VidInitDone)) {
 			m_nSegmentInitLen = m_pMp4Mux->GenerateInitSegment(m_pSegmentInitData, MAX_INIT_SEGMENT_SIZE);
-			m_fMp4InitSegment = 1;
+			m_fMp4InitSgmntDone = 1;
 			PublishInitSegment(m_pSegmentInitData, m_nSegmentInitLen);
 		}
 	}
@@ -772,8 +773,12 @@ int CMpdSegmnter::MuxMp4(
 
 	CPacket Packet;
 
-	if(!m_fMp4InitSegment) {
-		GenerateMp4InitSegment(pInData, nInLen, fVideo);
+	if(!m_fMp4InitSgmntDone) {
+		try {
+			GenerateMp4InitSegment(pInData, nInLen, fVideo);
+		} catch(...) {
+			JDBG_LOG(CJdDbg::LVL_ERR,("!!! GenerateMp4InitSegment Caused exception!!!"));
+		}
 	}
 
 	// Do not wait for m_fMp4InitSegment which requires both sps and pps found.
@@ -1604,7 +1609,7 @@ void CMpdPublishS3::Run()
 #else
 	pthread_create(&thrdHandle, NULL, CMpdPublishS3::thrdStreamHttpLiveUpload, this);
 #endif
-	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave", __FUNCTION__));
 }
 
 void CMpdPublishS3::Stop()
@@ -1648,7 +1653,7 @@ void CMpdPublishS3::UpdateSlidingWindow()
 		m_pHlsOut->Delete(m_pszParentFolder, szOldSegmentFileName);
 	}
 
-	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave", __FUNCTION__));
 }
 
 DWORD CMpdPublishS3::Process()
@@ -1759,7 +1764,7 @@ Exit:
 	if(buffer)
 		free(buffer);
 	m_fRunState = 0;
-	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave Exiting...", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave Exiting...", __FUNCTION__));
 	return 0;
 }
 
@@ -1798,7 +1803,7 @@ void *mpdPublishStart(
 	}
 	pPublisher->Run();
 	
-	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave", __FUNCTION__));
 	return pPublisher;
 }
 
@@ -1807,7 +1812,7 @@ void mpdPublishStop(void *pUploadCtx)
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	CMpdPublishBase *pHlsUpload = (CMpdPublishBase *)pUploadCtx;
 	pHlsUpload->Stop();
-	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Leave", __FUNCTION__));
 }
 
 int mpdPublishGetStats(void *pUploadCtx, int *pnState, int *pnStreamInTime, int *pnLostBufferTime,  int *pnStreamOutTime, int *pnSegmentTime)
@@ -1841,7 +1846,7 @@ void *mpdCreateSegmenter(CMpdRepresentation *pMpdRep)
 
 void mpdDeleteSegmenter(void *pSegmenter)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
 	
 	CMpdSegmnter *pHlsSegmenter = (CMpdSegmnter *)pSegmenter;
 	delete pHlsSegmenter;
@@ -1855,7 +1860,7 @@ void mpdDeleteSegmenter(void *pSegmenter)
  */
 int mpdWriteFrameData(void *pCtx, char *pData, int nLen, int fVideo, int fDiscont,  unsigned long ulPtsMs)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter fVideo=%d nLen=%d ulPtsMs=%d", __FUNCTION__, fVideo, nLen, ulPtsMs));
 	int res = 0;
 	CMpdSegmnter *pMpdLiveSgmnt = (CMpdSegmnter *)pCtx;
 	if(pMpdLiveSgmnt) {

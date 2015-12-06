@@ -19,6 +19,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../logutil/include
 MY_SRCS := ../src
 
 LOCAL_CFLAGS += -DPLATFORM_ANDROID
+LOCAL_CPP_FEATURES += exceptions
 
 LOCAL_SRC_FILES := $(MY_SRCS)/Mpd.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/MpegDashSgmt.cpp

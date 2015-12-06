@@ -226,22 +226,18 @@ public class ScreenRecorder extends Thread {
 
             } else if (index == MediaCodec.INFO_TRY_AGAIN_LATER) {
                 //Log.d(TAG, "retrieving buffers time out!");
-                /*
                 try {
                     // wait 10ms
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
                 }
-                */
             } else if (index >= 0) {
 
                 if (mEnableFileSave  && !mMuxerStarted) {
                     throw new IllegalStateException("MediaMuxer dose not call addTrack(format) ");
                 }
                 encodeToVideoTrack(index);
-
                 mEncoder.releaseOutputBuffer(index, false);
-                
                 OnyxApi.UpdateStatus();
             }
         }

@@ -107,7 +107,7 @@ void CRtspPublishBridge::PrepareMediaDelivery(COutputStream *pOutputStream)
 			mAggregate->AddTrack(mAudioTrack);
 		}
 	}
-	mMediaResMgr->AddMediaAggregate(pOutputStream->m_szStreamName, mAggregate);
+	mMediaResMgr->AddMediaAggregate(pOutputStream->m_szStreamName.c_str(), mAggregate);
 }
 
 int CRtspPublishBridge::SetRtspServerCfg(CRtspSrvConfig *pRtspSvrCfg)
@@ -146,7 +146,7 @@ void CRtspPublishBridge::RemoveMediaDelivery(COutputStream *pOutputStream)
 				delete mMp2tTrack;
 			}
 			
-			mMediaResMgr->RemoveAggregate(pOutputStream->m_szStreamName);
+			mMediaResMgr->RemoveAggregate(pOutputStream->m_szStreamName.c_str());
 			delete mAggregate;
 		}
 	}
@@ -326,17 +326,17 @@ int CRtspPublishBridge::ConnectToPublishServer()
 	CRtspPublishConfig *pRtspPublishCfg = mpRtspPublishCfg;
 	if(strlen(pRtspPublishCfg->szRtspServerAddr)) {
 		if(mRtspClntRec->Open(pRtspPublishCfg->szRtspServerAddr, pRtspPublishCfg->szApplicationName, pRtspPublishCfg->usServerRtspPort) == 0) {
-			CMediaAggregate *pMediaAggregate = mRtspClntRec->mpMediaResMgr->GetMediaAggregate(m_pOutputStream->m_szStreamName);
-			if(mRtspClntRec->SendAnnounce(m_pOutputStream->m_szStreamName) == 0) {
+			CMediaAggregate *pMediaAggregate = mRtspClntRec->mpMediaResMgr->GetMediaAggregate(m_pOutputStream->m_szStreamName.c_str());
+			if(mRtspClntRec->SendAnnounce(m_pOutputStream->m_szStreamName.c_str()) == 0) {
 				if(mRtspClntRec->SendSetup("video",pRtspPublishCfg->usRtpLocalPort,pRtspPublishCfg->usRtpLocalPort+1) == 0){
-					mRtspClntRec->SendRecord(m_pOutputStream->m_szStreamName);
-					mRtspClntRec->StartPublish(m_pOutputStream->m_szStreamName, TRACK_ID_VIDEO);
+					mRtspClntRec->SendRecord(m_pOutputStream->m_szStreamName.c_str());
+					mRtspClntRec->StartPublish(m_pOutputStream->m_szStreamName.c_str(), TRACK_ID_VIDEO);
 					res = 0;
 				} else {
 					fprintf(stderr, "Failed to setup video port=%d\n",pRtspPublishCfg->usRtpLocalPort );
 				}
 			} else {
-				fprintf(stderr, "Failed to Announce application=%s stream=%s\n", pRtspPublishCfg->szApplicationName,m_pOutputStream->m_szStreamName);
+				fprintf(stderr, "Failed to Announce application=%s stream=%s\n", pRtspPublishCfg->szApplicationName,m_pOutputStream->m_szStreamName.c_str());
 			}
 		} else {
 			fprintf(stderr, "Failed to connect to %s:%d\n", pRtspPublishCfg->szRtspServerAddr,pRtspPublishCfg->usServerRtspPort);

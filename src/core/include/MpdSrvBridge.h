@@ -34,8 +34,7 @@ public:
 		const char *pszFilePrefix, 
 		const char *pszParentFolder, 
 		const char *pszBucketOrServerRoot,
-		CJdAwsContext *pAwsContext
-		/*const char *pszHost, const char *pszAccessId, const char *pszSecKey*/);
+		CJdAwsContext *pAwsContext);
 	
 	int GetPublishStatistics(int *pnState, int *pnStreamInTime, int *pnLostBufferTime,  int *pnStreamOutTime, int *pnSegmentTime)
 	{
@@ -56,9 +55,9 @@ public:
 	void            *m_pUploader;
 	void            *m_pUploaderForExtHttpSrv;
 	CMpdRepresentation            *m_pMpdRepresentation;
-	char            m_szFilePrefix[256];
-	char            m_szParentFolder[256];
-	char            m_szBucketOrServerRoot[256];  
+	std::string            m_szFilePrefix;
+	std::string            m_szParentFolder;
+	std::string            m_szBucketOrServerRoot;
 /*
 	char	        m_szHost[256];
 	char	        m_szAccessId[256];
@@ -90,7 +89,6 @@ public:
 			const char *pszParentFolder,
 			const char *pszBucketOrServerRoot,
 			CJdAwsContext       *pJdAwsContext,
-			/*const char *pszHost, const char *pszAccessId, const char *pszSecKey,*/
 			int        nMimeType);
 
 	CMpdSrvBridgeChan *getChannel(std::string szId);

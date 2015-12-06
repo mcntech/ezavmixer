@@ -121,6 +121,7 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, std::string 
 		pServerNode = (CS3PublishNode *)it->second;
 		if(pServerNode) {
 			pSwitch =  getSwitch(strSwitchId);
+
 			if(pSwitch) {
 				res = CreateMpdPublishStream(szId, pMpdRoot, pSwitch, pRepresentation, pServerNode);
 			}
@@ -166,7 +167,7 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 	int nSegmentTimeMs = 0;
 	int nTimeShiftBufferMs = 0;
 	char strMpdFileName[256];
-	int nMuxType;
+	int nMuxType = MPD_MUX_TYPE_M4S;
 	int fFileUpdate = 0;
 
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
@@ -174,7 +175,6 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 	nTimeShiftBufferMs = pMpdRoot->GetTimeShiftBuffer();
 	nStartIndex = time(NULL);
 
-	const char *pszMimetype = NULL;
 	CMpdSrvBridgeChan *pOutBridge;
 
 	//pszFilePrefix = pRepresentation->GetId();
@@ -184,7 +184,6 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 			nStartIndex, nSegmentTimeMs, nTimeShiftBufferMs,
 			pServerNode->m_szFilePefix.c_str(), pServerNode->m_szFolder.c_str(), pServerNode->m_szBucket.c_str(),
 			&pServerNode->m_AwsContext,
-			/*pServerNode->m_szHost.c_str(), pServerNode->m_szAccesId.c_str(), pServerNode->m_szSecKey.c_str(),*/
 			nMuxType);
 
 	if(pOutBridge) {

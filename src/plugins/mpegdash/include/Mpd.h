@@ -39,6 +39,7 @@ class CMpdSegmentUrl;
 #define MPD_MUX_TYPE_TS             1
 #define MPD_MUX_TYPE_VIDEO_MP4      2
 #define MPD_MUX_TYPE_AUDIO_MP4      3
+#define MPD_MUX_TYPE_M4S            4
 
 typedef std::list<CMpdSegmentUrl *> SEGMETN_URL_LIST_T;
 

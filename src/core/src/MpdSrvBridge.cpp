@@ -132,21 +132,9 @@ int CMpdSrvBridgeChan::SetServerConfig(
 	m_fEnableServer = 0; // TODO
 	m_fEnablePublish = 1;
 	m_pMpdRepresentation = pMpdRepresentation;
-	if(pszFilePrefix)
-		strcpy(m_szFilePrefix, pszFilePrefix);
-	if(pszParentFolder)
-		strcpy(m_szParentFolder, pszParentFolder);
-	if(pszBucketOrServerRoot)
-		strcpy(m_szBucketOrServerRoot,pszBucketOrServerRoot);
-
-	//if(pszHost)
-	//	strcpy(m_szHost, pszHost);
-
-	//if(pszAccessId)
-	//	strcpy(m_szAccessId, pszAccessId);
-
-	//if(pszSecKey)
-	//	strcpy(m_szSecKey, pszSecKey);
+	m_szFilePrefix = pszFilePrefix;
+	m_szParentFolder =  pszParentFolder;
+	m_szBucketOrServerRoot = pszBucketOrServerRoot;
 	m_AwsContext = *pServerCtx;
 	return 0;
 }
@@ -169,15 +157,10 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 		m_pUploader = mpdPublishStart(
 			-1, m_pSegmenter, 
 			m_pMpdRepresentation, 
-			m_szFilePrefix, 
-			m_szParentFolder, 
-			m_szBucketOrServerRoot,
+			m_szFilePrefix.c_str(),
+			m_szParentFolder.c_str(),
+			m_szBucketOrServerRoot.c_str(),
 			&m_AwsContext,
-			/*
-			m_szHost,
-			m_szAccessId,
-			m_szSecKey,
-			*/
 			m_pMpdRepresentation->IsLive(), 
 			m_nSegmentStart, nUpLoadType);
 	}
@@ -221,7 +204,7 @@ CMpdSrvBridgeChan *CMpdSrvBridge::CreateChannel(
 		int        nMimeType)
 {
 	CMpdSrvBridgeChan *pChan = new CMpdSrvBridgeChan(nMimeType, nSegmentStart, nSegemtTimeMs, nTimeShiftBuffer);
-	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, pAwsContext/*pszHost, pszAccessId, pszSecKey*/);
+	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, pAwsContext);
 
 	m_listChan[szId] = pChan;
 	return pChan;

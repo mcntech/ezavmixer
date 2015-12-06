@@ -119,6 +119,7 @@ public class OnyxApi {
 
 		//String jserverNode = MpdSession.mServerId;
 		result = CreateMpdPublishStream(mHandle, jPublishId, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverId);
+
 		if(!result) {
 			mError = "Failed to create PublishStream";
 			return result;
@@ -130,6 +131,7 @@ public class OnyxApi {
 			mError = "Failed to StartPublishStream";
 			return result;
 		}
+		
 		mError = "Succcess";
 		return result;
 	}

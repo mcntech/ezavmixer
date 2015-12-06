@@ -22,7 +22,7 @@ extern "C" {
 static int  modDbgLevel = CJdDbg::LVL_ERR;
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE, ("Test Test Test Test"));
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("OnyxAPI"));
 	return JNI_VERSION_1_6;
 }
 
@@ -204,26 +204,34 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env,
 	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *env, jobject self, jlong handle,  jstring jId, jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId, jstring jswitchId, jstring jserverNode)
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(
+		JNIEnv *env, jobject self, jlong handle,
+		jstring jId,
+		jstring jmpdId,
+		jstring jperiodId,
+		jstring jadaptId,
+		jstring jrepId,
+		jstring jswitchId,
+		jstring jserverNode)
 {
 	int result = 0;
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	CDashMultiPublishClnt *pDash = (CDashMultiPublishClnt *)handle;
 
 	const char * szId = env->GetStringUTFChars(jId, 0);
-	std::string tmpId = szId;
+	std::string strId = szId;
 
 	const char * szmpdId = env->GetStringUTFChars(jmpdId, 0);
-	std::string tmpmpdId = szmpdId;
+	std::string strmpdId = szmpdId;
 
 	const char * szperiodId = env->GetStringUTFChars(jperiodId, 0);
-	std::string tmpperiodId = szperiodId;
+	std::string strperiodId = szperiodId;
 
 	const char * szadaptId = env->GetStringUTFChars(jadaptId, 0);
-	std::string tmpadaptId = szadaptId;
+	std::string stradaptId = szadaptId;
 
 	const char * szrepId = env->GetStringUTFChars(jrepId, 0);
-	std::string tmprepId = szrepId;
+	std::string strrepId = szrepId;
 
 	const char * szSwitchId = env->GetStringUTFChars(jswitchId, 0);
 	std::string strSwitchId = szSwitchId;
@@ -232,13 +240,13 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateMpdPublishStream(JNIEnv *en
 	std::string strServerNode= szServerNode;
 
 
-	result = pDash->CreateMpdPublishStream(tmpId, tmpmpdId, tmpperiodId, tmpadaptId, tmprepId, strSwitchId, strServerNode);
+	result = pDash->CreateMpdPublishStream(strId, strmpdId, strperiodId,
+			stradaptId, strrepId, strSwitchId, strServerNode);
 
 	env->ReleaseStringUTFChars(jId, szId);
-	env->ReleaseStringUTFChars(jadaptId, szadaptId);
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);
 	env->ReleaseStringUTFChars(jperiodId, szperiodId);
-	env->ReleaseStringUTFChars(jperiodId, szperiodId);
+	env->ReleaseStringUTFChars(jadaptId, szadaptId);
 	env->ReleaseStringUTFChars(jrepId, szrepId);
 	env->ReleaseStringUTFChars(jswitchId, szSwitchId);
 	env->ReleaseStringUTFChars(jserverNode, szServerNode);

@@ -270,7 +270,7 @@ public:
 		return res;
 	}
 
-	int Send(const char *pszParentFolder, const char *pszFile, std::time_t req_time, char *pData, int nLen, const char *pContentType, int nTimeOut)
+	int Send(const char *pszParentFolder, const char *pszFile, std::time_t req_time, const char *pData, int nLen, const char *pContentType, int nTimeOut)
 	{
 		int res = 0;
 		char szFile[256];
@@ -1552,7 +1552,6 @@ void CMpdPublishS3::UpLoadBroadcastPlayList()
 	int nSegmentCount;
 	int nLen = 0;
 	CMpdRepresentation *pMdpRep = m_pMpdRepresentation;
-
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 
 	int nSize = m_SegmentList.size();
@@ -1641,10 +1640,16 @@ void CMpdPublishS3::UpdateSlidingWindow()
 		delete pSegmentInf;
 	}
 
-	// Upload updated m3u8
+	// Upload updated mpd
 	if(m_SegmentList.size()  >=  m_nTimeshiftSegments + m_nBcastBackCache + m_nBcastFrontCache) {
 		JDBG_LOG(CJdDbg::LVL_MSG,("Upload playlist: url=%s playlist=%s\n", m_pszParentFolder, m_pszMpdFilePrefix));
 		UpLoadBroadcastPlayList();
+
+		CMpdRoot *pMpd = m_pMpdRepresentation->GetMpd();
+		std::string strMpd = pMpd->GetAsXmlText();
+		std::time_t req_time = std::time(NULL);
+		m_pHlsOut->Send(m_pszParentFolder, "live.mpd", req_time, strMpd.c_str(), strMpd.length(), CONTENT_STR_DEF, 30);
+
 	}
 	// Delete prev head segment for LiveOnly upload
 	if(m_fLiveOnly && nDeleteIdx) {

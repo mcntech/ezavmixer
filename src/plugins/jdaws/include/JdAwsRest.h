@@ -146,7 +146,7 @@ public:
 
 JD_STATUS JdAwsWriteHttpRequest(
 	void *handle,
-	char *buf,
+	const char *buf,
 	size_t *size,
 	int timeout);
 

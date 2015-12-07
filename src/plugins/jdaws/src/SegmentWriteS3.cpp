@@ -95,7 +95,7 @@ Exit:
     return(status == JD_OK);
 }
 
-int CSegmentWriteS3::Send(const char *pszParent, const char *pszFile, const std::time_t request_date, char *pData, int nLen, const char *pContentType, int nTimeOut)
+int CSegmentWriteS3::Send(const char *pszParent, const char *pszFile, const std::time_t request_date, const char *pData, int nLen, const char *pContentType, int nTimeOut)
 {
 	int result = JD_OK;
     int httpStatus;

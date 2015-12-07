@@ -659,7 +659,7 @@ JD_STATUS JdAwsOpenHttpConnection(const char *host, void **pHandleM, int timeout
 
 JD_STATUS JdAwsWriteHttpRequest(
 	void *handle,
-	char *pData,
+	const char *pData,
 	size_t *size,
 	int nTimeOut)
 {

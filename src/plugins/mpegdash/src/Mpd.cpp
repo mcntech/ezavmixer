@@ -477,20 +477,24 @@ int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	TiXmlElement *pRepElem = new TiXmlElement( ELEMENT_Representation );
 	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this);
-	pRepresentation->m_pNode = pRepElem;
 
-	if(!fSegmentTmplate) {
-		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
-		TiXmlNode *pSegNode = pSegElem;
-			pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
-			pRepresentation->m_pSegmentList = new CMpdSegmentList(pRepresentation, pSegNode);
-			pRepresentation->m_pSegmentList->m_pNode = pSegElem;
-	} else {
-		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
-	}
 	pRepresentation->m_szId = szId;
 	//pRepresentation->m_inputSwitch = szSwitchId;
 	m_listRepresentations.push_back(pRepresentation);
+	m_pNode->InsertEndChild(*pRepElem);
+	pRepresentation->m_pNode = m_pNode->FirstChild(); // TODO add support for multiple representation
+
+	if(!fSegmentTmplate) {
+		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
+		pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
+
+		pRepresentation->m_pNode->InsertEndChild(*pSegElem);
+		TiXmlNode *pSegNode = pRepresentation->m_pNode->FirstChild();
+		pRepresentation->m_pSegmentList = new CMpdSegmentList(pRepresentation, pSegNode);
+	} else {
+		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
+	}
+
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return 0;
 }
@@ -540,7 +544,7 @@ CMpdAdaptaionSet *CMpdPeriod::CreateAdaptationSet(std::string szId)
 
 	pAdaptElem = new TiXmlElement( ELEMENT_AdaptationSet );
 	CMpdAdaptaionSet *pAdaptaionSet = new  CMpdAdaptaionSet(this, pAdaptNode);
-	pAdaptaionSet->m_pNode = pAdaptElem;
+
 	pAdaptaionSet->m_szId = szId;
 
 
@@ -553,6 +557,8 @@ CMpdAdaptaionSet *CMpdPeriod::CreateAdaptationSet(std::string szId)
 
 	//while(pRepNode = pAdaptNode->IterateChildren(ELEMENT_Representation, pRepNode))
 	m_listAdaptionSets.push_back(pAdaptaionSet);
+	m_pNode->InsertEndChild(*pAdaptElem);
+	pAdaptaionSet->m_pNode = m_pNode->FirstChild(); // TODO: support for multiple adapt
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
@@ -588,14 +594,13 @@ CMpdPeriod *CMpdRoot::CreatePeriod(std::string szId)
 
 	pPeriodElem = new TiXmlElement( ELEMENT_Period );
 	CMpdPeriod *pPeriod = new CMpdPeriod(this);
-	pPeriod->m_pNode = pPeriodElem;
 	pPeriodElem->SetAttribute(ATTRIB_NAME_PERIOD_start, 0);
 
-	pPeriod->m_pNode = pPeriodNode;
 	pPeriod->m_pParent = this;
 	pPeriod->m_szId = szId;
 	m_listPeriods.push_back(pPeriod);
-
+	m_pNode->InsertEndChild(*pPeriodElem);
+	pPeriod->m_pNode = m_pNode->FirstChild(); // TODO multiple periods
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pPeriod;
 }
@@ -806,6 +811,18 @@ int CMpdRoot::SaveFile()
 	return 0;
 }
 
+std::string CMpdRoot::GetAsXmlText()
+{
+	TiXmlPrinter printer;
+	printer.SetIndent( "    " );
+
+	m_pDoc->Accept( &printer );
+	int len = printer.Size();
+	const char *pData = printer.CStr();
+	std::string xmltext = printer.CStr();
+	return xmltext;
+}
+
 const char *CMpdRoot::GetBaseURL()
 {
 	const char *pszBaseURL = NULL;
@@ -904,7 +921,6 @@ CMpdRoot::CMpdRoot(int fDynamic)
 	char szDaration[128];
 	TiXmlElement *pElem  = new TiXmlElement( ELEMENT_MPD );
 
-	m_pNode = pElem;
 	pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS_XSI, ATTRIB_VAL_MPD_XMLNS_XSI);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS, ATTRIB_NAME_MPD_XMLNS);
@@ -915,7 +931,7 @@ CMpdRoot::CMpdRoot(int fDynamic)
 		time_t    time_now;
 		char availability_start_time[MAX_TIME_STRING];
 		time ( &time_now );
-		time_now += GetCustomAvailabilityDelay() / 1000;
+		time_now += 0;//GetCustomAvailabilityDelay() / 1000;
 		ast_time = *gmtime(&time_now);
 		strftime(availability_start_time, 64, "%Y-%m-%dT%H:%M:%S", &ast_time);
 		pElem->SetAttribute(ATTRIB_NAME_MPD_availabilityStartTime, availability_start_time);
@@ -954,6 +970,9 @@ CMpdRoot::CMpdRoot(int fDynamic)
 
 	m_nUpdateTime = 0;
     m_nUpdateInterval = 1000; // default 1 Sec
+
+    m_pDoc->InsertEndChild(*pElem);
+    m_pNode = m_pDoc->FirstChild();
     JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
@@ -980,10 +999,10 @@ int CMpdRoot::CreateRepresentation(std::string szPeriod, std::string szAdapt, st
 	CMpdPeriod *pPeriod = FindPeriod(szPeriod);
 	if(pPeriod) {
 		int fSegmentTmplate = 0;
-			CMpdAdaptaionSet *pAdaptaionSet = pPeriod->FindAdaptationSet(szAdapt);
-			if(pAdaptaionSet) {
-				pAdaptaionSet->CreateRepresentation(szRep, fTmplate);
-			}
+		CMpdAdaptaionSet *pAdaptaionSet = pPeriod->FindAdaptationSet(szAdapt);
+		if(pAdaptaionSet) {
+			pAdaptaionSet->CreateRepresentation(szRep, fTmplate);
+		}
 	}
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return 0;

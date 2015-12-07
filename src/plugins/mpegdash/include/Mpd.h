@@ -272,6 +272,7 @@ public:
 	void SetSaveFileName(const char *pszFileName);
 	int CallbackChildUpdate(CMpdPeriod *pChild);
 	int SaveFile();
+	std::string GetAsXmlText();
 	const char *GetBaseURL();
 	const char *GetCutomCfgFolder();
 	const char *GetAvailabilityStartTime();

@@ -33,8 +33,9 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
         ConfigDatabase.loadSavedPreferences(this, isSystemApp);
         
+        PrepareAudioSourceSelection();
         PrepareBitrateSelection();
-        PrepareLatencySrcSelection();
+        PrepareSegmentDurationSelection();
         PrepareVdeioResolutionSelection();
         
         /* Display a list of checkboxes */
@@ -60,26 +61,22 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
         mEnVidCheckBox.setChecked(ConfigDatabase.mEnableVideo);
     }
 
-    private void PrepareLatencySrcSelection()
+    private void PrepareSegmentDurationSelection()
     {   
     	int i;
-	    Spinner latency_spinner = (Spinner) findViewById(R.id.latency);
-	    latency_spinner.setOnItemSelectedListener(this);
-	    List<String> latencies = new ArrayList<String>();
-	    latencies.add(Integer.toString(0));
-	    for(i = 60; i < 100; i=i+10)
-	    	latencies.add(Integer.toString(i));
-	    for(i = 100; i < 1000; i=i+50)
-	    	latencies.add(Integer.toString(i));
-	    for(i = 1000; i <= 4000; i=i+1000)
-	    	latencies.add(Integer.toString(i));
+	    Spinner spinner = (Spinner) findViewById(R.id.latency);
+	    spinner.setOnItemSelectedListener(this);
+	    List<String> duraions = new ArrayList<String>();
+
+	    for(i = 1; i < 30; i=i+1)
+	    	duraions.add(Integer.toString(i));
 	
-	    ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, latencies);
+	    ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, duraions);
 	    dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-	    latency_spinner.setAdapter(dataAdapter);
+	    spinner.setAdapter(dataAdapter);
 	    
-	    int latencySpinnerPostion = dataAdapter.getPosition(Integer.toString( ConfigDatabase.mLatency));
-	    latency_spinner.setSelection(latencySpinnerPostion, false);        
+	    int SpinnerPostion = dataAdapter.getPosition(Integer.toString( ConfigDatabase.mSegmentDUration));
+	    spinner.setSelection(SpinnerPostion, false);        
     }
   
     private void PrepareVdeioResolutionSelection()
@@ -92,7 +89,6 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
 	    list.add(ConfigDatabase.VID_RES_1080P);
 	    list.add(ConfigDatabase.VID_RES_4K);
 
-	
 	    ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, list);
 	    dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 	    spinner.setAdapter(dataAdapter);
@@ -123,19 +119,47 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
 	    int bitrateSpinnerPostion = bitrateAdapter.getPosition(Integer.toString( ConfigDatabase.mVideoBitrate / BITRATE_MBPS));
 	    bitrate_spinner.setSelection(bitrateSpinnerPostion, false);        
 	}
+
+    private void PrepareAudioSourceSelection()
+    {
+	    int i;
+	    Spinner spinner = (Spinner) findViewById(R.id.audio_source);
+	    spinner.setOnItemSelectedListener(this);
+	    List<String> sources = new ArrayList<String>();
+	
+	    sources.add(ConfigDatabase.AUDSRC_MIC);
+	    sources.add(ConfigDatabase.AUDSRC_SYSTEM_AUDIO);
+
+	
+	    ArrayAdapter<String> Adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sources);
+	    Adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+	    spinner.setAdapter(Adapter);
+	    
+	    int SpinnerPostion = Adapter.getPosition(ConfigDatabase.mAudioSource);
+	    spinner.setSelection(SpinnerPostion, false);        
+	}
     
 	@Override
 	public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2,
 			long arg3) {
 		 switch (arg0.getId()) {
-		 	case R.id.latency:
+		 	case R.id.segment_duration:
 		 	{
 		 		int position = arg0.getSelectedItemPosition();
 		 		String latencny = arg0.getAdapter().getItem(position).toString();
-		 		ConfigDatabase.mLatency = Integer.parseInt(latencny);
-		 		ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_LATENCY, ConfigDatabase.mLatency);
+		 		ConfigDatabase.mSegmentDuration = Integer.parseInt(latencny);
+		 		ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_SEGMENT_DURATION, ConfigDatabase.mSegmentDuration);
 		 	}
 		 	break;
+		 	case R.id.audio_source:
+		 	{
+		 		int position = arg0.getSelectedItemPosition();
+		 		String audio_source = arg0.getAdapter().getItem(position).toString();
+		 		ConfigDatabase.mAudioSource = audio_source;
+		 		ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_AUDIO_SOURCE, ConfigDatabase.mAudioSource);
+		 	}
+		 	break;
+		 	
 		 	case R.id.video_bitrate:
 		 	{
 		 		int position = arg0.getSelectedItemPosition();

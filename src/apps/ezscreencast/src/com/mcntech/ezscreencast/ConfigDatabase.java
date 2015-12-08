@@ -15,7 +15,7 @@ import com.google.gson.GsonBuilder;
 
 public class ConfigDatabase {
 
-	public static int mLatency;
+	public static int mSegmentDuration;
 	public static int mVideoBitrate;
 	public static String mVideoResolution;
 	public static String mAudioSource;
@@ -23,7 +23,7 @@ public class ConfigDatabase {
 	public static boolean mEnableAudio;
 	public static boolean mSystemApp;
 	
-	final static String KEY_LATENCY = "latency";
+	final static String KEY_SEGMENT_DURATION = "segment_duration";
 	final static String KEY_PUBLISH_URL_1 = "rtsp:192.168.1.20:554/test";
 
 	final static String KEY_AUDIO_SOURCE = "audio_source";
@@ -42,7 +42,7 @@ public class ConfigDatabase {
 	public static void loadSavedPreferences(Context context, boolean isSytemApp) {
 		SharedPreferences sharedPreferences = PreferenceManager
 				.getDefaultSharedPreferences(context);
-		mLatency = sharedPreferences.getInt(KEY_LATENCY, 60);
+		mSegmentDuration = sharedPreferences.getInt(KEY_SEGMENT_DURATION, 1);
 		mVideoBitrate = sharedPreferences.getInt(KEY_VIDEO_BITRATE, 6000000);
 		mAudioSource = sharedPreferences.getString(KEY_AUDIO_SOURCE, AUDSRC_SYSTEM_AUDIO);
 		mEnableVideo = sharedPreferences.getBoolean(KEY_ENABLE_VIDEO, true);

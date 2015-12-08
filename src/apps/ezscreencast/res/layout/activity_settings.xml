@@ -39,16 +39,32 @@
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
 	        android:layout_marginTop="10dip"
-	        android:text="@string/latency"
+	        android:text="@string/segment_duration"
 	        android:layout_marginBottom="5dp"
 	    />
 	    <!-- Spinner Element -->
 	    <Spinner
-	        android:id="@+id/latency"
+	        android:id="@+id/segment_duration"
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:prompt="@string/latency"
+	        android:prompt="@string/segment_duration"
 	    />
+	    
+	    <TextView
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_marginTop="10dip"
+	        android:text="@string/audio_source"
+	        android:layout_marginBottom="5dp"
+	    />
+	    <!-- Spinner Element -->
+	    <Spinner
+	        android:id="@+id/audio_source"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:prompt="@string/audio_source"
+	    />    
+	    	    
 	    <TextView
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"

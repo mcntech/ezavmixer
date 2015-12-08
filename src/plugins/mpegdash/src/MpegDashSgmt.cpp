@@ -97,6 +97,19 @@ static void GetSegmentNameFromIndex(char *pszSegmentFileName, const char *pszBas
 	sprintf(pszSegmentFileName,"%s_%d.%s", pszBaseName, nSegmentIdx, szSegmentExt);
 }
 
+std::string GetMpdInitSegmentName(const char *pszBaseName)
+{
+	std::string strInitSegment = pszBaseName;
+	strInitSegment.append("_0.m4s");
+	return strInitSegment;
+}
+
+std::string GetManifestFileName(const char *pszBaseName)
+{
+	std::string strMpdFileName = pszBaseName;
+	strMpdFileName.append(".mpd");
+	return strMpdFileName;
+}
 
 class CMpdEmsg
 {
@@ -1146,33 +1159,6 @@ static void *thrdStreamHttpLiveUpload(void *pArg);
 	int                 m_TransferType;
 };
 
-int CMpdPublishS3::ReceiveInitSegment(const char *pData, int nLen)
-{
-	return 0;
-}
-int CMpdPublishS3::ReceiveGop(int nGopNum, const char *pData, int nLen, int nStartPtsMs, int nDurarionMs, CMpdEmsg *pMpdEmsg)
-{
-	unsigned char *pCbData;
-	CGopCb *pGop;
-	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
-	m_nInStreamTime += nDurarionMs;
-	m_Mutex.Acquire();
-	JDBG_LOG(CJdDbg::LVL_MSG,("Enter:Receiving Gop %d:  nLen=%d nDurarionMs=%d", nGopNum, nLen, nDurarionMs));
-	pCbData = m_pCb->Alloc(nLen);
-	if(pCbData == NULL) {
-		JDBG_LOG(CJdDbg::LVL_ERR,("No Buffer"));
-		m_nLostBufferTime += nDurarionMs;
-		goto Exit;
-	}
-
-	pGop = new  CGopCb(pCbData, nLen);
-	memcpy(pGop->m_pBuff, pData, nLen);
-	m_pGopFilledList.push_back(pGop);
-Exit:
-	m_Mutex.Release();
-	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
-	return 0;
-}
 //=================================================================================
 // CSegmentFile is helper class used by CMpdPublishMemFile to write a local file
 class CSegmentFile
@@ -1532,6 +1518,42 @@ Exit:
 }
 
 
+int CMpdPublishS3::ReceiveInitSegment(const char *pData, int nLen)
+{
+	if(pData && nLen > 0) {
+		//CMpdRoot *pMpd = m_pMpdRepresentation->GetMpd();
+		std::time_t req_time = std::time(NULL);
+		std::string strInitSegmentName = GetMpdInitSegmentName(m_pszMpdFilePrefix);
+		m_pHlsOut->Send(m_pszParentFolder, strInitSegmentName.c_str(), req_time, pData, nLen, CONTENT_STR_MP2T, 30);
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR,("%s:Invalid init segment", __FUNCTION__));
+	}
+	return 0;
+}
+int CMpdPublishS3::ReceiveGop(int nGopNum, const char *pData, int nLen, int nStartPtsMs, int nDurarionMs, CMpdEmsg *pMpdEmsg)
+{
+	unsigned char *pCbData;
+	CGopCb *pGop;
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
+	m_nInStreamTime += nDurarionMs;
+	m_Mutex.Acquire();
+	JDBG_LOG(CJdDbg::LVL_MSG,("Enter:Receiving Gop %d:  nLen=%d nDurarionMs=%d", nGopNum, nLen, nDurarionMs));
+	pCbData = m_pCb->Alloc(nLen);
+	if(pCbData == NULL) {
+		JDBG_LOG(CJdDbg::LVL_ERR,("No Buffer"));
+		m_nLostBufferTime += nDurarionMs;
+		goto Exit;
+	}
+
+	pGop = new  CGopCb(pCbData, nLen);
+	memcpy(pGop->m_pBuff, pData, nLen);
+	m_pGopFilledList.push_back(pGop);
+Exit:
+	m_Mutex.Release();
+	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Leave", __FUNCTION__));
+	return 0;
+}
+
 
 #define	MAX_FILE_NAME	 256
 
@@ -1648,7 +1670,8 @@ void CMpdPublishS3::UpdateSlidingWindow()
 		CMpdRoot *pMpd = m_pMpdRepresentation->GetMpd();
 		std::string strMpd = pMpd->GetAsXmlText();
 		std::time_t req_time = std::time(NULL);
-		m_pHlsOut->Send(m_pszParentFolder, "live.mpd", req_time, strMpd.c_str(), strMpd.length(), CONTENT_STR_DEF, 30);
+		std::string strMpdFile = GetManifestFileName(m_pszMpdFilePrefix);
+		m_pHlsOut->Send(m_pszParentFolder, strMpdFile.c_str(), req_time, strMpd.c_str(), strMpd.length(), CONTENT_STR_DEF, 30);
 
 	}
 	// Delete prev head segment for LiveOnly upload

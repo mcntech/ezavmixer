@@ -58,6 +58,7 @@ public class ScreenRecorder extends Thread {
     private int mAudSrc;
     private int mChannelCfg;
     private int mAudSampleRate = 44100;  
+    //private int mAudFormat = android.media.AudioFormat.ENCODING_PCM_16BIT;
     private int mAudFormat = android.media.AudioFormat.ENCODING_PCM_16BIT;
     private long mStartPtsUs = 0;
     private long mStartExtVClkUs = 0;

@@ -3,6 +3,7 @@ package com.mcntech.ezscreencast;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -58,6 +59,9 @@ public class ScreenRecorder extends Thread {
     private int mAudSrc;
     private int mChannelCfg;
     private int mAudSampleRate = 44100;  
+    private int mAudioBitrate = 64000;
+    protected MediaCodec mAudioCodec;
+    private static final String AUD_ENC_MIME_TYPE = "audio/mp4a-latm";
     //private int mAudFormat = android.media.AudioFormat.ENCODING_PCM_16BIT;
     private int mAudFormat = android.media.AudioFormat.ENCODING_PCM_16BIT;
     private long mStartPtsUs = 0;
@@ -163,6 +167,63 @@ public class ScreenRecorder extends Thread {
 				out[i+3] = in_R[k+1];
 		}
 	}
+    
+    /**
+     *  Add ADTS header at the beginning of each and every AAC packet.
+     *  This is needed as MediaCodec encoder generates a packet of raw
+     *  AAC data.
+     *
+     *  Note the packetLen must count in the ADTS header itself.
+     **/
+    private void addADTStoPacket(byte[] packet, int packetLen) {
+        int profile = 2;  //AAC LC
+                          //39=MediaCodecInfo.CodecProfileLevel.AACObjectELD;
+        int freqIdx = 4;  //44.1KHz
+        int chanCfg = 2;  //CPE
+
+        // fill in ADTS data
+        packet[0] = (byte)0xFF;
+        packet[1] = (byte)0xF9;
+        packet[2] = (byte)(((profile-1)<<6) + (freqIdx<<2) +(chanCfg>>2));
+        packet[3] = (byte)(((chanCfg&3)<<6) + (packetLen>>11));
+        packet[4] = (byte)((packetLen&0x7FF) >> 3);
+        packet[5] = (byte)(((packetLen&7)<<5) + 0x1F);
+        packet[6] = (byte)0xFC;
+    }
+    
+    private void prepareAudioEncoder(){
+    	final MediaFormat audioFormat = MediaFormat.createAudioFormat(AUD_ENC_MIME_TYPE, mAudSampleRate, 1);
+		audioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+		audioFormat.setInteger(MediaFormat.KEY_CHANNEL_MASK, AudioFormat.CHANNEL_IN_MONO);
+		audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, mAudioBitrate);
+		audioFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
+		
+		try {
+			mAudioCodec = MediaCodec.createEncoderByType(AUD_ENC_MIME_TYPE);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		mAudioCodec.configure(audioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+		mAudioCodec.start();
+    }
+    
+    /**
+     * previous presentationTimeUs for writing
+     */
+	private long prevOutputPTSUs = 0;
+	/**
+	 * get next encoding presentationTimeUs
+	 * @return
+	 */
+    protected long getPTSUs() {
+		long result = System.nanoTime() / 1000L;
+		// presentationTimeUs should be monotonic
+		// otherwise muxer fail to write
+		if (result < prevOutputPTSUs)
+			result = (prevOutputPTSUs - result) + result;
+		return result;
+    }
     /*  
      * This runs in a separate thread reading the data from the AR buffer and dumping it  
      * into the queue (circular buffer) for processing (in java or C).  
@@ -171,7 +232,9 @@ public class ScreenRecorder extends Thread {
     	int numBytes;
         byte[] AudioBytes=new byte[BufferSize]; //Array containing the audio data bytes  
         byte[] AudioData=new byte[BufferSize*2]; //Array containing the audio samples  
-
+        int encoderStatus = 0;
+        protected static final int TIMEOUT_USEC = 10000;	// 10[msec]
+        final ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
          try {  
         	 maudRecorder = new AudioRecord(mAudSrc,mAudSampleRate,mChannelCfg,mAudFormat,BufferSize);  
               try {  
@@ -186,14 +249,47 @@ public class ScreenRecorder extends Thread {
                    }  
          while (isRecording)  
          {  
-        	numBytes = maudRecorder.read(AudioBytes, 0, BufferSize); 
+        	 final ByteBuffer buf = ByteBuffer.allocateDirect(BufferSize);
+        	numBytes = maudRecorder.read(buf, BufferSize); 
         	//Log.d(TAG, "AudioRecord : read got buffer, info: size=" + numBytes);
-        	if(mAudSrc == android.media.MediaRecorder.AudioSource.MIC) {
-        		dbgInterleave2Mono16bit(AudioBytes, AudioBytes, AudioData,  numBytes/2);
-        		OnyxApi.sendAudioData("input0", AudioData, numBytes * 2, 0, 0);
-        	} else {
-        		OnyxApi.sendAudioData("input0", AudioBytes, numBytes, 0, 0);
-        	} 
+        	//if(mAudSrc == android.media.MediaRecorder.AudioSource.MIC) {
+        		//dbgInterleave2Mono16bit(AudioBytes, AudioBytes, AudioData,  numBytes/2);
+        		//OnyxApi.sendAudioData("input0", AudioData, numBytes * 2, 0, 0);
+        	//} else {
+        		//OnyxApi.sendAudioData("input0", AudioBytes, numBytes, 0, 0);
+        	//} 
+        	if (numBytes > 0) {
+			    // set audio data to encoder
+				buf.position(numBytes);
+				buf.flip();
+				encode(buf, numBytes, getPTSUs());
+			}
+        	encoderStatus = mAudioCodec.dequeueOutputBuffer(mBufferInfo, TIMEOUT_USEC);
+        	
+        	if (inputBufferIndex >= 0) {
+	            final ByteBuffer inputBuffer = inputBuffers[inputBufferIndex];
+	            inputBuffer.clear();
+	            if (buffer != null) {
+	            	inputBuffer.put(buffer);
+	            }
+//	            if (DEBUG) Log.v(TAG, "encode:queueInputBuffer");
+	            if (length <= 0) {
+	            	// send EOS
+	            	mIsEOS = true;
+	            	if (DEBUG) Log.i(TAG, "send BUFFER_FLAG_END_OF_STREAM");
+	            	mMediaCodec.queueInputBuffer(inputBufferIndex, 0, 0,
+	            		presentationTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+		            break;
+	            } else {
+	            	mMediaCodec.queueInputBuffer(inputBufferIndex, 0, length,
+	            		presentationTimeUs, 0);
+	            }
+	            break;
+	        } else if (inputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
+	        	// wait for MediaCodec encoder is ready to encode
+	        	// nothing to do here because MediaCodec#dequeueInputBuffer(TIMEOUT_USEC)
+	        	// will wait for maximum TIMEOUT_USEC(10msec) on each call
+	        }        	
          }  
          Log.d("MyActivity", "Record_Thread stopped");  
     }  

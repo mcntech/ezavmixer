@@ -61,6 +61,9 @@ public class ScreenRecorder extends Thread {
     private int mAudSampleRate = 44100;  
     private int mAudioBitrate = 64000;
     protected MediaCodec mAudioCodec;
+    private MediaCodec.BufferInfo mAudBufferInfo = new MediaCodec.BufferInfo();
+    byte[] mAdtsData;
+    
     private static final String AUD_ENC_MIME_TYPE = "audio/mp4a-latm";
     //private int mAudFormat = android.media.AudioFormat.ENCODING_PCM_16BIT;
     private int mAudFormat = android.media.AudioFormat.ENCODING_PCM_16BIT;
@@ -208,22 +211,66 @@ public class ScreenRecorder extends Thread {
 		mAudioCodec.start();
     }
     
-    /**
-     * previous presentationTimeUs for writing
-     */
-	private long prevOutputPTSUs = 0;
-	/**
-	 * get next encoding presentationTimeUs
-	 * @return
-	 */
-    protected long getPTSUs() {
-		long result = System.nanoTime() / 1000L;
-		// presentationTimeUs should be monotonic
-		// otherwise muxer fail to write
-		if (result < prevOutputPTSUs)
-			result = (prevOutputPTSUs - result) + result;
-		return result;
+    private void encodeToAudioTrack(int index) {
+       	long fcVClkUs = 0;
+       	long pts = 0;
+       	long prevPts = 0;
+        ByteBuffer encodedData = mAudioCodec.getOutputBuffer(index);
+
+        if ((mAudBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+            // The codec config data was pulled out and fed to the muxer when we got
+            // the INFO_OUTPUT_FORMAT_CHANGED status.
+            // Ignore it.
+            Log.d(TAG, "ignoring BUFFER_FLAG_CODEC_CONFIG");
+            mAudBufferInfo.size = 0;
+        }
+        if (mAudBufferInfo.size == 0) {
+            Log.d(TAG, "info.size == 0, drop it.");
+            encodedData = null;
+        }
+ 
+        
+        if (encodedData != null) {
+            encodedData.position(mAudBufferInfo.offset);
+            encodedData.limit(mAudBufferInfo.offset + mAudBufferInfo.size);
+            //if(mEnableFileSave) {
+            //	mMuxer.writeSampleData(mVideoTrackIndex, encodedData, mBufferInfo);
+            //}
+            if(ConfigDatabase.mEnableAudio) {
+            	byte[] audBytes;
+            	int prependLen = 0;
+            	int payloadLen = mAudBufferInfo.size;
+
+              	fcVClkUs = OnyxApi.getClockUs();
+                if(mStartPtsUs == 0)
+                	mStartPtsUs = mBufferInfo.presentationTimeUs;
+            	
+                pts = (mAudBufferInfo.presentationTimeUs - mStartPtsUs) * 90 / 1000;
+ 
+                if(pts < prevPts) {
+                	Log.d(TAG, "pts_error pts=" + pts +" prevPts= " + prevPts);
+                }
+                prevPts=pts;
+                //Log.d(TAG, "got buffer, info: size=" + mBufferInfo.size
+                //        + ", pts(ms)=" + (mBufferInfo.presentationTimeUs - mStartPtsUs)/ 1000
+                //        + " FcClk=" + (fcVClkUs - mStartFcVClkUs ) / 1000);
+                
+	            if((mBufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
+	            	prependLen = mAdtsData.length;
+	            	audBytes = new byte[prependLen + payloadLen];
+	            	System.arraycopy(mAdtsData, 0, audBytes, 0, mAdtsData.length);
+	            } else {
+	            	audBytes = new byte[payloadLen];	            	
+	            }
+	            // transfer bytes from this buffer into the given destination array
+	            encodedData.get(audBytes, prependLen, payloadLen);
+		        OnyxApi.sendAudioData("input0", audBytes, prependLen + payloadLen, pts, mBufferInfo.flags);
+            }
+            //Log.i(TAG, "sent " + mBufferInfo.size + " bytes to muxer...Flags=0x" + Integer.toHexString(mBufferInfo.flags));
+        }
     }
+
+    
     /*  
      * This runs in a separate thread reading the data from the AR buffer and dumping it  
      * into the queue (circular buffer) for processing (in java or C).  
@@ -232,63 +279,46 @@ public class ScreenRecorder extends Thread {
     	int numBytes;
         byte[] AudioBytes=new byte[BufferSize]; //Array containing the audio data bytes  
         byte[] AudioData=new byte[BufferSize*2]; //Array containing the audio samples  
-        int encoderStatus = 0;
-        protected static final int TIMEOUT_USEC = 10000;	// 10[msec]
-        final ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
-         try {  
+        final int TIMEOUT_USEC = 10000;	// 10[msec]
+        try {  
         	 maudRecorder = new AudioRecord(mAudSrc,mAudSampleRate,mChannelCfg,mAudFormat,BufferSize);  
-              try {  
-            	  maudRecorder.startRecording();  
-              } catch (IllegalStateException e){  
+             try {  
+            	 maudRecorder.startRecording();  
+             } catch (IllegalStateException e){  
                    System.out.println("This didn't work very well");  
                    return;  
-                   }  
-              } catch(IllegalArgumentException e){  
-                   System.out.println("This didn't work very well");  
-                   return;  
-                   }  
-         while (isRecording)  
-         {  
-        	 final ByteBuffer buf = ByteBuffer.allocateDirect(BufferSize);
-        	numBytes = maudRecorder.read(buf, BufferSize); 
-        	//Log.d(TAG, "AudioRecord : read got buffer, info: size=" + numBytes);
-        	//if(mAudSrc == android.media.MediaRecorder.AudioSource.MIC) {
-        		//dbgInterleave2Mono16bit(AudioBytes, AudioBytes, AudioData,  numBytes/2);
-        		//OnyxApi.sendAudioData("input0", AudioData, numBytes * 2, 0, 0);
-        	//} else {
-        		//OnyxApi.sendAudioData("input0", AudioBytes, numBytes, 0, 0);
-        	//} 
-        	if (numBytes > 0) {
-			    // set audio data to encoder
-				buf.position(numBytes);
-				buf.flip();
-				encode(buf, numBytes, getPTSUs());
-			}
-        	encoderStatus = mAudioCodec.dequeueOutputBuffer(mBufferInfo, TIMEOUT_USEC);
+             }  
+        } catch(IllegalArgumentException e){  
+			System.out.println("This didn't work very well");  
+			return;  
+        }
+         prepareAudioEncoder();
+         int len = 0, inBufferIndex = 0, outBufferIndex = 0;
+         while (isRecording && !Thread.interrupted()) {  
+        	 inBufferIndex = mAudioCodec.dequeueInputBuffer(TIMEOUT_USEC); 
+             if (inBufferIndex>=0) { 
+            	 ByteBuffer buf = mAudioCodec.getInputBuffer(inBufferIndex); 
+            	 len = maudRecorder.read(buf, BufferSize); 
+            	 
+				 if (len ==  AudioRecord.ERROR_INVALID_OPERATION || len == AudioRecord.ERROR_BAD_VALUE) { 
+				    Log.e(TAG,"An error occured with the AudioRecord API !"); 
+				} else { 
+	            	 long presentationTimeUs = System.nanoTime()/1000;
+					mAudioCodec.queueInputBuffer(inBufferIndex, 0, len, presentationTimeUs, 0); 
+				} 
+             }
+             
+             outBufferIndex = mAudioCodec.dequeueOutputBuffer(mAudBufferInfo, TIMEOUT_USEC);
         	
-        	if (inputBufferIndex >= 0) {
-	            final ByteBuffer inputBuffer = inputBuffers[inputBufferIndex];
-	            inputBuffer.clear();
-	            if (buffer != null) {
-	            	inputBuffer.put(buffer);
-	            }
-//	            if (DEBUG) Log.v(TAG, "encode:queueInputBuffer");
-	            if (length <= 0) {
-	            	// send EOS
-	            	mIsEOS = true;
-	            	if (DEBUG) Log.i(TAG, "send BUFFER_FLAG_END_OF_STREAM");
-	            	mMediaCodec.queueInputBuffer(inputBufferIndex, 0, 0,
-	            		presentationTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-		            break;
-	            } else {
-	            	mMediaCodec.queueInputBuffer(inputBufferIndex, 0, length,
-	            		presentationTimeUs, 0);
-	            }
-	            break;
-	        } else if (inputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
-	        	// wait for MediaCodec encoder is ready to encode
-	        	// nothing to do here because MediaCodec#dequeueInputBuffer(TIMEOUT_USEC)
-	        	// will wait for maximum TIMEOUT_USEC(10msec) on each call
+             if (outBufferIndex >= 0) {
+            	 encodeToAudioTrack(outBufferIndex);
+            	 mAudioCodec.releaseOutputBuffer(outBufferIndex, false);
+	        } else if (outBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
+                try {
+                    // wait 10ms
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                }
 	        }        	
          }  
          Log.d("MyActivity", "Record_Thread stopped");  

@@ -38,6 +38,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private static final int NODE_LIST_DIALOG_CODE = 3;
     private static final String DEF_MPD_SERVER1 = "educast server-1";
     private static final int BTN_ID_START = 1;
+    private static final int BTN_ID_SHARE_LINK = 2;
     
     private MediaProjectionManager mMediaProjectionManager;
     private ScreenRecorder mRecorder;
@@ -61,6 +62,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		mBtnStart.setText("Start");
 		mBtnStart.setOnClickListener(this);
 		mBtnStart.setTag(BTN_ID_START);
+		
+		mBtnStart = (Button) findViewById(R.id.button_share_link);
+		mBtnStart.setOnClickListener(this);
+		mBtnStart.setTag(BTN_ID_SHARE_LINK);
+		
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		
         mOnyxRemoteNodeList = ConfigDatabase.mOnyxRemoteNodeList;
@@ -238,6 +244,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		            //OnyxApi.initialize(true);
 		        }
 		        break;
+    		case BTN_ID_SHARE_LINK:
+    			OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(0);  // todo
+	            Intent intent = new Intent(this, ShareMpdLink.class);
+	            intent.setType("text/plain");
+	            intent.putExtra("nickname",node.mNickname); 
+	            startActivity(intent);
+    			break;
     	}
     }
 

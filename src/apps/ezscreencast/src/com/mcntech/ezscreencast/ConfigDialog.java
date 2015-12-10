@@ -64,7 +64,7 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
     private void PrepareSegmentDurationSelection()
     {   
     	int i;
-	    Spinner spinner = (Spinner) findViewById(R.id.latency);
+	    Spinner spinner = (Spinner) findViewById(R.id.segment_duration);
 	    spinner.setOnItemSelectedListener(this);
 	    List<String> duraions = new ArrayList<String>();
 
@@ -75,7 +75,7 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
 	    dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 	    spinner.setAdapter(dataAdapter);
 	    
-	    int SpinnerPostion = dataAdapter.getPosition(Integer.toString( ConfigDatabase.mSegmentDUration));
+	    int SpinnerPostion = dataAdapter.getPosition(Integer.toString( ConfigDatabase.mSegmentDuration));
 	    spinner.setSelection(SpinnerPostion, false);        
     }
   

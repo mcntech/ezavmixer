@@ -41,6 +41,11 @@
             android:label="@string/server_list" >
             android:theme="@android:style/Theme.Dialog" />
         </activity>     
+      <activity
+            android:name="com.mcntech.ezscreencast.ShareMpdLink"
+            android:label="@string/share_mpd_link" >
+            android:theme="@android:style/Theme.Dialog" />
+        </activity>             
      <activity
             android:name="com.mcntech.ezscreencast.ConfigMpdSession"
             android:label="@string/server_config" >

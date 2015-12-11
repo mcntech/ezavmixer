@@ -1447,7 +1447,7 @@ int CMpdPublishMemFile::ReceiveInitSegment(const char *pData, int nLen)
 		m_MemFile.Close();
 
 		std::string segemtnInitUrl = szTsFile;
-		m_pMpdRepresentation->SetInitializationSegment(&segemtnInitUrl);
+		m_pMpdRepresentation->SetInitializationSegment(segemtnInitUrl);
 	}
 
 Exit:
@@ -1525,6 +1525,7 @@ int CMpdPublishS3::ReceiveInitSegment(const char *pData, int nLen)
 		std::time_t req_time = std::time(NULL);
 		std::string strInitSegmentName = GetMpdInitSegmentName(m_pszMpdFilePrefix);
 		m_pHlsOut->Send(m_pszParentFolder, strInitSegmentName.c_str(), req_time, pData, nLen, CONTENT_STR_MP2T, 30);
+		m_pMpdRepresentation->SetInitializationSegment(strInitSegmentName);
 	} else {
 		JDBG_LOG(CJdDbg::LVL_ERR,("%s:Invalid init segment", __FUNCTION__));
 	}

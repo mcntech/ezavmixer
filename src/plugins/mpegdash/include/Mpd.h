@@ -81,7 +81,7 @@ public:
 	{
 	}
 
-	void SetInitializationSegment(std::string *pUrl){}
+	void SetInitializationSegment(std::string &Url){}
 public:
 
 	CMpdInitializationUrl *m_SpegmentInitializationUrl;
@@ -100,7 +100,7 @@ public:
 	~CMpdSegmentTemplate();
 	void Setup(int nStartNumber, int nDurationMs, const char *pszTemplate);
 
-	void SetInitializationSegment(std::string *pUrl);
+	void SetInitializationSegment(std::string &Url);
 public:
 
 	CMpdInitializationUrl *m_SpegmentInitializationUrl;
@@ -142,7 +142,7 @@ public:
 		m_listSegmentUrl.remove_if(deleteAll);
 	}
 	void Update(int nStartTime, int fXlink, std::list<std::string> *plistUrl, int nStatNumber);
-	void SetInitializationSegment(std::string *pUrl);
+	void SetInitializationSegment(std::string &Url);
 	const char *GetInitializationSegment();
 	const char *GetXlink();
 	void SaveXlinkList(const char *szFileName);
@@ -177,7 +177,7 @@ public:
 	int GetMimeType();
 	int GetCutomAttribMoofLength();
 	void UpdateSegmentList(int nStartTime, int nSegmentDuration, int nStartNum, std::list<std::string> *plistUrl);
-	void SetInitializationSegment(std::string *pUrl);
+	void SetInitializationSegment(std::string &Url);
 	const char *GetInitializationSegment();
 	void SetStreamParams(int nWith, int nHeight, int nFrameRate, int nBandwidth);
 	int  IsLive(){ return 1;}

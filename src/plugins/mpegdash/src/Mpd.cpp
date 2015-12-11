@@ -147,14 +147,14 @@ void CMpdSegmentTemplate::Setup(int nStartNumber, int nDurationMs, const char *p
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
-void CMpdSegmentTemplate::SetInitializationSegment(std::string *pInitializationUrl)
+void CMpdSegmentTemplate::SetInitializationSegment(std::string &InitializationUrl)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
-	if(pInitializationUrl->size())	{
-		std::string Url = *pInitializationUrl;
+	if(InitializationUrl.size())	{
+		std::string Url = InitializationUrl;
 		CMpdInitializationUrl *pUrl = new CMpdInitializationUrl();
 		TiXmlElement *pElemUrl = new TiXmlElement(ELEMENT_SegmentInitialization);
-		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENT_INIT_sourceURL, pInitializationUrl->c_str());
+		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENT_INIT_sourceURL, InitializationUrl.c_str());
 		m_pNode->LinkEndChild(pElemUrl);
 	}
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
@@ -232,14 +232,14 @@ void CMpdSegmentList::SaveXlinkList(const char *szFileName)
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
-void CMpdSegmentList::SetInitializationSegment(std::string *pInitializationUrl)
+void CMpdSegmentList::SetInitializationSegment(std::string &InitializationUrl)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
-	if(pInitializationUrl->size())	{
-		std::string Url = *pInitializationUrl;
+	if(InitializationUrl.size())	{
+		std::string Url = InitializationUrl;
 		CMpdInitializationUrl *pUrl = new CMpdInitializationUrl();
 		TiXmlElement *pElemUrl = new TiXmlElement(ELEMENT_SegmentInitialization);
-		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENT_INIT_sourceURL, pInitializationUrl->c_str());
+		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENT_INIT_sourceURL, InitializationUrl.c_str());
 		m_pNode->LinkEndChild(pElemUrl);
 	}
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
@@ -382,10 +382,10 @@ void CMpdRepresentation::UpdateSegmentList(int nStartTime, int nSegmentDuration,
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
-void CMpdRepresentation::SetInitializationSegment(std::string *pUrl)
+void CMpdRepresentation::SetInitializationSegment(std::string &Url)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
-	m_pSegmentList->SetInitializationSegment(pUrl);
+	m_pSegmentList->SetInitializationSegment(Url);
 	m_pParent->CallbackChildUpdate(this);
 }
 

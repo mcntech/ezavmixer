@@ -1446,8 +1446,8 @@ int CMpdPublishMemFile::ReceiveInitSegment(const char *pData, int nLen)
 		m_MemFile.Write(pData, nLen);
 		m_MemFile.Close();
 
-		//std::string segemtnInitUrl = szTsFile;
-		//m_pMpdRepresentation->SetInitializationSegment(&segemtnInitUrl);
+		std::string segemtnInitUrl = szTsFile;
+		m_pMpdRepresentation->SetInitializationSegment(&segemtnInitUrl);
 	}
 
 Exit:

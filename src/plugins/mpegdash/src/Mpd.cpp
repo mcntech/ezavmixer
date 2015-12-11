@@ -283,6 +283,31 @@ CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent)
 	m_pParent = pParent;
 }
 
+CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string szId, TiXmlNode *pNode, int fSegmentTmplate)
+{
+	m_pParent = pParent;
+	m_szId = szId;
+	m_pNode = pNode;
+	TiXmlElement *pElem = m_pNode->ToElement();
+
+	if(!fSegmentTmplate) {
+		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
+		m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
+
+		m_pNode->InsertEndChild(*pSegElem);
+		TiXmlNode *pSegNode = m_pNode->FirstChild();
+		m_pSegmentList = new CMpdSegmentList(this, pSegNode);
+	} else {
+		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
+	}
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_mimeType, ATTRIB_VAL_ADAPTSET_MIMETYPE_MP4);
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_codecs, ATTRIB_VAL_ADAPTSET_codecs_AVC1_42E01E);
+
+	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_width, "1280");
+	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_height, "720");
+	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_bandwidth, "1000000");
+
+}
 
 const char *CMpdRepresentation::GetId()
 {
@@ -391,6 +416,15 @@ CMpdAdaptaionSet::CMpdAdaptaionSet(CMpdPeriod *pParent, TiXmlNode* pNode)
 	m_pParent = pParent;
 	m_pNode = pNode;
 	m_pSegmentTemplate = NULL;
+
+	TiXmlElement *pElem = m_pNode->ToElement();
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_mimeType, ATTRIB_VAL_ADAPTSET_MIMETYPE_MP4);
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_codecs, ATTRIB_VAL_ADAPTSET_codecs_AVC1_42E01E);
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_segmentAlignment, "true");
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_subsegmentAlignment, "true");
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_bitstreamSwitching, "false");
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_startWithSAP, "2");
+	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_subsegmentStartsWithSAP, "2");
 }
 
 int CMpdAdaptaionSet::CallbackChildUpdate(CMpdRepresentation *pChild)
@@ -475,25 +509,16 @@ CMpdRoot *CMpdAdaptaionSet::GetMpd()
 int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
+	TiXmlNode   *pRepNode;
 	TiXmlElement *pRepElem = new TiXmlElement( ELEMENT_Representation );
-	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this);
 
-	pRepresentation->m_szId = szId;
 	//pRepresentation->m_inputSwitch = szSwitchId;
-	m_listRepresentations.push_back(pRepresentation);
+
 	m_pNode->InsertEndChild(*pRepElem);
-	pRepresentation->m_pNode = m_pNode->FirstChild(); // TODO add support for multiple representation
+	pRepNode = m_pNode->FirstChild(); // TODO add support for multiple representation
 
-	if(!fSegmentTmplate) {
-		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
-		pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
-
-		pRepresentation->m_pNode->InsertEndChild(*pSegElem);
-		TiXmlNode *pSegNode = pRepresentation->m_pNode->FirstChild();
-		pRepresentation->m_pSegmentList = new CMpdSegmentList(pRepresentation, pSegNode);
-	} else {
-		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
-	}
+	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this, szId, pRepNode, fSegmentTmplate);
+	m_listRepresentations.push_back(pRepresentation);
 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return 0;
@@ -516,6 +541,15 @@ CMpdRepresentation *CMpdAdaptaionSet::FindRepresentation(std::string szId)
 CMpdPeriod::CMpdPeriod(CMpdRoot *pParent)
 {
 	m_pParent = pParent;
+}
+
+CMpdPeriod::CMpdPeriod(CMpdRoot *pParent, std::string strId, TiXmlNode *pNode, int nStartTime)
+{
+	m_pParent = pParent;
+	m_pNode = pNode;
+	m_szId = strId;
+	TiXmlElement *pElem = m_pNode->ToElement();
+	pElem->SetAttribute(ATTRIB_NAME_PERIOD_start, nStartTime);
 }
 
 CMpdPeriod::~CMpdPeriod()
@@ -543,10 +577,6 @@ CMpdAdaptaionSet *CMpdPeriod::CreateAdaptationSet(std::string szId)
 	TiXmlNode* pAdaptNode = NULL;
 
 	pAdaptElem = new TiXmlElement( ELEMENT_AdaptationSet );
-	CMpdAdaptaionSet *pAdaptaionSet = new  CMpdAdaptaionSet(this, pAdaptNode);
-
-	pAdaptaionSet->m_szId = szId;
-
 
 	//			pSegNode = pAdaptElem->FirstChild(ELEMENT_SegmentTemplate);
 	//			if(pSegNode) {
@@ -556,9 +586,14 @@ CMpdAdaptaionSet *CMpdPeriod::CreateAdaptationSet(std::string szId)
 	//			}
 
 	//while(pRepNode = pAdaptNode->IterateChildren(ELEMENT_Representation, pRepNode))
-	m_listAdaptionSets.push_back(pAdaptaionSet);
+
 	m_pNode->InsertEndChild(*pAdaptElem);
-	pAdaptaionSet->m_pNode = m_pNode->FirstChild(); // TODO: support for multiple adapt
+	pAdaptNode = m_pNode->FirstChild(); // TODO: support for multiple adapt
+
+	CMpdAdaptaionSet *pAdaptaionSet = new  CMpdAdaptaionSet(this, pAdaptNode);
+	pAdaptaionSet->m_szId = szId;
+	m_listAdaptionSets.push_back(pAdaptaionSet);
+
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
@@ -590,17 +625,14 @@ CMpdPeriod *CMpdRoot::CreatePeriod(std::string szId)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	TiXmlElement *pPeriodElem;
-	TiXmlNode* pPeriodNode = NULL;
 
 	pPeriodElem = new TiXmlElement( ELEMENT_Period );
-	CMpdPeriod *pPeriod = new CMpdPeriod(this);
-	pPeriodElem->SetAttribute(ATTRIB_NAME_PERIOD_start, 0);
-
-	pPeriod->m_pParent = this;
-	pPeriod->m_szId = szId;
-	m_listPeriods.push_back(pPeriod);
 	m_pNode->InsertEndChild(*pPeriodElem);
-	pPeriod->m_pNode = m_pNode->FirstChild(); // TODO multiple periods
+	TiXmlNode   *periodNode = m_pNode->FirstChild();
+
+	CMpdPeriod *pPeriod = new CMpdPeriod(this, szId, periodNode, 0);
+	m_listPeriods.push_back(pPeriod);
+
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pPeriod;
 }

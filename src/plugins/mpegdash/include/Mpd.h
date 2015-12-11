@@ -171,6 +171,8 @@ public:
 		TYPE_SEGMENT_TEMPLATE,
 	};
 	CMpdRepresentation(CMpdAdaptaionSet *pParent);
+	CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string szId, TiXmlNode *pNode, int fSegmentTmplate);
+
 	const char *GetId();
 	int GetMimeType();
 	int GetCutomAttribMoofLength();
@@ -243,6 +245,8 @@ class CMpdPeriod
 {
 public:
 	CMpdPeriod(CMpdRoot *pParent);
+	CMpdPeriod(CMpdRoot *pParent, std::string strId, TiXmlNode *pNode, int nStartTime);
+
 	~CMpdPeriod();
 	CMpdAdaptaionSet *CreateAdaptationSet(std::string szId);
 	CMpdAdaptaionSet *FindAdaptationSet(std::string szAdapt);

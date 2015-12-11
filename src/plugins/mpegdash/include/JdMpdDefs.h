@@ -68,7 +68,8 @@
 #define ATTRIB_VAL_ADAPTSET_MIMETYPE_MP2T     "video/mp2t"
 #define ATTRIB_VAL_ADAPTSET_MIMETYPE_MP4      "video/mp4"
 
-#define ATTRIB_NAME_ADAPTSET_codecs              "codecscodecs"
+#define ATTRIB_NAME_ADAPTSET_codecs              "codecs"
+#define ATTRIB_VAL_ADAPTSET_codecs_AVC1_42E01E  "avc1.42E01E"
 #define ATTRIB_NAME_ADAPTSET_frameRate           "frameRate"
 #define ATTRIB_NAME_ADAPTSET_segmentAlignment    "segmentAlignment" 
 #define ATTRIB_NAME_ADAPTSET_subsegmentAlignment "subsegmentAlignment"

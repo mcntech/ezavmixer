@@ -212,7 +212,7 @@ void CMpdSegmentList::Update(int nCrntTIme, int fXlink, std::list<std::string> *
 			m_listSegmentUrl.push_back(pSegmentUrl);
 		}
 		TiXmlElement *pElemUrl = pElemNode->ToElement();
-		pElemUrl->SetAttribute(ATTRIB_NAME_SEGTMPLT_startNumber, nStatNumber);
+		//pElemUrl->SetAttribute(ATTRIB_NAME_SEGTMPLT_startNumber, nStatNumber);
 		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENTLIST_presentationTimeOffset, nCrntTIme);
 		pElemUrl->SetAttribute(ATTRIB_NAME_SEGMENTLIST_timescale, 1000);
 	}

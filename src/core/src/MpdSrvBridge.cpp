@@ -64,7 +64,7 @@ CMpdSrvBridgeChan::~CMpdSrvBridgeChan()
 	}
 }
 
-int CMpdSrvBridgeChan::SendVideo(unsigned char *pData, int size, unsigned long lPts)
+int CMpdSrvBridgeChan::SendVideo(unsigned char *pData, int size, unsigned long lPts90kHz)
 {
 	long hr = 0;
 	JDBG_LOG(CJdDbg::LVL_STRM, ("vid:size=%d pts=%d", size,lPts));

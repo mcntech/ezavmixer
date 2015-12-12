@@ -42,8 +42,8 @@ typedef struct _ConnCtxT
 {
 	void *pPvtCtx;
 
-	int (*Read) (struct _ConnCtxT *pConn, char *pData, int lenData, unsigned long *pulFlags, long long *pllPts);
-	int (*Write) (struct _ConnCtxT *pConn, char *pData, int nMaxLen, unsigned long ulFlags, long long llPts);
+	int (*Read) (struct _ConnCtxT *pConn, char *pData, int lenData, unsigned long *pulFlags, long long *pllPtsUs);
+	int (*Write) (struct _ConnCtxT *pConn, char *pData, int nMaxLen, unsigned long ulFlags, long long llPtsUs);
 	int (*IsEmpty) (struct _ConnCtxT *pConn);
 	int (*IsFull) (struct _ConnCtxT *pConn);
 	int (*Flush) (struct _ConnCtxT *pConn);

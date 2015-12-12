@@ -245,7 +245,7 @@ public class ScreenRecorder extends Thread {
                 if(mStartPtsUs == 0)
                 	mStartPtsUs = mBufferInfo.presentationTimeUs;
             	
-                pts = (mAudBufferInfo.presentationTimeUs - mStartPtsUs) * 90 / 1000;
+                pts = (mAudBufferInfo.presentationTimeUs - mStartPtsUs);
  
                 if(pts < prevPts) {
                 	Log.d(TAG, "pts_error pts=" + pts +" prevPts= " + prevPts);
@@ -409,18 +409,15 @@ public class ScreenRecorder extends Thread {
                 	mStartExtVClkUs = fcVClkUs;
             	
                 if(mfSlaveToExtClock) {
-	                pts =  (fcVClkUs - mStartExtVClkUs) * 90 / 1000;
+	                pts =  (fcVClkUs - mStartExtVClkUs);
                 } else {
-                	pts = (mBufferInfo.presentationTimeUs - mStartPtsUs) * 90 / 1000;
+                	pts = (mBufferInfo.presentationTimeUs - mStartPtsUs);
                 }
  
                 if(pts < prevPts) {
                 	Log.d(TAG, "pts_error pts=" + pts +" prevPts= " + prevPts);
                 }
                 prevPts=pts;
-                //Log.d(TAG, "got buffer, info: size=" + mBufferInfo.size
-                //        + ", pts(ms)=" + (mBufferInfo.presentationTimeUs - mStartPtsUs)/ 1000
-                //        + " FcClk=" + (fcVClkUs - mStartFcVClkUs ) / 1000);
                 
 	            if((mBufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
 	            	prependLen = mSpsDdata.length + mPpsDdata.length;

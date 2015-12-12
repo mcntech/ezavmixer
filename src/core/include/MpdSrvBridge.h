@@ -24,8 +24,8 @@ public:
 	~CMpdSrvBridgeChan();
 
 	int Run(COutputStream *pOutputStream);
-	int SendVideo(unsigned char *pData, int size, unsigned long lPts);
-	int SendAudio(unsigned char *pData, int size, unsigned long lPts);
+	int SendVideo(unsigned char *pData, int size, unsigned long lPts90kHz);
+	int SendAudio(unsigned char *pData, int size, unsigned long lPts90kHz);
 	int SetVideoDiscont();
 	int SetVideoEos();
 

@@ -264,7 +264,7 @@ class CMpdRoot
 {
 public:
 	CMpdRoot(const char *pszConfFile);
-	CMpdRoot( int fDynamic);
+	CMpdRoot( int fDynamic, int nSegmentDurationMs);
 	CMpdRoot(const char *szSwitchId[], int numSwitches);
 	~CMpdRoot();
 	
@@ -290,7 +290,8 @@ public:
 	TiXmlNode* m_pNode;
 	TiXmlDocument *m_pDoc;
 	
-	
+	int           m_fIsLive;
+	int           m_nSegmentDurationMs;
 	std::string   m_strSaveFile;
 	unsigned int  m_nUpdateTime;
 	unsigned int  m_nUpdateInterval;

@@ -67,10 +67,10 @@ CMpdSrvBridgeChan::~CMpdSrvBridgeChan()
 int CMpdSrvBridgeChan::SendVideo(unsigned char *pData, int size, unsigned long lPts90kHz)
 {
 	long hr = 0;
-	JDBG_LOG(CJdDbg::LVL_STRM, ("vid:size=%d pts=%d", size,lPts));
+	JDBG_LOG(CJdDbg::LVL_STRM, ("vid:size=%d pts=%d", size,lPts90kHz));
 	m_Mutex.Acquire();
 	if(m_pSegmenter) {
-		if (mpdWriteFrameData(m_pSegmenter, (char *)pData, size, 1, m_fDiscont, lPts / 90) < 0 ) {
+		if (mpdWriteFrameData(m_pSegmenter, (char *)pData, size, 1, m_fDiscont, lPts90kHz / 90) < 0 ) {
 			hr = -1;
 		}
 	}

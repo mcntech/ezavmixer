@@ -12,10 +12,10 @@ CDashMultiPublishClnt::CDashMultiPublishClnt(CPublishEventBase *pEventBase)
 	m_pOutputStream = new COutputStream("Test");
 }
 
-int CDashMultiPublishClnt::CreateMpd(std::string szId)
+int CDashMultiPublishClnt::CreateMpd(std::string szId, int fDynamic, int nDurationMs)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
-	CMpdRoot *pMpdRoot = new CMpdRoot(1);
+	CMpdRoot *pMpdRoot = new CMpdRoot(fDynamic, nDurationMs);
 	m_listMpd[szId] = pMpdRoot;
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return 0;

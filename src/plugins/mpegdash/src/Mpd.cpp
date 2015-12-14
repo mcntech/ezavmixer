@@ -945,7 +945,7 @@ int CMpdRoot::IsDynamic()
 	return res;
 }
 
-CMpdRoot::CMpdRoot(int fDynamic)
+CMpdRoot::CMpdRoot(int fDynamic, int nSegmentDurationMs)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	m_pDoc = new TiXmlDocument( );
@@ -953,7 +953,7 @@ CMpdRoot::CMpdRoot(int fDynamic)
 	char szDaration[128];
 	TiXmlElement *pElem  = new TiXmlElement( ELEMENT_MPD );
 
-	pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
+
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS_XSI, ATTRIB_VAL_MPD_XMLNS_XSI);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS, ATTRIB_NAME_MPD_XMLNS);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XSI_SCHEMA_LOCN, ATTRIB_VAL_MPD_XSI_SCHEMA_LOCN);
@@ -966,13 +966,16 @@ CMpdRoot::CMpdRoot(int fDynamic)
 		time_now += 0;//GetCustomAvailabilityDelay() / 1000;
 		ast_time = *gmtime(&time_now);
 		strftime(availability_start_time, 64, "%Y-%m-%dT%H:%M:%S", &ast_time);
+		pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
+		pElem->SetAttribute(ATTRIB_NAME_MPD_TYPE, ATTRIB_VAL_MPD_TYPE_DYNAMIC);
+		FormatTime(nSegmentDurationMs / 1000, szDaration, MAX_TIME_STRING);
+		pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
 		pElem->SetAttribute(ATTRIB_NAME_MPD_availabilityStartTime, availability_start_time);
 	} else {
-		// TODO: Make v_dur, a_dur externally set
-		int v_dur = 0;
-		int a_dur = 0;
-		int dur = v_dur > a_dur ? v_dur : a_dur;
-		FormatTime(dur, szDaration, MAX_TIME_STRING);
+		FormatTime(nSegmentDurationMs / 1000, szDaration, MAX_TIME_STRING);
+
+		pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_on_demand);
+		pElem->SetAttribute(ATTRIB_NAME_MPD_TYPE, ATTRIB_VAL_MPD_TYPE_STATIC);
 		pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
 	}
 

@@ -33,7 +33,14 @@
 	        android:layout_gravity ="right"
 	        android:checked="true" 
 	        android:id="@+id/enable_video" />
-	
+	   <CheckBox
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/is_live_stream" 
+	        android:layout_gravity ="right"
+	        android:checked="true" 
+	        android:id="@+id/is_live_stream" />
+	   	
 	       <!-- Text Label -->
 	    <TextView
 	        android:layout_width="fill_parent"

@@ -22,8 +22,10 @@ public class ConfigDatabase {
 	public static boolean mEnableVideo;
 	public static boolean mEnableAudio;
 	public static boolean mSystemApp;
+	public static boolean mIsLiveStream;
 	
 	final static String KEY_SEGMENT_DURATION = "segment_duration";
+	final static String KEY_IS_LIVE_STREAM = "is_live_stream";
 	final static String KEY_PUBLISH_URL_1 = "rtsp:192.168.1.20:554/test";
 
 	final static String KEY_AUDIO_SOURCE = "audio_source";
@@ -42,10 +44,11 @@ public class ConfigDatabase {
 	public static void loadSavedPreferences(Context context, boolean isSytemApp) {
 		SharedPreferences sharedPreferences = PreferenceManager
 				.getDefaultSharedPreferences(context);
-		mSegmentDuration = sharedPreferences.getInt(KEY_SEGMENT_DURATION, 1);
+		mSegmentDuration = sharedPreferences.getInt(KEY_SEGMENT_DURATION, 4);
 		mVideoBitrate = sharedPreferences.getInt(KEY_VIDEO_BITRATE, 6000000);
 		mAudioSource = sharedPreferences.getString(KEY_AUDIO_SOURCE, AUDSRC_SYSTEM_AUDIO);
 		mEnableVideo = sharedPreferences.getBoolean(KEY_ENABLE_VIDEO, true);
+		mIsLiveStream = sharedPreferences.getBoolean(KEY_IS_LIVE_STREAM, true);
 		if(isSytemApp) {
 			mEnableAudio = sharedPreferences.getBoolean(KEY_ENABLE_AUDIO, false);
 		} else {

@@ -49,7 +49,7 @@ public:
 	CDashMultiPublishClnt(CPublishEventBase *pEventBase);
 	CDashMultiPublishClnt(CConfigBase *pConfig);
 	CDashMultiPublishClnt(){m_pConfig=NULL;}
-	int CreateMpd(std::string szId);
+	int CreateMpd(std::string szId, int fIsLive, int nDurationMs);
 	int CreatePeriod(std::string szId, std::string szperiodId);
 	int CreateAdaptationSet(std::string szmpdId, std::string szperiodId, std::string szadaptId);
 	int CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId);

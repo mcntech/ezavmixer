@@ -22,6 +22,7 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
 	
 	CheckBox mEnAudCheckBox;
 	CheckBox mEnVidCheckBox;
+	CheckBox mIsLiveCheckBox;	
 	final int BITRATE_MBPS = 1000000;
 	
     @Override
@@ -57,10 +58,18 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
 		        	 ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_ENABLE_VIDEO, ConfigDatabase.mEnableVideo);
 		        }
         	}); 
-
         mEnVidCheckBox.setChecked(ConfigDatabase.mEnableVideo);
+        
+        mIsLiveCheckBox = (CheckBox) findViewById(R.id.is_live_stream);
+        mIsLiveCheckBox.setOnClickListener(new OnClickListener() {
+	        public void onClick(View v) {
+	        	 ConfigDatabase.mIsLiveStream = mIsLiveCheckBox.isChecked();
+	        	 ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_IS_LIVE_STREAM, ConfigDatabase.mIsLiveStream);
+	        }
+    	}); 
+        mIsLiveCheckBox.setChecked(ConfigDatabase.mIsLiveStream);
     }
-
+   
     private void PrepareSegmentDurationSelection()
     {   
     	int i;

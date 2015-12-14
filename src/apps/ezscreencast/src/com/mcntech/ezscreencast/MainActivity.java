@@ -43,6 +43,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private MediaProjectionManager mMediaProjectionManager;
     private ScreenRecorder mRecorder;
     private Button mBtnStart;
+    private Button mBtnShareLink;
     
     RemoteNodeHandler mDeviceHandler;
 	public static ListView mRemoteNodeListView = null;
@@ -63,9 +64,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		mBtnStart.setOnClickListener(this);
 		mBtnStart.setTag(BTN_ID_START);
 		
-		mBtnStart = (Button) findViewById(R.id.button_share_link);
-		mBtnStart.setOnClickListener(this);
-		mBtnStart.setTag(BTN_ID_SHARE_LINK);
+		mBtnShareLink = (Button) findViewById(R.id.button_share_link);
+		mBtnShareLink.setOnClickListener(this);
+		mBtnShareLink.setTag(BTN_ID_SHARE_LINK);
 		
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		

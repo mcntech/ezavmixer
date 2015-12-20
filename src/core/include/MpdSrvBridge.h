@@ -20,7 +20,7 @@
 class CMpdSrvBridgeChan : public CStrmOutBridge
 {
 public:
-	CMpdSrvBridgeChan(int fMuxType, int nSegmentStart, int nSegmentTime, int nTimeShiftBuffer);
+	CMpdSrvBridgeChan(int nSegmentStart);
 	~CMpdSrvBridgeChan();
 
 	int Run(COutputStream *pOutputStream);
@@ -69,8 +69,6 @@ public:
 	COsalMutex      m_Mutex;
 	int             m_fDiscont;
 	int             m_nSegmentStart;
-	int             m_nSegmentTime;
-	int             m_nTimeShiftBuffer;
 	int             m_nMuxType;
 };
 
@@ -83,13 +81,10 @@ public:
 			std::string         szId,
 			CMpdRepresentation *pCfgRepresenation,
 			int        nSegmentStart,
-			int        nSegemtTimeMs,
-			int        nTimeShiftBuffer,
 			const char *pszFilePrefix,
 			const char *pszParentFolder,
 			const char *pszBucketOrServerRoot,
-			CJdAwsContext       *pJdAwsContext,
-			int        nMimeType);
+			CJdAwsContext       *pJdAwsContext);
 
 	CMpdSrvBridgeChan *getChannel(std::string szId);
 

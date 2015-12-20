@@ -164,27 +164,22 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 {
 	int result = 0;
 	int nStartIndex;
-	int nSegmentTimeMs = 0;
 	int nTimeShiftBufferMs = 0;
 	char strMpdFileName[256];
 	int nMuxType = MPD_MUX_TYPE_M4S;
 	int fFileUpdate = 0;
 
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
-	nSegmentTimeMs = pMpdRoot->GetMaxSegmentDuration();
-	nTimeShiftBufferMs = pMpdRoot->GetTimeShiftBuffer();
+
 	nStartIndex = time(NULL);
 
 	CMpdSrvBridgeChan *pOutBridge;
 
-	//pszFilePrefix = pRepresentation->GetId();
-	//pszMimetype = pRepresentation->GetMimetTpe();
 	CJdAwsContext JdAwsContext;
 	pOutBridge = m_pMpdSrvBridge->CreateChannel(szId, pRepresentation,
-			nStartIndex, nSegmentTimeMs, nTimeShiftBufferMs,
+			nStartIndex,
 			pServerNode->m_szFilePefix.c_str(), pServerNode->m_szFolder.c_str(), pServerNode->m_szBucket.c_str(),
-			&pServerNode->m_AwsContext,
-			nMuxType);
+			&pServerNode->m_AwsContext);
 
 	if(pOutBridge) {
 		pPublishSwitch->AddOutput(pOutBridge);

@@ -170,21 +170,35 @@ public:
 		TYPE_SEGMENT_LIST,
 		TYPE_SEGMENT_TEMPLATE,
 	};
+	enum MIME_TYPE {
+		MIME_MP2T,
+		MIME_MP4
+	};
+	enum VID_CODEC_TYPE {
+		VID_CODEC_42E01E,
+		VID_CODEC_01,
+	};
+	enum AUD_CODEC_TYPE {
+		AUD_CODEC_00,
+		AUD_CODEC_01,
+	};
+
 	CMpdRepresentation(CMpdAdaptaionSet *pParent);
 	CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string szId, TiXmlNode *pNode, int fSegmentTmplate);
 
 	const char *GetId();
-	int GetMimeType();
+	MIME_TYPE GetMimeType();
 	int GetCutomAttribMoofLength();
 	void UpdateSegmentList(int nStartTime, int nSegmentDuration, int nStartNum, std::list<std::string> *plistUrl);
 	void SetInitializationSegment(std::string &Url);
 	const char *GetInitializationSegment();
 	void SetStreamParams(int nWith, int nHeight, int nFrameRate, int nBandwidth);
-	int  IsLive(){ return 1;}
 	CMpdRoot *GetMpd();
 	CMpdAdaptaionSet *GetAdaptationSet(){return m_pParent;}
 
 public:
+	int            m_nWidth;
+	int            m_nHeight;
 	int            m_nBandwidth;
 	int            m_nQualityRanking;
 	char           m_nDependencyId[MPD_ID_SIZE];
@@ -200,6 +214,9 @@ public:
 	CMpdSegmentBase      *m_pSegmentBase;
 	CMpdSegmentList      *m_pSegmentList;
 	SEGMENT_TYPE         m_SegmentType;
+	MIME_TYPE            m_MimeType;
+	VID_CODEC_TYPE       m_VidCodecType;
+	AUD_CODEC_TYPE       m_AuCodecType;
 };
 
 class CMpdAdaptaionSet
@@ -285,6 +302,8 @@ public:
 	int GetCustomAvailabilityDelay();
 	int IsUpdateRequired();
 	int IsDynamic();
+	int IsLive(){return m_fIsLive;}
+	int GetSegmentDuration(){return m_nSegmentDurationMs;}
 public:
 	std::vector<CMpdPeriod *> m_listPeriods;
 	TiXmlNode* m_pNode;

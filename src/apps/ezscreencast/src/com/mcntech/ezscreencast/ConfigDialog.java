@@ -36,6 +36,9 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
         
         PrepareAudioSourceSelection();
         PrepareBitrateSelection();
+        PrepareMuxTypeSelection();
+        PrepareVidCodecTypeSelection();
+        PrepareAudCodecTypeSelection();        
         PrepareSegmentDurationSelection();
         PrepareVdeioResolutionSelection();
         
@@ -147,6 +150,62 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
 	    int SpinnerPostion = Adapter.getPosition(ConfigDatabase.mAudioSource);
 	    spinner.setSelection(SpinnerPostion, false);        
 	}
+
+    private void PrepareMuxTypeSelection()
+    {
+	    int i;
+	    Spinner spinner = (Spinner) findViewById(R.id.mux_type);
+	    spinner.setOnItemSelectedListener(this);
+	    List<String> sources = new ArrayList<String>();
+	
+	    sources.add(ConfigDatabase.MUX_TYPE_MP4);
+	    sources.add(ConfigDatabase.MUX_TYPE_TS);
+
+	
+	    ArrayAdapter<String> Adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sources);
+	    Adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+	    spinner.setAdapter(Adapter);
+	    
+	    int SpinnerPostion = Adapter.getPosition(ConfigDatabase.mMuxType);
+	    spinner.setSelection(SpinnerPostion, false);        
+	}
+
+    private void PrepareVidCodecTypeSelection()
+    {
+	    int i;
+	    Spinner spinner = (Spinner) findViewById(R.id.video_codec_type);
+	    spinner.setOnItemSelectedListener(this);
+	    List<String> sources = new ArrayList<String>();
+	
+	    sources.add(ConfigDatabase.VID_CODEC_TYPE_H264);
+	    sources.add(ConfigDatabase.VID_CODEC_TYPE_HEVC);
+
+	
+	    ArrayAdapter<String> Adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sources);
+	    Adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+	    spinner.setAdapter(Adapter);
+	    
+	    int SpinnerPostion = Adapter.getPosition(ConfigDatabase.mVidCodecType);
+	    spinner.setSelection(SpinnerPostion, false);        
+	}
+
+    private void PrepareAudCodecTypeSelection()
+    {
+	    int i;
+	    Spinner spinner = (Spinner) findViewById(R.id.audio_codec_type);
+	    spinner.setOnItemSelectedListener(this);
+	    List<String> sources = new ArrayList<String>();
+	
+	    sources.add(ConfigDatabase.AUD_CODEC_TYPE_AAC);
+
+	
+	    ArrayAdapter<String> Adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sources);
+	    Adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+	    spinner.setAdapter(Adapter);
+	    
+	    int SpinnerPostion = Adapter.getPosition(ConfigDatabase.mAudCodecType);
+	    spinner.setSelection(SpinnerPostion, false);        
+	}
     
 	@Override
 	public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2,
@@ -166,6 +225,32 @@ public class ConfigDialog extends Activity implements OnItemSelectedListener {
 		 		String audio_source = arg0.getAdapter().getItem(position).toString();
 		 		ConfigDatabase.mAudioSource = audio_source;
 		 		ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_AUDIO_SOURCE, ConfigDatabase.mAudioSource);
+		 	}
+		 	break;
+		 	case R.id.mux_type:
+		 	{
+		 		int position = arg0.getSelectedItemPosition();
+		 		String mux_type = arg0.getAdapter().getItem(position).toString();
+		 		ConfigDatabase.mMuxType = mux_type;
+		 		ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_MUX_TYPE, ConfigDatabase.mMuxType);
+		 	}
+		 	break;
+
+		 	case R.id.audio_codec_type:
+		 	{
+		 		int position = arg0.getSelectedItemPosition();
+		 		String selection = arg0.getAdapter().getItem(position).toString();
+		 		ConfigDatabase.mAudCodecType = selection;
+		 		ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_AUD_CODEC_TYPE, ConfigDatabase.mAudCodecType);
+		 	}
+		 	break;
+
+		 	case R.id.video_codec_type:
+		 	{
+		 		int position = arg0.getSelectedItemPosition();
+		 		String selection = arg0.getAdapter().getItem(position).toString();
+		 		ConfigDatabase.mVidCodecType = selection;
+		 		ConfigDatabase.savePreferences(getApplicationContext(), ConfigDatabase.KEY_VID_CODEC_TYPE, ConfigDatabase.mVidCodecType);
 		 	}
 		 	break;
 		 	

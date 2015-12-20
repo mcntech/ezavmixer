@@ -27,11 +27,7 @@ void *mpdPublishStart(
 		const char	*pszSrcM3u8Url,             ///< Play list file name
 		const char	*pszDestParentUrl,			///< Network folder name
 		const char	*pszBucketOrSvrRoot, 
-		//const char	*pszHost,
-		//const char	*szAccessId,
-		//const char	*szSecKey,
 		CJdAwsContext  *pServerCtxt,
-		int         fLiveOnly,
 		int         nStartIndex,
 		int         nDestType
 		);		

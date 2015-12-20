@@ -27,7 +27,7 @@ static int HasSps(unsigned char *pData, int nLen)
 	return 0;
 }
 
-CMpdSrvBridgeChan::CMpdSrvBridgeChan(int fMuxType, int nSegmentStart, int nSegmentTimeMs, int nTimeShiftBuffer) : CStrmOutBridge("MPD")
+CMpdSrvBridgeChan::CMpdSrvBridgeChan(int nSegmentStart) : CStrmOutBridge("MPD")
 {
 	m_fEnableServer = 0;
 	m_fEnablePublish = 0;
@@ -35,10 +35,7 @@ CMpdSrvBridgeChan::CMpdSrvBridgeChan(int fMuxType, int nSegmentStart, int nSegme
 	m_pUploader = NULL;
 	m_pUploaderForExtHttpSrv = NULL;
 	m_nSegmentStart = nSegmentStart;
-	m_nSegmentTime = nSegmentTimeMs;
-	m_nTimeShiftBuffer = nTimeShiftBuffer;
 	m_pMpdRepresentation = NULL;
-	m_nMuxType = fMuxType;
 	m_pSegmenter = NULL;
 	m_fDiscont = 1;
 }
@@ -126,7 +123,7 @@ int CMpdSrvBridgeChan::SetServerConfig(
 	const char *pszFilePrefix, 
 	const char *pszParentFolder, 
 	const char *pszBucketOrServerRoot,
-	CJdAwsContext *pServerCtx/*const char *pszHost, const char *pszAccessId, const char *pszSecKey*/)
+	CJdAwsContext *pServerCtx)
 { 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:%s:%s", pszFilePrefix,pszParentFolder,pszBucketOrServerRoot));
 	m_fEnableServer = 0; // TODO
@@ -161,7 +158,6 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 			m_szParentFolder.c_str(),
 			m_szBucketOrServerRoot.c_str(),
 			&m_AwsContext,
-			m_pMpdRepresentation->IsLive(), 
 			m_nSegmentStart, nUpLoadType);
 	}
 	if(m_fEnableServer){
@@ -194,16 +190,12 @@ CMpdSrvBridgeChan *CMpdSrvBridge::CreateChannel(
 		std::string         szId,
 		CMpdRepresentation *pCfgRepresenation, 
 		int        nSegmentStart,
-		int        nSegemtTimeMs, 
-		int        nTimeShiftBuffer, 
 		const char *pszFilePrefix, 
 		const char *pszParentFolder, 
 		const char *pszBucketOrServerRoot,
-		CJdAwsContext *pAwsContext,
-		/*const char *pszHost, const char *pszAccessId, const char *pszSecKey,*/
-		int        nMimeType)
+		CJdAwsContext *pAwsContext)
 {
-	CMpdSrvBridgeChan *pChan = new CMpdSrvBridgeChan(nMimeType, nSegmentStart, nSegemtTimeMs, nTimeShiftBuffer);
+	CMpdSrvBridgeChan *pChan = new CMpdSrvBridgeChan(nSegmentStart);
 	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, pAwsContext);
 
 	m_listChan[szId] = pChan;

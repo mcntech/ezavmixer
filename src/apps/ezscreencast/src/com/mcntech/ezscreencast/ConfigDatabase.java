@@ -23,9 +23,15 @@ public class ConfigDatabase {
 	public static boolean mEnableAudio;
 	public static boolean mSystemApp;
 	public static boolean mIsLiveStream;
+	public static String mMuxType;
+	public static String mVidCodecType;
+	public static String mAudCodecType;
 	
 	final static String KEY_SEGMENT_DURATION = "segment_duration";
 	final static String KEY_IS_LIVE_STREAM = "is_live_stream";
+	final static String KEY_MUX_TYPE = "mux_type";	
+	final static String KEY_VID_CODEC_TYPE = "vid_codec_type";	
+	final static String KEY_AUD_CODEC_TYPE = "aud_codec_type";		
 	final static String KEY_PUBLISH_URL_1 = "rtsp:192.168.1.20:554/test";
 
 	final static String KEY_AUDIO_SOURCE = "audio_source";
@@ -35,10 +41,20 @@ public class ConfigDatabase {
 	final static String KEY_VIDEO_RESOLUTION = "video_resolution";
 	final static String AUDSRC_SYSTEM_AUDIO = "System Audio";
 	final static String AUDSRC_MIC = "Mic";
+	
 	final static String VID_RES_480P = "640x352@60fps";
 	final static String VID_RES_720P = "1280x720@60fps";
 	final static String VID_RES_1080P = "1920x1080@60fps";
 	final static String VID_RES_4K = "3840x2160@30fps";
+	
+	final static String MUX_TYPE_TS = "mux_type_ts";
+	final static String MUX_TYPE_MP4 = "mux_type_mp4";
+
+	final static String VID_CODEC_TYPE_H264 = "vid_codec_h264";
+	final static String VID_CODEC_TYPE_HEVC = "vid_codec_hevc";
+	
+	final static String AUD_CODEC_TYPE_AAC = "aud_codec_aac";
+	
 	public static ArrayList<OnyxRemoteNode> mOnyxRemoteNodeList = null;
 	
 	public static void loadSavedPreferences(Context context, boolean isSytemApp) {
@@ -49,6 +65,10 @@ public class ConfigDatabase {
 		mAudioSource = sharedPreferences.getString(KEY_AUDIO_SOURCE, AUDSRC_SYSTEM_AUDIO);
 		mEnableVideo = sharedPreferences.getBoolean(KEY_ENABLE_VIDEO, true);
 		mIsLiveStream = sharedPreferences.getBoolean(KEY_IS_LIVE_STREAM, true);
+		mMuxType = sharedPreferences.getString(KEY_MUX_TYPE, MUX_TYPE_MP4);
+		mVidCodecType = sharedPreferences.getString(KEY_VID_CODEC_TYPE, VID_CODEC_TYPE_H264);
+		mAudCodecType = sharedPreferences.getString(KEY_AUD_CODEC_TYPE, AUD_CODEC_TYPE_AAC);
+		
 		if(isSytemApp) {
 			mEnableAudio = sharedPreferences.getBoolean(KEY_ENABLE_AUDIO, false);
 		} else {

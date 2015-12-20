@@ -91,7 +91,8 @@ public class OnyxApi {
 		int nHeight = ConfigDatabase.getVideoHeight();
 		int nFramerate = ConfigDatabase.getVideoFramerate();
 		int segmentDurationMs = ConfigDatabase.mSegmentDuration * 1000;
-
+		String strMuxType = ConfigDatabase.mMuxType;
+		
 		addS3PublishNode(mHandle, jserverId,
 				jhost, jaccessId, jsecKey,
 				jbucket, jfolder, jfilePerfix);

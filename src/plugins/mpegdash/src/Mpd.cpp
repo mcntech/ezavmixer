@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #endif
 #include <time.h>
+#include <ctype.h>
 
 #ifdef WIN32
 #define snprintf _snprintf
@@ -289,6 +290,11 @@ CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string sz
 	m_szId = szId;
 	m_pNode = pNode;
 	TiXmlElement *pElem = m_pNode->ToElement();
+	m_MimeType = MIME_MP4; // TODO get it from arg
+	m_VidCodecType = VID_CODEC_42E01E; // TODO: get it
+	m_nWidth = 1280;
+	m_nHeight = 720;
+	m_nBandwidth = 1000000;
 
 	if(!fSegmentTmplate) {
 		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
@@ -300,12 +306,21 @@ CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string sz
 	} else {
 		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
 	}
-	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_mimeType, ATTRIB_VAL_ADAPTSET_MIMETYPE_MP4);
-	pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_codecs, ATTRIB_VAL_ADAPTSET_codecs_AVC1_42E01E);
-
-	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_width, "1280");
-	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_height, "720");
-	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_bandwidth, "1000000");
+	if(m_MimeType == MIME_MP4) {
+		pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_mimeType, ATTRIB_VAL_ADAPTSET_MIMETYPE_MP4);
+	} else  {
+		pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_mimeType, ATTRIB_VAL_ADAPTSET_MIMETYPE_MP2T);
+	}
+	if(m_VidCodecType == VID_CODEC_42E01E) {
+		pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_codecs, ATTRIB_VAL_ADAPTSET_codecs_AVC1_42E01E);
+	}
+	char szTmp[32] = {0};
+	sprintf(szTmp,"%d", m_nWidth);
+	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_width, szTmp);
+	sprintf(szTmp,"%d", m_nHeight);
+	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_height, szTmp);
+	sprintf(szTmp,"%d", m_nBandwidth);
+	pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_bandwidth, szTmp);
 
 }
 
@@ -323,23 +338,21 @@ const char *CMpdRepresentation::GetId()
 }
 
 
-int CMpdRepresentation::GetMimeType()
+CMpdRepresentation::MIME_TYPE CMpdRepresentation::GetMimeType()
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
-	int nMimeType = MPD_MUX_TYPE_TS;
+	MIME_TYPE nMimeType = MIME_MP2T;
 	TiXmlElement *pElem = m_pNode->ToElement();
 	const char *pszMimetype = pElem->Attribute(ATTRIB_NAME_REPRESENTATION_mimetype);
 	if(pszMimetype) {
 		if(strcmp(pszMimetype,ATTRIB_VAL_REPRESENTATION_MIMETYPE_video_mp4) == 0) {
-			nMimeType = MPD_MUX_TYPE_VIDEO_MP4;
+			nMimeType = MIME_MP4;
 		} else {
-			nMimeType = MPD_MUX_TYPE_TS;
+			nMimeType = MIME_MP2T;
 		}
-	} else {
-		nMimeType = m_pParent->GetMimeType();
 	}
-	return nMimeType;
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
+	return nMimeType;
 }
 
 #define DEFUALT_MOOF_LEN  500
@@ -958,6 +971,8 @@ CMpdRoot::CMpdRoot(int fDynamic, int nSegmentDurationMs)
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XMLNS, ATTRIB_NAME_MPD_XMLNS);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_XSI_SCHEMA_LOCN, ATTRIB_VAL_MPD_XSI_SCHEMA_LOCN);
 
+	m_fIsLive = fDynamic;
+	m_nSegmentDurationMs = nSegmentDurationMs;
 	if(fDynamic)	{
 		struct tm ast_time;
 		time_t    time_now;
@@ -968,16 +983,14 @@ CMpdRoot::CMpdRoot(int fDynamic, int nSegmentDurationMs)
 		strftime(availability_start_time, 64, "%Y-%m-%dT%H:%M:%S", &ast_time);
 		pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_live);
 		pElem->SetAttribute(ATTRIB_NAME_MPD_TYPE, ATTRIB_VAL_MPD_TYPE_DYNAMIC);
-		FormatTime(nSegmentDurationMs / 1000, szDaration, MAX_TIME_STRING);
-		pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
 		pElem->SetAttribute(ATTRIB_NAME_MPD_availabilityStartTime, availability_start_time);
 	} else {
-		FormatTime(nSegmentDurationMs / 1000, szDaration, MAX_TIME_STRING);
-
 		pElem->SetAttribute(ATTRIB_NAME_MPD_profiles, ATTRIB_VAL_MPD_PROFILE_isoff_on_demand);
 		pElem->SetAttribute(ATTRIB_NAME_MPD_TYPE, ATTRIB_VAL_MPD_TYPE_STATIC);
-		pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
 	}
+
+	FormatTime(nSegmentDurationMs / 1000, szDaration, MAX_TIME_STRING);
+	pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
 
 	int nMinimumUpdatePeriod = DEFAULT_UPDATE_PERIOD;//3600 * 1000; // 1 Hour
 	FormatTime(nMinimumUpdatePeriod, szDaration, MAX_TIME_STRING);

@@ -1026,19 +1026,17 @@ public:
 		const char	*pszParentFolder,
 		const char	*pszBucket,
 		CJdAwsContext *pAwsContext,
-		int         fLiveOnly,
 		int         nStartIndex,
-		int         nSegmentDuration,
 		int         nDestType,
 		int         *phr
 		):
-			m_nTotalTimeMs(nTotalTimeMs),
-			m_fLiveOnly(fLiveOnly)
+			m_nTotalTimeMs(nTotalTimeMs)
 	{
 		*phr = -1;
 		int result = 0;
-		// TODO: Pass as parameter
-		m_nSegmentDurationMs = nSegmentDuration;
+		CMpdRoot *pMpd = pCfgRepresenation->GetMpd();
+		m_nSegmentDurationMs = pMpd->GetMaxSegmentDuration();
+		m_fLiveOnly = pMpd->IsLive();
 		if (nDestType == MPD_UPLOADER_TYPE_S3) {
 			m_TransferType = TRANSFER_TYPE_FULL;
 			m_pHlsOut = new CSegmentWriteS3(pAwsContext,pszBucket/*, pszHost, szAccessId, szSecKey, 2*/);
@@ -1804,11 +1802,7 @@ void *mpdPublishStart(
 			const char	*pszSegmentPrefix,
 			const char	*pszParentFolder,
  			const char	*pszBucketOrSvrRoot, 
-			/*const char	*pszHost,
- 			const char	*szAccessId,
-			const char	*szSecKey,*/
 			CJdAwsContext  *pServerCtxt,
-			int         fLiveOnly,
 			int         nStartIndex,
 			int         nDestType
 			)
@@ -1822,7 +1816,7 @@ void *mpdPublishStart(
 		if(nTotalTimeMs == -1)
 			nTotalTimeMs = MAX_UPLOAD_TIME;
 		pPublisher = new CMpdPublishS3(nTotalTimeMs, pSegmenter, pMpdRep, pszSegmentPrefix, pszParentFolder,
-			pszBucketOrSvrRoot, pServerCtxt, fLiveOnly, nStartIndex, nSegmentDurationMs, nDestType, &result);
+			pszBucketOrSvrRoot, pServerCtxt, nStartIndex, nDestType, &result);
 		if (result != 0)
 			return NULL;
 	} else 

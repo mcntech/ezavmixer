@@ -12,6 +12,9 @@
     <string name="video_bitrate">Video Bitrate (Mbps)</string>     
     <string name="video_resolution">Video Resolution</string>         
     <string name="audio_source">Audio Source</string>
+    <string name="mux_type">Mux Type</string>
+    <string name="audio_codec_type">Audio Codec</string>
+    <string name="video_codec_type">Video Codec</string>         
     <string name="server_list">Publish Server List</string>
     <string name="server_config">Publish Server Configuration</string>    
     <string name="node_add">Add Server</string>

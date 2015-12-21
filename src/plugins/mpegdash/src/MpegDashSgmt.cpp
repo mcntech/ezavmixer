@@ -73,7 +73,7 @@ using namespace std;
 #define MAX_GOP_CIRC_BUFFER (10 * 1024 * 1024)
 #define MAX_SEGMENT_SIZE (8*1024*1024)
 
-static int               modDbgLevel = CJdDbg::LVL_ERR;
+static int               modDbgLevel = CJdDbg::LVL_STRM;
 
 /* Delay updating S3 Playlist by S3_CACHE_DELAY segments */
 #define S3_CACHE_DELAY				2
@@ -89,7 +89,7 @@ static int               modDbgLevel = CJdDbg::LVL_ERR;
 static void GetSegmentNameFromIndex(char *pszSegmentFileName, const char *pszBaseName, int nSegmentIdx, int nMuxType)
 {
 	char szSegmentExt[8] = {0};
-	if(nMuxType == MPD_MUX_TYPE_TS)
+	if(nMuxType == MIME_MP2T)
 		strncpy(szSegmentExt, TS_SEGEMNT_FILE_EXT, 8);
 	else
 		strncpy(szSegmentExt, MP4_SEGEMNT_FILE_EXT, 8);
@@ -383,8 +383,10 @@ public:
 	CMpdSegmnter(CMpdRepresentation *pMpdRep, int *phr)
 	{
 		*phr = 0;
-		int nMuxType = pMpdRep->GetMimeType();
-		int nMoofDurationMs = pMpdRep->GetCutomAttribMoofLength();
+		MIME_TYPE nMuxType = pMpdRep->GetMimeType();
+		CMpdRoot *pMpd = pMpdRep->GetMpd();
+		int nMoofDurationMs = pMpd->GetSegmentDuration();
+
 		int fEnableVid = 1;
 		int fEnableAud = 0;
 
@@ -397,15 +399,15 @@ public:
 		m_pMp4moof = NULL;
 		m_pMuxBuffer = NULL;
 		m_pCrntGop = new CGop(m_nGopSize);
-		if(nMuxType == MPD_MUX_TYPE_TS) {
+		if(nMuxType == MIME_MP2T) {
 			m_pMuxBuffer = (char *)malloc(MAX_TS_BUFFER_SIZE);
 			if(m_pMuxBuffer == NULL) {
 				*phr = -1;
 				return;
 			}
 		} else {
-			fEnableVid = nMuxType == MPD_MUX_TYPE_VIDEO_MP4;
-			fEnableAud = nMuxType == MPD_MUX_TYPE_AUDIO_MP4;
+			fEnableVid = nMuxType == MIME_MP4;
+			fEnableAud = 0;//nMuxType == MPD_MUX_TYPE_AUDIO_MP4; // TODO
 			m_pMp4Mux = CreateMp4Segmenter(fEnableAud, fEnableVid);
 			m_pMuxBuffer = (char *)malloc(MAX_MP4_BUFFER_SIZE);
 			if(m_pMuxBuffer == NULL) {
@@ -497,6 +499,7 @@ public:
 			// Prepare for next GOP
 			m_fHasSps = fHasSps;
 			m_GopStartPtsMs = ulPtsMs;
+			JDBG_LOG(CJdDbg::LVL_STRM,("%s:!!! m_GopStartPtsMs=%d", m_GopStartPtsMs));
 		}
 		if(m_pCrntGop){
 			m_pCrntGop->AddData((unsigned char *)pData, nLen);
@@ -816,7 +819,7 @@ int CMpdSegmnter::ProcessAVFrame(char *pData, int nLen, int fVideo, int fDisCont
 	int res = 0;
 	unsigned long ulFlags = 0;
 
-	if(m_nMuxType == MPD_MUX_TYPE_TS) {
+	if(m_nMuxType == MIME_MP2T) {
 		int nTsLen = MAX_TS_BUFFER_SIZE;
 		if(MuxTs(pData, nLen, m_pMuxBuffer, &nTsLen, fVideo, &ulFlags, ulPtsMs, fDisCont) == 0) {
 			WriteFrameData(m_pMuxBuffer, nTsLen, 1, ulFlags, ulPtsMs / 90);
@@ -828,7 +831,9 @@ int CMpdSegmnter::ProcessAVFrame(char *pData, int nLen, int fVideo, int fDisCont
 			long ulFlags = 0;
 			int nSearchLen;
 			nSearchLen = nLen < 32 ? nLen : 32;				// Limit SPS search tp first 32 bytes
+
 			if(HasSps((unsigned char *)pData, nSearchLen) && (m_nMoofCrntTime == 0 || m_nMoofCrntTime >= m_nMoofDurationMs)) {
+				JDBG_LOG(CJdDbg::LVL_STRM,("%s: hassps ulPtsMs=%d m_nMoofCrntTime=%d m_nMoofDurationMs=%d", __FUNCTION__, ulPtsMs, m_nMoofCrntTime, m_nMoofDurationMs));
 				ulFlags |= MPD_FLAG_HAS_SPS;
 				if(m_pMp4moof) {
 					CMoofParam MoofParam;
@@ -846,7 +851,7 @@ int CMpdSegmnter::ProcessAVFrame(char *pData, int nLen, int fVideo, int fDisCont
 			}
 			if(m_pMp4moof) {
 				MuxMp4(pData, nLen, m_pMuxBuffer, &nOutLen, fVideo, ulFlags, ulPtsMs, fDisCont);
-				if(ulPtsMs - m_nMp4SStrmPts < 200/*check*/)
+				//if(ulPtsMs - m_nMp4SStrmPts < 200/*check*/)
 					m_nMoofCrntTime += (ulPtsMs - m_nMp4SStrmPts);
 				m_nMp4SStrmPts = ulPtsMs;
 			}
@@ -859,7 +864,7 @@ int CMpdSegmnter::ProcessAVFrame(char *pData, int nLen, int fVideo, int fDisCont
 
 int CMpdSegmnter::ProcessEndOfSeq()
 {
-	if(m_nMuxType == MPD_MUX_TYPE_TS) {
+	if(m_nMuxType == MIME_MP2T) {
 		// Do nothing for now
 	} else {
 		if(m_pMp4moof) {
@@ -1290,12 +1295,12 @@ public:
 			m_nTimeshiftSegments = DEFUALT_NUM_TIMESHIFT_SEGS;
 		m_pszMpdBaseUrl = NULL;
 		m_pMpdRepresentation = pMpdRepresentation;
-		if (m_pMpdRepresentation->m_SegmentType == CMpdRepresentation::TYPE_SEGMENT_LIST) {
+		if (m_pMpdRepresentation->m_SegmentType == TYPE_SEGMENT_LIST) {
 			if(m_pMpdRepresentation->GetInitializationSegment() == NULL)
 				m_fSegmentSelfInit = 1;
 			else
 				m_fSegmentSelfInit = 0;
-		} else if (m_pMpdRepresentation->m_SegmentType == CMpdRepresentation::TYPE_SEGMENT_TEMPLATE) {
+		} else if (m_pMpdRepresentation->m_SegmentType == TYPE_SEGMENT_TEMPLATE) {
 			if(pAdapSet->GetInitializationSegmentUrl() == NULL)
 				m_fSegmentSelfInit = 1;
 			else
@@ -1407,7 +1412,7 @@ void CMpdPublishMemFile::UpdateSlidingWindow()
 		delete pSegmentInf;
 	}
 
-	if (m_pMpdRepresentation->m_SegmentType == CMpdRepresentation::TYPE_SEGMENT_LIST) {
+	if (m_pMpdRepresentation->m_SegmentType == TYPE_SEGMENT_LIST) {
 		if(m_SegmentList.size()  >=  m_nTimeshiftSegments + m_nBcastBackCache + m_nBcastFrontCache) {
 			UpLoadBroadcastPlayList();
 		}
@@ -1529,6 +1534,7 @@ int CMpdPublishS3::ReceiveInitSegment(const char *pData, int nLen)
 	}
 	return 0;
 }
+
 int CMpdPublishS3::ReceiveGop(int nGopNum, const char *pData, int nLen, int nStartPtsMs, int nDurarionMs, CMpdEmsg *pMpdEmsg)
 {
 	unsigned char *pCbData;
@@ -1536,7 +1542,7 @@ int CMpdPublishS3::ReceiveGop(int nGopNum, const char *pData, int nLen, int nSta
 	JDBG_LOG(CJdDbg::LVL_STRM,("%s:Enter", __FUNCTION__));
 	m_nInStreamTime += nDurarionMs;
 	m_Mutex.Acquire();
-	JDBG_LOG(CJdDbg::LVL_MSG,("Enter:Receiving Gop %d:  nLen=%d nDurarionMs=%d", nGopNum, nLen, nDurarionMs));
+	JDBG_LOG(CJdDbg::LVL_MSG,("%s:Enter:Receiving Gop %d:  nLen=%d nDurarionMs=%d", __FUNCTION__, nGopNum, nLen, nDurarionMs));
 	pCbData = m_pCb->Alloc(nLen);
 	if(pCbData == NULL) {
 		JDBG_LOG(CJdDbg::LVL_ERR,("No Buffer"));
@@ -1546,6 +1552,7 @@ int CMpdPublishS3::ReceiveGop(int nGopNum, const char *pData, int nLen, int nSta
 
 	pGop = new  CGopCb(pCbData, nLen);
 	memcpy(pGop->m_pBuff, pData, nLen);
+	pGop->m_DurationMs = nDurarionMs;
 	m_pGopFilledList.push_back(pGop);
 Exit:
 	m_Mutex.Release();
@@ -1777,7 +1784,10 @@ DWORD CMpdPublishS3::Process()
 			}
 		} else {
 			std::time_t req_time = std::time(NULL);
-			m_pHlsOut->Send(m_pszParentFolder,szTsFileName, req_time, buffer, nTotlaLen, CONTENT_STR_MP2T, 30);
+			int res = m_pHlsOut->Send(m_pszParentFolder,szTsFileName, req_time, buffer, nTotlaLen, CONTENT_STR_MP2T, 30);
+			if(res != 0){
+				JDBG_LOG(CJdDbg::LVL_ERR,("%s:Failed: to upload %s", __FUNCTION__, szTsFileName));
+			}
 		}
 		UpdateSlidingWindow();
 

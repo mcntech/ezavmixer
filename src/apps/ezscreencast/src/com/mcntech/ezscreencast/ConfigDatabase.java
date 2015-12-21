@@ -47,10 +47,10 @@ public class ConfigDatabase {
 	final static String VID_RES_1080P = "1920x1080@60fps";
 	final static String VID_RES_4K = "3840x2160@30fps";
 	
-	final static String MUX_TYPE_TS = "mux_type_ts";
-	final static String MUX_TYPE_MP4 = "mux_type_mp4";
+	final static String MUX_TYPE_TS = "video/mp2t";
+	final static String MUX_TYPE_MP4 = "video/mp4";
 
-	final static String VID_CODEC_TYPE_H264 = "vid_codec_h264";
+	final static String VID_CODEC_TYPE_H264 = "avc1.42E01E";
 	final static String VID_CODEC_TYPE_HEVC = "vid_codec_hevc";
 	
 	final static String AUD_CODEC_TYPE_AAC = "aud_codec_aac";

@@ -173,7 +173,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateAdaptationSet(JNIEnv *env, 
 	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env, jobject self, jlong handle,  jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId)
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env, jobject self, jlong handle,  jstring jmpdId, jstring jperiodId, jstring jadaptId, jstring jrepId, jstring mimeType, jstring codecType)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 
@@ -191,7 +191,13 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRepresentation(JNIEnv *env,
 	const char * szrepId = env->GetStringUTFChars(jrepId, 0);
 	std::string tmprepId = szrepId;
 
-	result = pDash->CreateRepresentation(tmpmpdId, tmpperiodId, tmpadaptId, tmprepId);
+	const char * szmimeType = env->GetStringUTFChars(mimeType, 0);
+	std::string tmpmimeType = szadaptId;
+
+	const char * szcodecType = env->GetStringUTFChars(codecType, 0);
+	std::string tmpcodecType = szrepId;
+
+	result = pDash->CreateRepresentation(tmpmpdId, tmpperiodId, tmpadaptId, tmprepId, tmpmimeType, tmpcodecType);
 
 	env->ReleaseStringUTFChars(jadaptId, szadaptId);
 	env->ReleaseStringUTFChars(jmpdId, szmpdId);

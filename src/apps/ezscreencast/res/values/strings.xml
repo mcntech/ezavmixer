@@ -8,7 +8,7 @@
     <string name="capture_selection">Capture Selection</string>    
     <string name="enable_audio">Enable Audio</string>
     <string name="enable_video">Enable Video</string>
-    <string name="segment_duration">Segment Duration (milliseconds)</string>
+    <string name="segment_duration">Segment Duration (seconds)</string>
     <string name="video_bitrate">Video Bitrate (Mbps)</string>     
     <string name="video_resolution">Video Resolution</string>         
     <string name="audio_source">Audio Source</string>

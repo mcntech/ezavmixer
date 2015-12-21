@@ -30,6 +30,24 @@ static int  modDbgLevel = CJdDbg::LVL_ERR;
 #define MAX_TIME_STRING           256
 #define MAX_SEGMENT_FILE_NAME     256
 
+MIME_TYPE getIdOfMimeType(const char *szMimeType)
+{
+	if(strcmp(szMimeType, ATTRIB_VAL_REPRESENTATION_MIMETYPE_MP2T) == 0)
+		return MIME_MP2T;
+	else if (strcmp(szMimeType, ATTRIB_VAL_REPRESENTATION_MIMETYPE_video_mp4) == 0)
+		return MIME_MP4;
+	else
+		return MIME_MP4;
+}
+
+VID_CODEC_TYPE getIdOfCodecType(const char *szCodecType)
+{
+	if(strcmp(szCodecType, ATTRIB_VAL_ADAPTSET_codecs_AVC1_42E01E) == 0)
+		return VID_CODEC_42E01E;
+	else
+		return VID_CODEC_42E01E;
+}
+
 void FormatTime(int nDurationMs,char *szString, int nLen)
 {
 	int h, m, s, ms;
@@ -284,21 +302,21 @@ CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent)
 	m_pParent = pParent;
 }
 
-CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string szId, TiXmlNode *pNode, int fSegmentTmplate)
+CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string szId, TiXmlNode *pNode, int fSegmentTmplate, MIME_TYPE nMimeType, VID_CODEC_TYPE nCodecType)
 {
 	m_pParent = pParent;
 	m_szId = szId;
 	m_pNode = pNode;
 	TiXmlElement *pElem = m_pNode->ToElement();
-	m_MimeType = MIME_MP4; // TODO get it from arg
-	m_VidCodecType = VID_CODEC_42E01E; // TODO: get it
+	m_MimeType = nMimeType; // TODO get it from arg
+	m_VidCodecType = nCodecType;//VID_CODEC_42E01E; // TODO: get it
 	m_nWidth = 1280;
 	m_nHeight = 720;
 	m_nBandwidth = 1000000;
 
 	if(!fSegmentTmplate) {
 		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentList );
-		m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
+		m_SegmentType = TYPE_SEGMENT_LIST;
 
 		m_pNode->InsertEndChild(*pSegElem);
 		TiXmlNode *pSegNode = m_pNode->FirstChild();
@@ -307,9 +325,9 @@ CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string sz
 		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
 	}
 	if(m_MimeType == MIME_MP4) {
-		pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_mimeType, ATTRIB_VAL_ADAPTSET_MIMETYPE_MP4);
+		pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_mimetype, ATTRIB_VAL_REPRESENTATION_MIMETYPE_video_mp4);
 	} else  {
-		pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_mimeType, ATTRIB_VAL_ADAPTSET_MIMETYPE_MP2T);
+		pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_mimetype, ATTRIB_VAL_REPRESENTATION_MIMETYPE_MP2T);
 	}
 	if(m_VidCodecType == VID_CODEC_42E01E) {
 		pElem->SetAttribute(ATTRIB_NAME_ADAPTSET_codecs, ATTRIB_VAL_ADAPTSET_codecs_AVC1_42E01E);
@@ -338,7 +356,7 @@ const char *CMpdRepresentation::GetId()
 }
 
 
-CMpdRepresentation::MIME_TYPE CMpdRepresentation::GetMimeType()
+MIME_TYPE CMpdRepresentation::GetMimeType()
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	MIME_TYPE nMimeType = MIME_MP2T;
@@ -358,22 +376,6 @@ CMpdRepresentation::MIME_TYPE CMpdRepresentation::GetMimeType()
 #define DEFUALT_MOOF_LEN  500
 #define MAX_MOOF_LEN      20000
 #define MIN_MOOF_LEN      500
-int CMpdRepresentation::GetCutomAttribMoofLength()
-{
-	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
-	int nMoofLen = DEFUALT_MOOF_LEN;
-	TiXmlElement *pElem = m_pNode->ToElement();
-	const char *pszVal = pElem->Attribute(ATTRIB_NAME_MCN_REPRESENTATION_moofLength);
-	if(pszVal) {
-		nMoofLen = atoi(pszVal);
-		if(nMoofLen > MAX_MOOF_LEN)
-			nMoofLen = MAX_MOOF_LEN;
-		else if (nMoofLen < MIN_MOOF_LEN)
-			nMoofLen = MIN_MOOF_LEN;
-	}
-	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
-	return nMoofLen;
-}
 
 void CMpdRepresentation::UpdateSegmentList(int nStartTime, int nSegmentDuration, int nStartNum, std::list<std::string> *plistUrl)
 {
@@ -447,14 +449,14 @@ int CMpdAdaptaionSet::CallbackChildUpdate(CMpdRepresentation *pChild)
 
 int CMpdAdaptaionSet::GetMimeType()
 {
-	int nMimeType = MPD_MUX_TYPE_VIDEO_MP4;
+	int nMimeType = MIME_MP4;
 	TiXmlElement *pElem = m_pNode->ToElement();
 	const char *pszMimetype = pElem->Attribute(ATTRIB_NAME_ADAPTSET_mimeType);
 	if(pszMimetype) {
 		if(pszMimetype && strcmp(pszMimetype,ATTRIB_VAL_REPRESENTATION_MIMETYPE_video_mp4) == 0) {
-			nMimeType = MPD_MUX_TYPE_VIDEO_MP4;
+			nMimeType = MIME_MP4;
 		} else {
-			nMimeType = MPD_MUX_TYPE_TS;
+			nMimeType = MIME_MP2T;
 		}
 	}
 	return nMimeType;
@@ -519,7 +521,7 @@ CMpdRoot *CMpdAdaptaionSet::GetMpd()
 	return m_pParent->GetMpd();
 }
 
-int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate)
+int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate, MIME_TYPE mimeType, VID_CODEC_TYPE codecType)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	TiXmlNode   *pRepNode;
@@ -530,7 +532,7 @@ int CMpdAdaptaionSet::CreateRepresentation(std::string szId, int fSegmentTmplate
 	m_pNode->InsertEndChild(*pRepElem);
 	pRepNode = m_pNode->FirstChild(); // TODO add support for multiple representation
 
-	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this, szId, pRepNode, fSegmentTmplate);
+	CMpdRepresentation *pRepresentation = new  CMpdRepresentation(this, szId, pRepNode, fSegmentTmplate, mimeType, codecType);
 	m_listRepresentations.push_back(pRepresentation);
 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
@@ -768,7 +770,7 @@ CMpdRoot::CMpdRoot(const char *pszConfFile)
 				if(!fSegmentTmplate) {
 					pSegNode = pRepNode->FirstChild(ELEMENT_SegmentList);
 					if(pSegNode) {
-						pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_LIST;
+						pRepresentation->m_SegmentType = TYPE_SEGMENT_LIST;
 						pRepresentation->m_pSegmentList = new CMpdSegmentList(pRepresentation, pSegNode);
 						pRepresentation->m_pSegmentList->m_pNode = pSegNode;
 					} else {
@@ -781,7 +783,7 @@ CMpdRoot::CMpdRoot(const char *pszConfFile)
 #endif
 					}
 				} else {
-					pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
+					pRepresentation->m_SegmentType = TYPE_SEGMENT_TEMPLATE;
 				}
 				const char *pszVal = pRepElem->Attribute(ATTRIB_NAME_MCN_REPRESENTATION_source);
 				pRepresentation->m_inputSwitch = pszVal;
@@ -1035,7 +1037,7 @@ CMpdPeriod *CMpdRoot::FindPeriod(std::string szPeriod)
 	return NULL;
 }
 
-int CMpdRoot::CreateRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep, int fTmplate)
+int CMpdRoot::CreateRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep, int fTmplate, MIME_TYPE mimeType, VID_CODEC_TYPE codecType)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	char szDaration[MAX_TIME_STRING];
@@ -1049,7 +1051,7 @@ int CMpdRoot::CreateRepresentation(std::string szPeriod, std::string szAdapt, st
 		int fSegmentTmplate = 0;
 		CMpdAdaptaionSet *pAdaptaionSet = pPeriod->FindAdaptationSet(szAdapt);
 		if(pAdaptaionSet) {
-			pAdaptaionSet->CreateRepresentation(szRep, fTmplate);
+			pAdaptaionSet->CreateRepresentation(szRep, fTmplate, mimeType, codecType);
 		}
 	}
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));

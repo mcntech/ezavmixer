@@ -49,7 +49,7 @@ int CDashMultiPublishClnt::CreateAdaptationSet(std::string szmpdId, std::string 
 	return res;
 }
 
-int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId)
+int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId, std::string mimeType, std::string codecType)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	int fSegmentTemplate = 0;
@@ -60,7 +60,9 @@ int CDashMultiPublishClnt::CreateRepresentation(std::string szmpdId, std::string
 		if(pPeriod) {
 			CMpdAdaptaionSet *pAdaptationSet = pPeriod->FindAdaptationSet(szadaptId);
 			if(pAdaptationSet) {
-				res = pAdaptationSet->CreateRepresentation(szrepId, fSegmentTemplate);
+				MIME_TYPE _mimeType = getIdOfMimeType(mimeType.c_str());
+				VID_CODEC_TYPE _vidCodec = getIdOfCodecType(codecType.c_str());
+				res = pAdaptationSet->CreateRepresentation(szrepId, fSegmentTemplate, _mimeType, _vidCodec);
 			}
 		}
 	}
@@ -166,7 +168,6 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 	int nStartIndex;
 	int nTimeShiftBufferMs = 0;
 	char strMpdFileName[256];
-	int nMuxType = MPD_MUX_TYPE_M4S;
 	int fFileUpdate = 0;
 
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));

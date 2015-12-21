@@ -52,7 +52,7 @@ public:
 	int CreateMpd(std::string szId, int fIsLive, int nDurationMs);
 	int CreatePeriod(std::string szId, std::string szperiodId);
 	int CreateAdaptationSet(std::string szmpdId, std::string szperiodId, std::string szadaptId);
-	int CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId);
+	int CreateRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId, std::string mimeType, std::string codecType);
 	CMpdRepresentation * FindRepresentation(std::string szmpdId, std::string szperiodId, std::string szadaptId, std::string szrepId);
 
 	int CreateMpdPublishStream(std::string szId, CMpdRoot  *pMpdRoot, CMediaSwitch *pPublishSwitch, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode);

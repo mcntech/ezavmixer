@@ -430,6 +430,7 @@ public class ScreenRecorder extends Thread {
 	            // transfer bytes from this buffer into the given destination array
 	            encodedData.get(vidBytes, prependLen, payloadLen);
 		        OnyxApi.sendVideoData("input0", vidBytes, prependLen + payloadLen, pts, mBufferInfo.flags);
+		        Log.i(TAG, "payloadLen=" + payloadLen + " ptsMs=" + pts / 1000);
             }
             //Log.i(TAG, "sent " + mBufferInfo.size + " bytes to muxer...Flags=0x" + Integer.toHexString(mBufferInfo.flags));
         }

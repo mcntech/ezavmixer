@@ -36,10 +36,27 @@ class CMpdSegmentUrl;
 
 #define TS_SEGEMNT_FILE_EXT         "ts"
 #define MP4_SEGEMNT_FILE_EXT        "m4s"
-#define MPD_MUX_TYPE_TS             1
-#define MPD_MUX_TYPE_VIDEO_MP4      2
-#define MPD_MUX_TYPE_AUDIO_MP4      3
-#define MPD_MUX_TYPE_M4S            4
+
+enum SEGMENT_TYPE {
+	TYPE_SEGMENT_BASE,
+	TYPE_SEGMENT_LIST,
+	TYPE_SEGMENT_TEMPLATE,
+};
+enum MIME_TYPE {
+	MIME_MP2T,
+	MIME_MP4
+};
+enum VID_CODEC_TYPE {
+	VID_CODEC_42E01E,
+	VID_CODEC_01,
+};
+enum AUD_CODEC_TYPE {
+	AUD_CODEC_00,
+	AUD_CODEC_01,
+};
+
+MIME_TYPE getIdOfMimeType(const char *szMimeType);
+VID_CODEC_TYPE getIdOfCodecType(const char *szCodecType);
 
 typedef std::list<CMpdSegmentUrl *> SEGMETN_URL_LIST_T;
 
@@ -165,30 +182,14 @@ public:
 class CMpdRepresentation
 {
 public:
-	enum SEGMENT_TYPE {
-		TYPE_SEGMENT_BASE,
-		TYPE_SEGMENT_LIST,
-		TYPE_SEGMENT_TEMPLATE,
-	};
-	enum MIME_TYPE {
-		MIME_MP2T,
-		MIME_MP4
-	};
-	enum VID_CODEC_TYPE {
-		VID_CODEC_42E01E,
-		VID_CODEC_01,
-	};
-	enum AUD_CODEC_TYPE {
-		AUD_CODEC_00,
-		AUD_CODEC_01,
-	};
+
 
 	CMpdRepresentation(CMpdAdaptaionSet *pParent);
-	CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string szId, TiXmlNode *pNode, int fSegmentTmplate);
+	CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string szId, TiXmlNode *pNode, int fSegmentTmplate, MIME_TYPE mimeType, VID_CODEC_TYPE codecType);
 
 	const char *GetId();
 	MIME_TYPE GetMimeType();
-	int GetCutomAttribMoofLength();
+
 	void UpdateSegmentList(int nStartTime, int nSegmentDuration, int nStartNum, std::list<std::string> *plistUrl);
 	void SetInitializationSegment(std::string &Url);
 	const char *GetInitializationSegment();
@@ -232,7 +233,7 @@ public:
 	const char *GetBaseURL();
 	int GetMimeType();
 	CMpdRoot *GetMpd();
-	int CreateRepresentation(std::string szId, int fSegmentTmplate);
+	int CreateRepresentation(std::string szId, int fSegmentTmplate, MIME_TYPE mimeType, VID_CODEC_TYPE codecType);
 	CMpdRepresentation *FindRepresentation(std::string szId);
 
 public:
@@ -286,7 +287,7 @@ public:
 	~CMpdRoot();
 	
 	CMpdPeriod *FindPeriod(std::string szPeriod);
-	int CreateRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep, int fTmplate);
+	int CreateRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep, int fTmplate, MIME_TYPE mimeType, VID_CODEC_TYPE codecType);
 	CMpdRepresentation *FindRepresentation(std::string szPeriod, std::string szAdapt, std::string szRep);
 
 	CMpdPeriod *CreatePeriod(std::string szId);

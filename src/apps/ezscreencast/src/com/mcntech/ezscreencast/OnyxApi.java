@@ -91,7 +91,8 @@ public class OnyxApi {
 		int nHeight = ConfigDatabase.getVideoHeight();
 		int nFramerate = ConfigDatabase.getVideoFramerate();
 		int segmentDurationMs = ConfigDatabase.mSegmentDuration * 1000;
-		String strMuxType = ConfigDatabase.mMuxType;
+		String strMimeType = ConfigDatabase.mMuxType;
+		String strCodecType = ConfigDatabase.mVidCodecType;
 		
 		addS3PublishNode(mHandle, jserverId,
 				jhost, jaccessId, jsecKey,
@@ -119,7 +120,7 @@ public class OnyxApi {
 		}
 		
 		String jrepId = mpdSession.mRepId;		
-		result  = CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId);
+		result  = CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId, strMimeType, strCodecType);
 		if(!result) {
 			mError = "Failed to create Representation";
 			return result;
@@ -273,7 +274,7 @@ public class OnyxApi {
 	private native static boolean CreateMpd(long  handle, String jid, boolean isLive, int durationMs);	
 	private native static boolean CreatePeriod(long handle, String jmpdId, String jperiodId);
 	private native static boolean CreateAdaptationSet(long handle, String jmpdId, String jperiodId, String jadaptId);
-	private native static boolean CreateRepresentation(long handle,  String jmpdId, String jperiodId, String jadaptId, String jrepId);
+	private native static boolean CreateRepresentation(long handle,  String jmpdId, String jperiodId, String jadaptId, String jrepId, String mimeType, String mCodecType);
 	private native static boolean CreateMpdPublishStream(long handle,  String jId, String jmpdId, String jperiodId, String jadaptId, String jrepId, String jswitchId, String jserverNode);
 	private native static boolean ConfigMpdPublishStream(long handle,  String jId, String jrepId, boolean fIsLive, int nBitrate, int nWidth, int nHeight, int nFramerate);
 	private native static boolean StartMpdPublishStream(long handle,  String jId);

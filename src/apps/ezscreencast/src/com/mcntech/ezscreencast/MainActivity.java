@@ -39,11 +39,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private static final String DEF_MPD_SERVER1 = "educast server-1";
     private static final int BTN_ID_START = 1;
     private static final int BTN_ID_SHARE_LINK = 2;
+    private static final int BTN_ID_SHOW_FILE = 3;
     
     private MediaProjectionManager mMediaProjectionManager;
     private ScreenRecorder mRecorder;
     private Button mBtnStart;
     private Button mBtnShareLink;
+    private Button mBtnShowFile;
     
     RemoteNodeHandler mDeviceHandler;
 	public static ListView mRemoteNodeListView = null;
@@ -67,6 +69,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		mBtnShareLink = (Button) findViewById(R.id.button_share_link);
 		mBtnShareLink.setOnClickListener(this);
 		mBtnShareLink.setTag(BTN_ID_SHARE_LINK);
+		
+		mBtnShowFile = (Button) findViewById(R.id.button_show_file);
+		mBtnShowFile.setOnClickListener(this);
+		mBtnShowFile.setTag(BTN_ID_SHOW_FILE);		
 		
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		
@@ -246,12 +252,23 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		        }
 		        break;
     		case BTN_ID_SHARE_LINK:
+    		{
     			OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(0);  // todo
 	            Intent intent = new Intent(this, ShareMpdLink.class);
 	            intent.setType("text/plain");
 	            intent.putExtra("nickname",node.mNickname); 
 	            startActivity(intent);
-    			break;
+    		}
+    		break;
+    		case BTN_ID_SHOW_FILE:
+    		{
+	            Intent intent = new Intent(this, TranscoderActivity.class);
+	            //intent.setType("text/plain");
+	            //intent.putExtra("nickname",node.mNickname); 
+	            startActivity(intent);
+    		}
+    		break;
+
     	}
     }
 

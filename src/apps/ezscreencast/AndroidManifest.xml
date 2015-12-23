@@ -44,6 +44,11 @@
             android:name="com.mcntech.ezscreencast.ShareMpdLink"
             android:label="@string/share_mpd_link" >
             android:theme="@android:style/Theme.Dialog" />
+        </activity>   
+      <activity
+            android:name="com.mcntech.ezscreencast.TranscoderActivity"
+            android:label="@string/show_file" >
+            android:theme="@android:style/Theme.Dialog" />
         </activity>             
      <activity
             android:name="com.mcntech.ezscreencast.ConfigMpdSession"

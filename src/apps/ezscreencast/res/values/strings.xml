@@ -19,6 +19,7 @@
     <string name="server_config">Publish Server Configuration</string>    
     <string name="node_add">Add Server</string>
     <string name="node_clear_all">Clear All</string>   
-    <string name="share_mpd_link">Share Streaming Link</string>     
+    <string name="share_mpd_link">Share Streaming Link</string>  
+    <string name="show_file">Show File</string>     
     <string name="is_live_stream">Live Stream</string>         
 </resources>

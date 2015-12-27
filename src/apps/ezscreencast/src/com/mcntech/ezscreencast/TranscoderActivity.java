@@ -3,6 +3,8 @@ package com.mcntech.ezscreencast;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.media.MediaCodec;
+import android.media.MediaCodec.BufferInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
@@ -16,20 +18,28 @@ import android.widget.Toast;
 
 import net.ypresto.androidtranscoder.MediaTranscoder;
 import net.ypresto.androidtranscoder.format.MediaFormatStrategyPresets;
+import net.ypresto.androidtranscoder.engine.MediaTranscoderEngine;
+import net.ypresto.androidtranscoder.engine.QueuedMuxer.SampleType;
 
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
 
-public class TranscoderActivity extends Activity {
+public class TranscoderActivity extends Activity implements MediaTranscoderEngine.StreamIf {
     private static final String TAG = "TranscoderActivity";
     private static final int REQUEST_CODE_PICK = 1;
     private static final int PROGRESS_BAR_MAX = 1000;
     private Future<Void> mFuture;
-
+    private long mStartPtsUs = 0;
+    byte[] mSpsDdata;
+    byte[] mPpsDdata;
+    
+    byte[] mAdtsData;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,7 +114,7 @@ public class TranscoderActivity extends Activity {
                     };
                     Log.d(TAG, "transcoding into " + file);
                     mFuture = MediaTranscoder.getInstance().transcodeVideo(fileDescriptor, file.getAbsolutePath(),
-                            MediaFormatStrategyPresets.createAndroid720pStrategy(), listener);
+                            MediaFormatStrategyPresets.createAndroid720pStrategy(), listener, this);
                     switchButtonEnabled(true);
                 }
                 break;
@@ -150,4 +160,52 @@ public class TranscoderActivity extends Activity {
         findViewById(R.id.select_video_button).setEnabled(!isProgress);
         findViewById(R.id.cancel_button).setEnabled(isProgress);
     }
+
+	@Override
+	public void writeData(SampleType sampleType, ByteBuffer byteBuf,
+			BufferInfo bufferInfo) {
+		
+		if(sampleType == SampleType.VIDEO) {
+	    	byte[] vidBytes;
+	    	long pts = 0;
+	    	int prependLen = 0;
+	    	int payloadLen = bufferInfo.size;
+	        if(mStartPtsUs == 0)
+	        	mStartPtsUs = bufferInfo.presentationTimeUs;
+	        pts = (bufferInfo.presentationTimeUs - mStartPtsUs);
+	
+	        if((bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
+	        	prependLen = mSpsDdata.length + mPpsDdata.length;
+	        	vidBytes = new byte[prependLen + payloadLen];
+	        	System.arraycopy(mSpsDdata, 0, vidBytes, 0, mSpsDdata.length);
+	        	System.arraycopy(mPpsDdata, 0, vidBytes, mSpsDdata.length, mPpsDdata.length);
+	        } else {
+	        	vidBytes = new byte[payloadLen];	            	
+	        }
+	        // transfer bytes from this buffer into the given destination array
+	        byteBuf.get(vidBytes, prependLen, payloadLen);
+	        OnyxApi.sendVideoData("input0", vidBytes, prependLen + payloadLen, pts, bufferInfo.flags);
+		} else if (sampleType == SampleType.AUDIO) {
+        	byte[] audBytes;
+        	long pts = 0;
+        	int prependLen = 0;
+        	int payloadLen = bufferInfo.size;
+
+        	if(mStartPtsUs == 0)
+            	mStartPtsUs = bufferInfo.presentationTimeUs;
+        	
+            pts = (bufferInfo.presentationTimeUs - mStartPtsUs);
+
+            if((bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
+            	prependLen = mAdtsData.length;
+            	audBytes = new byte[prependLen + payloadLen];
+            	System.arraycopy(mAdtsData, 0, audBytes, 0, mAdtsData.length);
+            } else {
+            	audBytes = new byte[payloadLen];	            	
+            }
+            // transfer bytes from this buffer into the given destination array
+            byteBuf.get(audBytes, prependLen, payloadLen);
+	        OnyxApi.sendAudioData("input0", audBytes, prependLen + payloadLen, pts, mBufferInfo.flags);
+		}
+	}
 }

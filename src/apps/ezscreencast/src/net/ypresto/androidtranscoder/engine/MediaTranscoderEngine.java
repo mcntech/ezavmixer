@@ -15,17 +15,20 @@
  */
 package net.ypresto.androidtranscoder.engine;
 
+import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaMuxer;
 import android.util.Log;
 
+import net.ypresto.androidtranscoder.engine.QueuedMuxer.SampleType;
 import net.ypresto.androidtranscoder.format.MediaFormatStrategy;
 import net.ypresto.androidtranscoder.utils.MediaExtractorUtils;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Internal engine, do not use this directly.
@@ -41,9 +44,14 @@ public class MediaTranscoderEngine {
     private TrackTranscoder mAudioTrackTranscoder;
     private MediaExtractor mExtractor;
     private MediaMuxer mMuxer;
+    private StreamIf mStreamIf = null;
     private volatile double mProgress;
     private ProgressCallback mProgressCallback;
     private long mDurationUs;
+
+    public interface StreamIf {
+    	public void writeData(SampleType sampleType, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo);
+    }
 
     /**
      * Do not use this constructor unless you know what you are doing.
@@ -80,7 +88,7 @@ public class MediaTranscoderEngine {
      * @throws InvalidOutputFormatException when output format is not supported.
      * @throws InterruptedException         when cancel to transcode.
      */
-    public void transcodeVideo(String outputPath, MediaFormatStrategy formatStrategy) throws IOException, InterruptedException {
+    public void transcodeVideo(String outputPath, MediaFormatStrategy formatStrategy, StreamIf streamif) throws IOException, InterruptedException {
         if (outputPath == null) {
             throw new NullPointerException("Output path cannot be null.");
         }
@@ -91,11 +99,16 @@ public class MediaTranscoderEngine {
             // NOTE: use single extractor to keep from running out audio track fast.
             mExtractor = new MediaExtractor();
             mExtractor.setDataSource(mInputFileDescriptor);
-            mMuxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            if(streamif == null)
+            	mMuxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            else {
+            	mStreamIf = streamif;
+            }
             setupMetadata();
             setupTrackTranscoders(formatStrategy);
             runPipelines();
-            mMuxer.stop();
+            if(mMuxer != null)
+            	mMuxer.stop();
         } finally {
             try {
                 if (mVideoTrackTranscoder != null) {
@@ -132,7 +145,8 @@ public class MediaTranscoderEngine {
 
         String rotationString = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
         try {
-            mMuxer.setOrientationHint(Integer.parseInt(rotationString));
+        	if (mMuxer != null)
+        		mMuxer.setOrientationHint(Integer.parseInt(rotationString));
         } catch (NumberFormatException e) {
             // skip
         }
@@ -156,14 +170,18 @@ public class MediaTranscoderEngine {
         if (videoOutputFormat == null && audioOutputFormat == null) {
             throw new InvalidOutputFormatException("MediaFormatStrategy returned pass-through for both video and audio. No transcoding is necessary.");
         }
-        QueuedMuxer queuedMuxer = new QueuedMuxer(mMuxer, new QueuedMuxer.Listener() {
-            @Override
-            public void onDetermineOutputFormat() {
-                MediaFormatValidator.validateVideoOutputFormat(mVideoTrackTranscoder.getDeterminedFormat());
-                MediaFormatValidator.validateAudioOutputFormat(mAudioTrackTranscoder.getDeterminedFormat());
-            }
-        });
-
+        QueuedMuxer queuedMuxer = null;
+        if (mMuxer != null) {
+	        queuedMuxer = new QueuedMuxer(mMuxer, new QueuedMuxer.Listener() {
+	            @Override
+	            public void onDetermineOutputFormat() {
+	                MediaFormatValidator.validateVideoOutputFormat(mVideoTrackTranscoder.getDeterminedFormat());
+	                MediaFormatValidator.validateAudioOutputFormat(mAudioTrackTranscoder.getDeterminedFormat());
+	            }
+	        });
+        } else {
+        	
+        }
         if (videoOutputFormat == null) {
             mVideoTrackTranscoder = new PassThroughTrackTranscoder(mExtractor, trackResult.mVideoTrackIndex, queuedMuxer, QueuedMuxer.SampleType.VIDEO);
         } else {

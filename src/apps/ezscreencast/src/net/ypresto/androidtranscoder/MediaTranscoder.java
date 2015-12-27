@@ -21,6 +21,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import net.ypresto.androidtranscoder.engine.MediaTranscoderEngine;
+import net.ypresto.androidtranscoder.engine.MediaTranscoderEngine.StreamIf;
 import net.ypresto.androidtranscoder.format.MediaFormatPresets;
 import net.ypresto.androidtranscoder.format.MediaFormatStrategy;
 
@@ -74,7 +75,7 @@ public class MediaTranscoder {
      * @deprecated Use {@link #transcodeVideo(FileDescriptor, String, MediaFormatStrategy, MediaTranscoder.Listener)} which accepts output video format.
      */
     @Deprecated
-    public Future<Void> transcodeVideo(final FileDescriptor inFileDescriptor, final String outPath, final Listener listener) {
+    public Future<Void> transcodeVideo(final FileDescriptor inFileDescriptor, final String outPath, final Listener listener, MediaTranscoderEngine.StreamIf streamif) {
         return transcodeVideo(inFileDescriptor, outPath, new MediaFormatStrategy() {
             @Override
             public MediaFormat createVideoOutputFormat(MediaFormat inputFormat) {
@@ -85,7 +86,7 @@ public class MediaTranscoder {
             public MediaFormat createAudioOutputFormat(MediaFormat inputFormat) {
                 return null;
             }
-        }, listener);
+        }, listener, streamif);
     }
 
     /**
@@ -98,7 +99,7 @@ public class MediaTranscoder {
      * @param listener          Listener instance for callback.
      * @throws IOException if input file could not be read.
      */
-    public Future<Void> transcodeVideo(final String inPath, final String outPath, final MediaFormatStrategy outFormatStrategy, final Listener listener) throws IOException {
+    public Future<Void> transcodeVideo(final String inPath, final String outPath, final MediaFormatStrategy outFormatStrategy, final Listener listener, StreamIf streamif) throws IOException {
         FileInputStream fileInputStream = null;
         FileDescriptor inFileDescriptor;
         try {
@@ -146,7 +147,7 @@ public class MediaTranscoder {
                     Log.e(TAG, "Can't close input stream: ", e);
                 }
             }
-        });
+        },  streamif);
     }
 
     /**
@@ -158,7 +159,7 @@ public class MediaTranscoder {
      * @param outFormatStrategy Strategy for output video format.
      * @param listener          Listener instance for callback.
      */
-    public Future<Void> transcodeVideo(final FileDescriptor inFileDescriptor, final String outPath, final MediaFormatStrategy outFormatStrategy, final Listener listener) {
+    public Future<Void> transcodeVideo(final FileDescriptor inFileDescriptor, final String outPath, final MediaFormatStrategy outFormatStrategy, final Listener listener, final StreamIf streamif) {
         Looper looper = Looper.myLooper();
         if (looper == null) looper = Looper.getMainLooper();
         final Handler handler = new Handler(looper);
@@ -181,7 +182,7 @@ public class MediaTranscoder {
                         }
                     });
                     engine.setDataSource(inFileDescriptor);
-                    engine.transcodeVideo(outPath, outFormatStrategy);
+                    engine.transcodeVideo(outPath, outFormatStrategy, streamif);
                 } catch (IOException e) {
                     Log.w(TAG, "Transcode failed: input file (fd: " + inFileDescriptor.toString() + ") not found"
                             + " or could not open output file ('" + outPath + "') .", e);

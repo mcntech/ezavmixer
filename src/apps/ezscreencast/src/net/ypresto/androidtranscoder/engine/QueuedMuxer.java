@@ -31,7 +31,8 @@ import java.util.List;
 public class QueuedMuxer {
     private static final String TAG = "QueuedMuxer";
     private static final int BUFFER_SIZE = 64 * 1024; // I have no idea whether this value is appropriate or not...
-    private final MediaMuxer mMuxer;
+    private MediaMuxer mMuxer = null;
+    private MediaTranscoderEngine.StreamIf mStreamIf = null;
     private final Listener mListener;
     private MediaFormat mVideoFormat;
     private MediaFormat mAudioFormat;
@@ -47,6 +48,12 @@ public class QueuedMuxer {
         mSampleInfoList = new ArrayList<>();
     }
 
+    public QueuedMuxer(MediaTranscoderEngine.StreamIf streamif, Listener listener) {
+    	mStreamIf = streamif;
+        mListener = listener;
+        mSampleInfoList = new ArrayList<>();
+    }
+    
     public void setOutputFormat(SampleType sampleType, MediaFormat format) {
         switch (sampleType) {
             case VIDEO:
@@ -91,7 +98,10 @@ public class QueuedMuxer {
 
     public void writeSampleData(SampleType sampleType, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo) {
         if (mStarted) {
-            mMuxer.writeSampleData(getTrackIndexForSampleType(sampleType), byteBuf, bufferInfo);
+        	if(mStreamIf != null)
+        		mStreamIf.writeData(sampleType, byteBuf, bufferInfo);
+        	else if(mMuxer != null)
+        		mMuxer.writeSampleData(getTrackIndexForSampleType(sampleType), byteBuf, bufferInfo);
             return;
         }
         byteBuf.limit(bufferInfo.offset + bufferInfo.size);

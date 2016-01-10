@@ -26,6 +26,7 @@ public class ConfigDatabase {
 	public static String mMuxType;
 	public static String mVidCodecType;
 	public static String mAudCodecType;
+	public static boolean mSaveTranscodeFile;
 	
 	final static String KEY_SEGMENT_DURATION = "segment_duration";
 	final static String KEY_IS_LIVE_STREAM = "is_live_stream";
@@ -41,6 +42,7 @@ public class ConfigDatabase {
 	final static String KEY_VIDEO_RESOLUTION = "video_resolution";
 	final static String AUDSRC_SYSTEM_AUDIO = "System Audio";
 	final static String AUDSRC_MIC = "Mic";
+	final static String KEY_SAVE_TRANSCODE_FILE = "save_transcode_file";
 	
 	final static String VID_RES_480P = "640x352@60fps";
 	final static String VID_RES_720P = "1280x720@60fps";
@@ -68,7 +70,7 @@ public class ConfigDatabase {
 		mMuxType = sharedPreferences.getString(KEY_MUX_TYPE, MUX_TYPE_MP4);
 		mVidCodecType = sharedPreferences.getString(KEY_VID_CODEC_TYPE, VID_CODEC_TYPE_H264);
 		mAudCodecType = sharedPreferences.getString(KEY_AUD_CODEC_TYPE, AUD_CODEC_TYPE_AAC);
-		
+		mSaveTranscodeFile = sharedPreferences.getBoolean(KEY_SAVE_TRANSCODE_FILE, true);
 		if(isSytemApp) {
 			mEnableAudio = sharedPreferences.getBoolean(KEY_ENABLE_AUDIO, false);
 		} else {

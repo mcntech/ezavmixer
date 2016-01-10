@@ -112,9 +112,15 @@ public class TranscoderActivity extends Activity implements MediaTranscoderEngin
                             onTranscodeFinished(false, "Transcoder error occurred.", parcelFileDescriptor);
                         }
                     };
-                    Log.d(TAG, "transcoding into " + file);
-                    mFuture = MediaTranscoder.getInstance().transcodeVideo(fileDescriptor, file.getAbsolutePath(),
-                            MediaFormatStrategyPresets.createAndroid720pStrategy(), listener, this);
+                    if(ConfigDatabase.mSaveTranscodeFile) {
+	                    Log.d(TAG, "transcoding into " + file);
+	                    mFuture = MediaTranscoder.getInstance().transcodeVideo(fileDescriptor, file.getAbsolutePath(),
+	                            MediaFormatStrategyPresets.createAndroidFollowInputStrategy(), listener, null);
+                    } else {
+	                    Log.d(TAG, "transcoding into " + file);
+	                    mFuture = MediaTranscoder.getInstance().transcodeVideo(fileDescriptor, null,
+	                            MediaFormatStrategyPresets.createAndroidFollowInputStrategy(), listener, this);                    	
+                    }
                     switchButtonEnabled(true);
                 }
                 break;
@@ -205,7 +211,7 @@ public class TranscoderActivity extends Activity implements MediaTranscoderEngin
             }
             // transfer bytes from this buffer into the given destination array
             byteBuf.get(audBytes, prependLen, payloadLen);
-	        OnyxApi.sendAudioData("input0", audBytes, prependLen + payloadLen, pts, mBufferInfo.flags);
+	        OnyxApi.sendAudioData("input0", audBytes, prependLen + payloadLen, pts, bufferInfo.flags);
 		}
 	}
 }

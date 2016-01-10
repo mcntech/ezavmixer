@@ -41,6 +41,14 @@ public class MediaFormatStrategyPresets {
         return new Android720pFormatStrategy(bitRate);
     }
 
+    public static MediaFormatStrategy createAndroidFollowInputStrategy(int bitRate) {
+        return new AndroidFollowInputFormatStrategy(bitRate);
+    }
+    public static MediaFormatStrategy createAndroidFollowInputStrategy() {
+        return new AndroidFollowInputFormatStrategy();
+    }
+
+    
     /**
      * Preset similar to iOS SDK's AVAssetExportPreset960x540.
      * Note that encoding resolutions of this preset are not supported in all devices e.g. Nexus 4.

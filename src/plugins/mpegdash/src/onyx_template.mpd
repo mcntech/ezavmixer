@@ -1,0 +1,33 @@
+<MPD type="dynamic" id="Test0001" xmlns:xlink="http://www.w3.org/1999/xlink" maxSegmentDuration="PT4S" minBufferTime="PT2S" timeShiftBufferDepth="PT00H00M12.000S" suggestedPresentationDelay="PT00H00M0.000S">
+  <customFolder>/srv/www/</customFolder>
+  <Period >
+    <AdaptationSet id="0" mimeType="video/mp4" codecs="avc1.42E01E" segmentAlignment="true" subsegmentAlignment="true" bitstreamSwitching="false" startWithSAP="2" subsegmentStartsWithSAP="2" >
+      <BaseURL>mpdlive/</BaseURL>
+      <!-- <SegmentTemplate initialization="$RepresentationID$_0.m4s" /> -->
+      <Viewpoint schemeIdUri="urn:mpeg:DASH:viewpoint:2011" value="Camera-Globe"/>
+      <Representation id="channel1hq" mimeType="video/mp4" codecs="avc1.42E01E" width="640" height="480" bandwidth="1000000" customSource="switch0">
+      <SegmentList xlink:href="http://www.mcntech.com/channel1hq.lst">
+        <Initialization sourceURL="channel1hq_0.m4s" />
+      </SegmentList>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="0" mimeType="video/mp4" codecs="avc1.42E01E" segmentAlignment="true" subsegmentAlignment="true" bitstreamSwitching="false" startWithSAP="2" subsegmentStartsWithSAP="2" >
+      <BaseURL>mpdlive/</BaseURL>
+      <SegmentTemplate initialization="$RepresentationID$_0.m4s" />
+      <Viewpoint schemeIdUri="urn:mpeg:DASH:viewpoint:2011" value="Camera-Snowman"/>      
+      <Representation id="http://www.mcntech.com/channel2hq" mimeType="video/mp4" codecs="avc1.42E01E" width="640" height="480" bandwidth="1000000" customSource="switch1"> </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="0" mimeType="video/mp4" codecs="avc1.42E01E" segmentAlignment="true" subsegmentAlignment="true" bitstreamSwitching="false" startWithSAP="2" subsegmentStartsWithSAP="2" >
+      <BaseURL>mpdlive/</BaseURL>
+      <!-- <SegmentTemplate initialization="$RepresentationID$_0.m4s" /> -->
+      <Viewpoint schemeIdUri="urn:mpeg:DASH:viewpoint:2011" value="Camera-Stage"/>
+      <Representation id="http://www.mcntech.com/channel3hq" mimeType="video/mp4" codecs="avc1.42E01E" width="640" height="480" bandwidth="1000000" customSource="switch2">
+        <SegmentList xlink:href="channel2hq.lst">
+          <Initialization sourceURL="channel2hq_0.m4s" />
+        </SegmentList>
+
+      </Representation>
+    </AdaptationSet>
+
+  </Period>
+</MPD>

@@ -17,7 +17,8 @@ public class OnyxApi {
 	public static final int PROTOCOL_MPD = 2;	
 	public static final int PROTOCOL_RTSP = 1;
 	public static String mError = "";
-	public static MpdSession mMpdSession = null;
+	public static MpdModel mMpdSession = null;
+	public static RtspModel mRtspSession = null;
 	
 	public interface RemoteNodeHandler {
 		void onConnectRemoteNode(String url);
@@ -63,7 +64,20 @@ public class OnyxApi {
 		}
 	}
 	
-	public static boolean startSession(MpdSession mpdSession, boolean enableAud, boolean enabeVid) {
+	public static boolean startSession(RtspModel rtsp, boolean enableAud, boolean enabeVid) {
+
+		boolean result = true;
+		mMpdSession = mpdSession;
+		String jPublishId = mpdSession.mPublishId;
+		String jswitchId = mpdSession.mSwcitchId;
+		String jinputId = mpdSession.mInputId;
+		String jInputType = mpdSession.mInputType;
+		String jUrl = mpdSession.mInputUrl;		
+		CreateInputStream(mHandle, jinputId, jInputType, jUrl);
+		CreateSwitch(mHandle, jswitchId);
+	}
+	
+	public static boolean startSession(MpdModel mpdSession, boolean enableAud, boolean enabeVid) {
 
 		boolean result = true;
 		mMpdSession = mpdSession;
@@ -85,14 +99,14 @@ public class OnyxApi {
 		String jfolder = node.mFolder;
 		String jfilePerfix = node.mFileprefix;
 	
-		boolean fIsLive = ConfigDatabase.mIsLiveStream;
-		int nBitrate = ConfigDatabase.mVideoBitrate;
-		int nWidth = ConfigDatabase.getVideoWidth();
-		int nHeight = ConfigDatabase.getVideoHeight();
-		int nFramerate = ConfigDatabase.getVideoFramerate();
-		int segmentDurationMs = ConfigDatabase.mSegmentDuration * 1000;
-		String strMimeType = ConfigDatabase.mMuxType;
-		String strCodecType = ConfigDatabase.mVidCodecType;
+		boolean fIsLive = CodecModel.mIsLiveStream;
+		int nBitrate = CodecModel.mVideoBitrate;
+		int nWidth = CodecModel.getVideoWidth();
+		int nHeight = CodecModel.getVideoHeight();
+		int nFramerate = CodecModel.getVideoFramerate();
+		int segmentDurationMs = CodecModel.mSegmentDuration * 1000;
+		String strMimeType = CodecModel.mMuxType;
+		String strCodecType = CodecModel.mVidCodecType;
 		
 		addS3PublishNode(mHandle, jserverId,
 				jhost, jaccessId, jsecKey,

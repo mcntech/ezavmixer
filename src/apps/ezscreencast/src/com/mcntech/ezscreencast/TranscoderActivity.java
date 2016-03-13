@@ -112,7 +112,7 @@ public class TranscoderActivity extends Activity implements MediaTranscoderEngin
                             onTranscodeFinished(false, "Transcoder error occurred.", parcelFileDescriptor);
                         }
                     };
-                    if(ConfigDatabase.mSaveTranscodeFile) {
+                    if(CodecModel.mSaveTranscodeFile) {
 	                    Log.d(TAG, "transcoding into " + file);
 	                    mFuture = MediaTranscoder.getInstance().transcodeVideo(fileDescriptor, file.getAbsolutePath(),
 	                            MediaFormatStrategyPresets.createAndroidFollowInputStrategy(), listener, null);

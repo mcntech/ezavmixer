@@ -157,7 +157,7 @@ int CMpdSrvBridgeChan::Run(COutputStream *pOutputStream)
 			m_szParentFolder.c_str(),
 			m_szBucketOrServerRoot.c_str(),
 			&m_AwsContext,
-			m_nSegmentStart, nUpLoadType);
+			nUpLoadType);
 	}
 	if(m_fEnableServer){
 		// TODO

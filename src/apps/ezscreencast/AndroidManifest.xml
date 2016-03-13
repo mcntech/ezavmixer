@@ -31,7 +31,7 @@
             </intent-filter>
         </activity>
        <activity
-            android:name="com.mcntech.ezscreencast.ConfigDialog"
+            android:name="com.mcntech.ezscreencast.CodecDlg"
             android:label="@string/settings_title" >
             android:theme="@android:style/Theme.Dialog" />
         </activity>        
@@ -51,7 +51,7 @@
             android:theme="@android:style/Theme.Dialog" />
         </activity>             
      <activity
-            android:name="com.mcntech.ezscreencast.ConfigMpdSession"
+            android:name="com.mcntech.ezscreencast.MpdDlg"
             android:label="@string/server_config" >
             android:theme="@android:style/Theme.Dialog" />
         </activity>             

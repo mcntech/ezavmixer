@@ -19,7 +19,7 @@ public class ShareMpdLink extends Activity implements OnItemSelectedListener{
         
         Bundle b = getIntent().getExtras();
         String value = b.getString("nickname");
-        OnyxRemoteNode node = new DatabaseHandler(this).read(value);
+        OnyxRemoteNode node = new PublishSrversModel(this).read(value);
         String shareLink = "https://" + node.mHost + "/" + node.mBucket + "/" + node.mFolder + "/" + node.mFileprefix + ".mpd";
         EditText editStreamLink = (EditText) findViewById(R.id.editStreamLink);
         editStreamLink.setText(shareLink);

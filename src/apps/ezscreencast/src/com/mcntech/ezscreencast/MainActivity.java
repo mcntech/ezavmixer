@@ -58,7 +58,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         Log.d(TAG, "onCreate: ");
 		boolean isSystemApp = (getApplicationInfo().flags
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
-		ConfigDatabase.loadSavedPreferences(this, isSystemApp);
+		CodecModel.loadSavedPreferences(this, isSystemApp);
         
 		setContentView(R.layout.activity_main);
 		mBtnStart = (Button) findViewById(R.id.button_startstop);
@@ -76,7 +76,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		
-        mOnyxRemoteNodeList = ConfigDatabase.mOnyxRemoteNodeList;
+        mOnyxRemoteNodeList = CodecModel.mOnyxRemoteNodeList;
         mRemoteNodeListView =  (ListView)findViewById(R.id.listRemoteNodes);
 
 	    mListAdapter = new ArrayAdapter<OnyxRemoteNode>(getApplicationContext(), 
@@ -139,17 +139,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
     	};        
     	//ConfigDatabase.loadSavedPreferences(this, isSystemApp);
-    	int recordCount = new DatabaseHandler(this).count();
+    	int recordCount = new PublishSrversModel(this).count();
     	if(recordCount <= 0){
     		// Initialize Database
         	OnyxRemoteNode node1 = new OnyxRemoteNode(DEF_MPD_SERVER1);
-        	new DatabaseHandler(this).createRow(node1);
+        	new PublishSrversModel(this).createRow(node1);
     	}
         OnyxApi.initialize(OnyxApi.PROTOCOL_MPD);
         OnyxApi.setRemoteNodeHandler(mDeviceHandler);
         
         
-        List<OnyxRemoteNode> RemoteNodes = new DatabaseHandler(this).read();
+        List<OnyxRemoteNode> RemoteNodes = new PublishSrversModel(this).read();
         
         if (RemoteNodes.size() > 0) {
             for (OnyxRemoteNode obj : RemoteNodes) {
@@ -184,7 +184,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }
   
     public void doSettings() {
-        Intent intent = new Intent(this, ConfigDialog.class);
+        Intent intent = new Intent(this, CodecDlg.class);
         startActivity(intent);
     } 
     
@@ -195,7 +195,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }  
     
     public void doEditRemoteNode(OnyxRemoteNode node) {
-        Intent intent = new Intent(this, ConfigMpdSession.class);
+        Intent intent = new Intent(this, MpdDlg.class);
         intent.setType("text/plain");
         intent.putExtra("nickname",node.mNickname); 
         startActivityForResult(intent, NODE_LIST_DIALOG_CODE);
@@ -214,17 +214,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	            return;
 	        }
 	        // video size
-	        final int width = ConfigDatabase.getVideoWidth();
-	        final int height = ConfigDatabase.getVideoHeight();
-	        final int framerate = ConfigDatabase.getVideoFramerate();
-	        MpdSession mMpdSession = new MpdSession();
+	        final int width = CodecModel.getVideoWidth();
+	        final int height = CodecModel.getVideoHeight();
+	        final int framerate = CodecModel.getVideoFramerate();
+	        MpdModel mMpdSession = new MpdModel();
 	        int mpdSessionId = 0;
-	        OnyxRemoteNode node = new DatabaseHandler(this).read(DEF_MPD_SERVER1);
+	        OnyxRemoteNode node = new PublishSrversModel(this).read(DEF_MPD_SERVER1);
 	        mMpdSession.setNodeParams(node, mpdSessionId);
 	        
 	        File file = new File(Environment.getExternalStorageDirectory(),
 	                "record-" + width + "x" + height + "-" + System.currentTimeMillis() + ".mp4");
-	        final int bitrate = ConfigDatabase.mVideoBitrate;
+	        final int bitrate = CodecModel.mVideoBitrate;
 
 	        mRecorder = new ScreenRecorder(this, mMpdSession, width, height, framerate, bitrate, 1, mediaProjection, file.getAbsolutePath());
 

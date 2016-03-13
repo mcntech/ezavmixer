@@ -179,6 +179,19 @@ void CMpdSegmentTemplate::SetInitializationSegment(std::string &InitializationUr
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 }
 
+const char *CMpdSegmentTemplate::GetInitializationSegment()
+{
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
+	const char *pszUrl = NULL;
+	TiXmlNode *pNode = m_pNode->FirstChild(ELEMENT_SegmentInitialization);
+	if(pNode) {
+		TiXmlElement *pElemUrl = pNode->ToElement();
+		pszUrl = pElemUrl->Attribute(ATTRIB_NAME_SEGMENT_INIT_sourceURL);
+	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
+	return pszUrl;
+}
+
 CMpdSegmentList::CMpdSegmentList(CMpdRepresentation *pParent, TiXmlNode *pNode)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
@@ -333,7 +346,8 @@ CMpdRepresentation::CMpdRepresentation(
 
 		m_pNode->InsertEndChild(*pSegElem);
 		TiXmlNode *pSegNode = m_pNode->FirstChild();
-		m_pSegmentTemplate = new CMpdSegmentTemplate(this, pSegNode);
+		//TODO : create a generic parenr
+		//m_pSegmentTemplate = new CMpdSegmentTemplate(this, pSegNode);
 	}
 	if(m_MimeType == MIME_MP4) {
 		pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_mimetype, ATTRIB_VAL_REPRESENTATION_MIMETYPE_video_mp4);
@@ -432,7 +446,7 @@ const char *CMpdRepresentation::GetInitializationSegment()
 	if(m_SegmentType == TYPE_SEGMENT_LIST) {
 		return m_pSegmentList->GetInitializationSegment();
 	} else if(m_SegmentType == TYPE_SEGMENT_TEMPLATE) {
-		m_pSegmentTemplate->SetInitializationSegment(Url);
+		m_pSegmentTemplate->GetInitializationSegment();
 	}
 	return NULL;
 }

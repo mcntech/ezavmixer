@@ -71,8 +71,8 @@ public class ScreenRecorder extends Thread {
     private long mStartExtVClkUs = 0;
     private Context mContext = null;
     private boolean mfSlaveToExtClock = false;
-    MpdSession mMpdSession = null;
-    public ScreenRecorder(Context context, MpdSession mpdSession, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
+    MpdModel mMpdSession = null;
+    public ScreenRecorder(Context context, MpdModel mpdSession, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
         super(TAG);
         mContext = context;
         mMpdSession = mpdSession; 
@@ -84,10 +84,10 @@ public class ScreenRecorder extends Thread {
         mMediaProjection = mp;
         mDstPath = dstPath;
         
-        if(ConfigDatabase.mAudioSource.equals(ConfigDatabase.AUDSRC_MIC)) {
+        if(CodecModel.mAudioSource.equals(CodecModel.AUDSRC_MIC)) {
         	mChannelCfg = android.media.AudioFormat.CHANNEL_IN_MONO;
         	mAudSrc = android.media.MediaRecorder.AudioSource.MIC;  
-        } else if (ConfigDatabase.mAudioSource.equals(ConfigDatabase.AUDSRC_SYSTEM_AUDIO)) {
+        } else if (CodecModel.mAudioSource.equals(CodecModel.AUDSRC_SYSTEM_AUDIO)) {
         	mChannelCfg = android.media.AudioFormat.CHANNEL_IN_STEREO;
         	mAudSrc = android.media.MediaRecorder.AudioSource.REMOTE_SUBMIX;  
         } else {
@@ -111,8 +111,8 @@ public class ScreenRecorder extends Thread {
                 if(mEnableFileSave) {
                 	mMuxer = new MediaMuxer(mDstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
                 }
-                if(ConfigDatabase.mEnableVideo || ConfigDatabase.mEnableAudio) {
-                	boolean result = OnyxApi.startSession(mMpdSession, ConfigDatabase.mEnableAudio, ConfigDatabase.mEnableVideo);
+                if(CodecModel.mEnableVideo || CodecModel.mEnableAudio) {
+                	boolean result = OnyxApi.startSession(mMpdSession, CodecModel.mEnableAudio, CodecModel.mEnableVideo);
                 	if(!result) {
                 		Toast.makeText(mContext, OnyxApi.mError, Toast.LENGTH_SHORT).show();
                 		return;
@@ -134,7 +134,7 @@ public class ScreenRecorder extends Thread {
                     mSurface, null, null);
             Log.d(TAG, "created virtual display: " + mVirtualDisplay);
 
-            if(ConfigDatabase.mEnableAudio) {
+            if(CodecModel.mEnableAudio) {
             	satrtAudRecording();
             }
             recordVirtualDisplay();
@@ -236,7 +236,7 @@ public class ScreenRecorder extends Thread {
             //if(mEnableFileSave) {
             //	mMuxer.writeSampleData(mVideoTrackIndex, encodedData, mBufferInfo);
             //}
-            if(ConfigDatabase.mEnableAudio) {
+            if(CodecModel.mEnableAudio) {
             	byte[] audBytes;
             	int prependLen = 0;
             	int payloadLen = mAudBufferInfo.size;
@@ -396,7 +396,7 @@ public class ScreenRecorder extends Thread {
             	mMuxer.writeSampleData(mVideoTrackIndex, encodedData, mBufferInfo);
             }
          // Retrieve all bytes in the buffer
-            if(ConfigDatabase.mEnableVideo) {
+            if(CodecModel.mEnableVideo) {
             	byte[] vidBytes;
             	int prependLen = 0;
             	int payloadLen = mBufferInfo.size;
@@ -494,11 +494,11 @@ public class ScreenRecorder extends Thread {
             mMuxer = null;
         }
         
-        if(ConfigDatabase.mEnableAudio) {
+        if(CodecModel.mEnableAudio) {
         	stopAudRecording();
         }
         
-        if(ConfigDatabase.mEnableVideo) {
+        if(CodecModel.mEnableVideo) {
         	OnyxApi.stopSession();
          	//OnyxApi.deinitialize();
         }

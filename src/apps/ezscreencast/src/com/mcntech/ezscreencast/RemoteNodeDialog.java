@@ -30,12 +30,12 @@ public class RemoteNodeDialog extends Activity {
     	int i;
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nodelist);
-        ConfigDatabase.loadSavedPreferences(this, false);
+        CodecModel.loadSavedPreferences(this, false);
                 
         mNodeUrl = (EditText) findViewById(R.id.node_url);
         mRemoteNodeList = (ListView)findViewById(R.id.node_list);
         mListAdapter = new ArrayAdapter<OnyxRemoteNode>(this, 
-				android.R.layout.simple_list_item_1, ConfigDatabase.mOnyxRemoteNodeList); 
+				android.R.layout.simple_list_item_1, CodecModel.mOnyxRemoteNodeList); 
 		mRemoteNodeList.setAdapter(mListAdapter ); 
 		//mRemoteNodeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 		mRemoteNodeList.setOnItemClickListener(new AdapterView.OnItemClickListener(){
@@ -44,8 +44,8 @@ public class RemoteNodeDialog extends Activity {
                     int position, long id)
             {
             	OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(position); 
-            	ConfigDatabase.mOnyxRemoteNodeList.remove(position);
-            	ConfigDatabase.saveRemoteNodeList(getApplicationContext());
+            	CodecModel.mOnyxRemoteNodeList.remove(position);
+            	CodecModel.saveRemoteNodeList(getApplicationContext());
             	mListAdapter.notifyDataSetChanged();
             }
         });
@@ -54,13 +54,13 @@ public class RemoteNodeDialog extends Activity {
 	
     public void onAddRemoteNode(View v) {
 		OnyxRemoteNode node = new OnyxRemoteNode(mNodeUrl.getText().toString());
-		ConfigDatabase.mOnyxRemoteNodeList.add(node);
-		ConfigDatabase.saveRemoteNodeList(getApplicationContext());
+		CodecModel.mOnyxRemoteNodeList.add(node);
+		CodecModel.saveRemoteNodeList(getApplicationContext());
 		mListAdapter.notifyDataSetChanged();
     }
     public void onClearAllNodes(View v) {
 		OnyxRemoteNode node = new OnyxRemoteNode(mNodeUrl.toString());
-		ConfigDatabase.mOnyxRemoteNodeList.add(node);
+		CodecModel.mOnyxRemoteNodeList.add(node);
     }
 
 }

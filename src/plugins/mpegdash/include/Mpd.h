@@ -117,6 +117,8 @@ public:
 	~CMpdSegmentTemplate();
 	void Setup(int nStartNumber, int nDurationMs, const char *pszTemplate);
 	void SetInitializationSegment(std::string &Url);
+	const char *GetInitializationSegment();
+
 	int GetStartIndex()
 	{
 		return m_nStartNumber;

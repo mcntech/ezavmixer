@@ -1261,13 +1261,12 @@ public:
 		CMpdRepresentation        *pMpdRepresentation,
 		const char	*pszMpdSegmentPrefix,
 		const char	*pszFolder,
-		const char	*pszServerRoot,
-		int          nStartIndex
+		const char	*pszServerRoot
 		)
 	{
 		CMpdRoot         *m_pMpd = pMpdRepresentation->GetMpd();
 		CMpdAdaptaionSet *pAdapSet= pMpdRepresentation->GetAdaptationSet();
-
+		int          nStartIndex = 1;
 		int          nSegmentDuration = m_pMpd->GetMaxSegmentDuration();
 		int          nTimeShiftBuffer = m_pMpd->GetTimeShiftBuffer();
 		char szHlsFolderPath[256];
@@ -1830,7 +1829,7 @@ void *mpdPublishStart(
 	} else 
 #endif
 	{
-		pPublisher = new CMpdPublishMemFile(pSegmenter, pMpdRep, pszSegmentPrefix, pszParentFolder, pszBucketOrSvrRoot, nStartIndex);
+		pPublisher = new CMpdPublishMemFile(pSegmenter, pMpdRep, pszSegmentPrefix, pszParentFolder, pszBucketOrSvrRoot);
 	}
 	pPublisher->Run();
 	

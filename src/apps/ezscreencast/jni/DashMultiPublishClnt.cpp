@@ -171,8 +171,6 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 
-	nStartIndex = time(NULL);
-
 	CMpdSrvBridgeChan *pOutBridge;
 
 	CJdAwsContext JdAwsContext;

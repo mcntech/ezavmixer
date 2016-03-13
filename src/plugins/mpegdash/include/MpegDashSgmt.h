@@ -28,7 +28,6 @@ void *mpdPublishStart(
 		const char	*pszDestParentUrl,			///< Network folder name
 		const char	*pszBucketOrSvrRoot, 
 		CJdAwsContext  *pServerCtxt,
-		int         nStartIndex,
 		int         nDestType
 		);		
 

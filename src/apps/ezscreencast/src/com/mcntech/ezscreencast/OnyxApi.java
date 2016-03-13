@@ -65,7 +65,7 @@ public class OnyxApi {
 	}
 	
 	public static boolean startSession(RtspModel rtsp, boolean enableAud, boolean enabeVid) {
-
+/*
 		boolean result = true;
 		mMpdSession = mpdSession;
 		String jPublishId = mpdSession.mPublishId;
@@ -75,6 +75,8 @@ public class OnyxApi {
 		String jUrl = mpdSession.mInputUrl;		
 		CreateInputStream(mHandle, jinputId, jInputType, jUrl);
 		CreateSwitch(mHandle, jswitchId);
+*/	
+		return false;
 	}
 	
 	public static boolean startSession(MpdModel mpdSession, boolean enableAud, boolean enabeVid) {

@@ -42,10 +42,14 @@ public class MediaFormatStrategyPresets {
     }
 
     public static MediaFormatStrategy createAndroidFollowInputStrategy(int bitRate) {
-        return new AndroidFollowInputFormatStrategy(bitRate);
+    	
+/*        return new AndroidFollowInputFormatStrategy(bitRate);
+*/
+    	return null;
     }
     public static MediaFormatStrategy createAndroidFollowInputStrategy() {
-        return new AndroidFollowInputFormatStrategy();
+       /* return new AndroidFollowInputFormatStrategy();*/
+    	return null;
     }
 
     

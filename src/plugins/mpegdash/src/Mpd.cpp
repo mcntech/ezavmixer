@@ -302,7 +302,13 @@ CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent)
 	m_pParent = pParent;
 }
 
-CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string szId, TiXmlNode *pNode, int fSegmentTmplate, MIME_TYPE nMimeType, VID_CODEC_TYPE nCodecType)
+CMpdRepresentation::CMpdRepresentation(
+		CMpdAdaptaionSet *pParent,
+		std::string      szId,
+		TiXmlNode        *pNode,
+		int              fSegmentTmplate,
+		MIME_TYPE        nMimeType,
+		VID_CODEC_TYPE   nCodecType)
 {
 	m_pParent = pParent;
 	m_szId = szId;
@@ -322,7 +328,12 @@ CMpdRepresentation::CMpdRepresentation(CMpdAdaptaionSet *pParent, std::string sz
 		TiXmlNode *pSegNode = m_pNode->FirstChild();
 		m_pSegmentList = new CMpdSegmentList(this, pSegNode);
 	} else {
-		// todo pRepresentation->m_SegmentType = CMpdRepresentation::TYPE_SEGMENT_TEMPLATE;
+		TiXmlElement *pSegElem = new TiXmlElement( ELEMENT_SegmentTemplate );
+		m_SegmentType = TYPE_SEGMENT_TEMPLATE;
+
+		m_pNode->InsertEndChild(*pSegElem);
+		TiXmlNode *pSegNode = m_pNode->FirstChild();
+		m_pSegmentTemplate = new CMpdSegmentTemplate(this, pSegNode);
 	}
 	if(m_MimeType == MIME_MP4) {
 		pElem->SetAttribute(ATTRIB_NAME_REPRESENTATION_mimetype, ATTRIB_VAL_REPRESENTATION_MIMETYPE_video_mp4);
@@ -353,6 +364,14 @@ const char *CMpdRepresentation::GetId()
 	}
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 	return pszId;
+}
+int CMpdRepresentation::GetStartIndex()
+{
+	if(m_SegmentType == TYPE_SEGMENT_LIST) {
+		return m_pSegmentList->GetStartIndex();
+	} else if(m_SegmentType == TYPE_SEGMENT_TEMPLATE) {
+		m_pSegmentTemplate->GetStartIndex();
+	}
 }
 
 
@@ -400,13 +419,22 @@ void CMpdRepresentation::UpdateSegmentList(int nStartTime, int nSegmentDuration,
 void CMpdRepresentation::SetInitializationSegment(std::string &Url)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
-	m_pSegmentList->SetInitializationSegment(Url);
+	if(m_SegmentType == TYPE_SEGMENT_LIST) {
+		m_pSegmentList->SetInitializationSegment(Url);
+	} else if(m_SegmentType == TYPE_SEGMENT_TEMPLATE) {
+		m_pSegmentTemplate->SetInitializationSegment(Url);
+	}
 	m_pParent->CallbackChildUpdate(this);
 }
 
 const char *CMpdRepresentation::GetInitializationSegment()
 {
-	return m_pSegmentList->GetInitializationSegment();
+	if(m_SegmentType == TYPE_SEGMENT_LIST) {
+		return m_pSegmentList->GetInitializationSegment();
+	} else if(m_SegmentType == TYPE_SEGMENT_TEMPLATE) {
+		m_pSegmentTemplate->SetInitializationSegment(Url);
+	}
+	return NULL;
 }
 
 
@@ -652,7 +680,10 @@ CMpdPeriod *CMpdRoot::CreatePeriod(std::string szId)
 	return pPeriod;
 }
 
-
+/*
+ * COnstructor to create mpd from a template file
+ * TODO : not verified with recent code
+ */
 CMpdRoot::CMpdRoot(const char *pszConfFile)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
@@ -960,6 +991,11 @@ int CMpdRoot::IsDynamic()
 	return res;
 }
 
+/*
+ * Constructor to initialize an MPD
+ * fDynamic : 1- Dynamic mpd, 0- static mpd
+ * nSegmentDurationMs - Segment duration
+ */
 CMpdRoot::CMpdRoot(int fDynamic, int nSegmentDurationMs)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
@@ -991,9 +1027,10 @@ CMpdRoot::CMpdRoot(int fDynamic, int nSegmentDurationMs)
 		pElem->SetAttribute(ATTRIB_NAME_MPD_TYPE, ATTRIB_VAL_MPD_TYPE_STATIC);
 	}
 
+#if 0 // TODO set the duration outside of this function
 	FormatTime(nSegmentDurationMs / 1000, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_mediaPresentationDuration, szDaration);
-
+#endif
 	int nMinimumUpdatePeriod = DEFAULT_UPDATE_PERIOD;//3600 * 1000; // 1 Hour
 	FormatTime(nMinimumUpdatePeriod, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_minimumUpdatePeriod, szDaration);
@@ -1006,20 +1043,21 @@ CMpdRoot::CMpdRoot(int fDynamic, int nSegmentDurationMs)
 	FormatTime(nTimeShiftBufferDepth, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_timeShiftBufferDepth, szDaration);
 
+	// TODO
 	int nSuggestedPresentationDelay = 4000;
 	FormatTime(nSuggestedPresentationDelay, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_NAME_MPD_suggestedPresentationDelay, szDaration);
 
-	int nMaxSegmentDuration = DEFAULT_SEGMENT_DURATION; //4000;
+	int nMaxSegmentDuration = m_nSegmentDurationMs; //4000;
 	FormatTime(nMaxSegmentDuration, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_MPD_maxSegmentDuration, szDaration);
 
-	int nMaxSubsegmentDuration = 4000;
+	int nMaxSubsegmentDuration = m_nSegmentDurationMs;
 	FormatTime(nMaxSubsegmentDuration, szDaration, MAX_TIME_STRING);
 	pElem->SetAttribute(ATTRIB_MPD_maxSubsegmentDuration, szDaration);
 
 	m_nUpdateTime = 0;
-    m_nUpdateInterval = 1000; // default 1 Sec
+    m_nUpdateInterval = m_nSegmentDurationMs;
 
     m_pDoc->InsertEndChild(*pElem);
     m_pNode = m_pDoc->FirstChild();

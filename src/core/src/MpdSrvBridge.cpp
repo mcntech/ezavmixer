@@ -27,14 +27,13 @@ static int HasSps(unsigned char *pData, int nLen)
 	return 0;
 }
 
-CMpdSrvBridgeChan::CMpdSrvBridgeChan(int nSegmentStart) : CStrmOutBridge("MPD")
+CMpdSrvBridgeChan::CMpdSrvBridgeChan() : CStrmOutBridge("MPD")
 {
 	m_fEnableServer = 0;
 	m_fEnablePublish = 0;
 	m_pHttpSrv = NULL;
 	m_pUploader = NULL;
 	m_pUploaderForExtHttpSrv = NULL;
-	m_nSegmentStart = nSegmentStart;
 	m_pMpdRepresentation = NULL;
 	m_pSegmenter = NULL;
 	m_fDiscont = 1;
@@ -189,13 +188,12 @@ CMpdSrvBridge::~CMpdSrvBridge()
 CMpdSrvBridgeChan *CMpdSrvBridge::CreateChannel(
 		std::string         szId,
 		CMpdRepresentation *pCfgRepresenation, 
-		int        nSegmentStart,
 		const char *pszFilePrefix, 
 		const char *pszParentFolder, 
 		const char *pszBucketOrServerRoot,
 		CJdAwsContext *pAwsContext)
 {
-	CMpdSrvBridgeChan *pChan = new CMpdSrvBridgeChan(nSegmentStart);
+	CMpdSrvBridgeChan *pChan = new CMpdSrvBridgeChan();
 	pChan->SetServerConfig(pCfgRepresenation, pszFilePrefix, pszParentFolder, pszBucketOrServerRoot, pAwsContext);
 
 	m_listChan[szId] = pChan;

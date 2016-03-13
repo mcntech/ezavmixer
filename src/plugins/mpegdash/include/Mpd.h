@@ -116,8 +116,12 @@ public:
 	CMpdSegmentTemplate(CMpdAdaptaionSet *pParent, TiXmlNode *pNode);
 	~CMpdSegmentTemplate();
 	void Setup(int nStartNumber, int nDurationMs, const char *pszTemplate);
-
 	void SetInitializationSegment(std::string &Url);
+	int GetStartIndex()
+	{
+		return m_nStartNumber;
+	}
+
 public:
 
 	CMpdInitializationUrl *m_SpegmentInitializationUrl;
@@ -146,7 +150,10 @@ public:
 	{
 		m_nStartNumber = nStartNumber;
 	}
-
+	int GetStartIndex()
+	{
+		return m_nStartNumber;
+	}
 	void SetDuration(int nDuration)
 	{
 		m_nDuration = nDuration;
@@ -189,6 +196,7 @@ public:
 
 	const char *GetId();
 	MIME_TYPE GetMimeType();
+	int GetStartIndex();
 
 	void UpdateSegmentList(int nStartTime, int nSegmentDuration, int nStartNum, std::list<std::string> *plistUrl);
 	void SetInitializationSegment(std::string &Url);
@@ -214,6 +222,7 @@ public:
 	TiXmlNode            *m_pNode;
 	CMpdSegmentBase      *m_pSegmentBase;
 	CMpdSegmentList      *m_pSegmentList;
+	CMpdSegmentTemplate  *m_pSegmentTemplate;
 	SEGMENT_TYPE         m_SegmentType;
 	MIME_TYPE            m_MimeType;
 	VID_CODEC_TYPE       m_VidCodecType;

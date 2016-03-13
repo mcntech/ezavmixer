@@ -20,7 +20,7 @@
 class CMpdSrvBridgeChan : public CStrmOutBridge
 {
 public:
-	CMpdSrvBridgeChan(int nSegmentStart);
+	CMpdSrvBridgeChan();
 	~CMpdSrvBridgeChan();
 
 	int Run(COutputStream *pOutputStream);
@@ -68,7 +68,6 @@ public:
 	int             m_fEnablePublish;
 	COsalMutex      m_Mutex;
 	int             m_fDiscont;
-	int             m_nSegmentStart;
 	int             m_nMuxType;
 };
 
@@ -80,7 +79,6 @@ public:
 	CMpdSrvBridgeChan *CreateChannel(
 			std::string         szId,
 			CMpdRepresentation *pCfgRepresenation,
-			int        nSegmentStart,
 			const char *pszFilePrefix,
 			const char *pszParentFolder,
 			const char *pszBucketOrServerRoot,

@@ -1031,7 +1031,6 @@ public:
 		const char	*pszParentFolder,
 		const char	*pszBucket,
 		CJdAwsContext *pAwsContext,
-		int         nStartIndex,
 		int         nDestType,
 		int         *phr
 		):
@@ -1062,7 +1061,7 @@ public:
 		m_fRunState = 0;
 
 		m_pSegmenter = (CMpdSegmnter *)pSegmenter;
-		m_nSegmentStartIndex = nStartIndex;//time(NULL);//1;
+		m_nSegmentStartIndex = pCfgRepresenation->GetStartIndex();// TODO nStartIndex;//time(NULL);//1;
 		m_nSegmentIndex = m_nSegmentStartIndex;
 		m_nBcastFrontCache = S3_DEFAULT_FRONT_CACHE;
 		m_nBcastBackCache = S3_DEFAULT_BACK_CACHE;
@@ -1813,7 +1812,6 @@ void *mpdPublishStart(
 			const char	*pszParentFolder,
  			const char	*pszBucketOrSvrRoot, 
 			CJdAwsContext  *pServerCtxt,
-			int         nStartIndex,
 			int         nDestType
 			)
 {
@@ -1826,7 +1824,7 @@ void *mpdPublishStart(
 		if(nTotalTimeMs == -1)
 			nTotalTimeMs = MAX_UPLOAD_TIME;
 		pPublisher = new CMpdPublishS3(nTotalTimeMs, pSegmenter, pMpdRep, pszSegmentPrefix, pszParentFolder,
-			pszBucketOrSvrRoot, pServerCtxt, nStartIndex, nDestType, &result);
+			pszBucketOrSvrRoot, pServerCtxt, nDestType, &result);
 		if (result != 0)
 			return NULL;
 	} else 

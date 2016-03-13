@@ -165,7 +165,6 @@ int CDashMultiPublishClnt::UpdateMpdPublishStatus(std::string szPublishId)
 int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pMpdRoot, CMediaSwitch *pPublishSwitch, CMpdRepresentation *pRepresentation, CS3PublishNode *pServerNode)
 {
 	int result = 0;
-	int nStartIndex;
 	int nTimeShiftBufferMs = 0;
 	char strMpdFileName[256];
 	int fFileUpdate = 0;
@@ -178,7 +177,6 @@ int CDashMultiPublishClnt::CreateMpdPublishStream(std::string szId, CMpdRoot *pM
 
 	CJdAwsContext JdAwsContext;
 	pOutBridge = m_pMpdSrvBridge->CreateChannel(szId, pRepresentation,
-			nStartIndex,
 			pServerNode->m_szFilePefix.c_str(), pServerNode->m_szFolder.c_str(), pServerNode->m_szBucket.c_str(),
 			&pServerNode->m_AwsContext);
 

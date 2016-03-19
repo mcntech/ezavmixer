@@ -1,81 +1,67 @@
-#include "RtspMultiPublishClnt.h"
+#include "RtspPlayer.h"
 
 CRtspPlayer::CRtspPlayer(CPublishEventBase *pEventBase)
 {
 	m_EventCallback = pEventBase;
 }
 
-int CRtspPlayer::AddPublishServer(std::string url, std::string appName, int localRtpPort, int remoteRtpPort, int serverPort)
+CServerNode *CRtspPlayer::getServerNode(std::string url)
 {
-	CRtspServerNode *pServerNode = new CRtspServerNode(url, appName, localRtpPort, remoteRtpPort, serverPort);
-	m_PublishServerList[url] = pServerNode;
-	CRtspPublishBridge *pRtspPublishBridge = new CRtspPublishBridge;
-	pRtspPublishBridge->SetStreamCfg(pServerNode->m_pRtspCommonCfg);
-	pServerNode->m_pRtspPublishBridge = pRtspPublishBridge;
+	CServerNode *pNode = NULL;
+	for (ServerNodeMap::iterator it = m_ServerList.begin(); it != m_ServerList.end(); it++) {
+		pNode = *it;
+		if(pRep->m_szId == szId){
+			return pNode;
+		}
+	}
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
+	return NULL;
+}
+int CRtspPlayer::AddServer(std::string url)
+{
+	CRtspServerNode *pServerNode = new CRtspServerNode(url);
+	m_ServerList[url] = pServerNode;
+	CRtspClntBridge *pRtspClntBridge = new CRtspPublishBridge;
+	pRtspClntBridge->SetStreamCfg(pServerNode->m_pRtspCommonCfg);
+	pServerNode->m_pRtspClntBridge = pRtspClntBridge;
 }
 
 int CRtspPlayer::RemovePublishServer(std::string url)
 {
-	ServerNodeMap::iterator it = m_PublishServerList.find(url);
-	if(it != m_PublishServerList.end()) {
-		CRtspServerNode *pNode = (CRtspServerNode *)it->second;
+	CServerNode *pNode = getServerNode(url);
+	if(pNode) {
 		if(pNode->m_pRtspPublishBridge)
 			delete pNode->m_pRtspPublishBridge;
-		m_PublishServerList.erase(it);
+		m_ServerList.erase(it);
 	}
 }
 
-int CRtspPlayer::start()
+int CRtspPlayer::start(std::string url)
 {
-	char szSwitchIdSection[128];
-	int i = 0;
-	CRtspServerNode *pServerNode;
-	sprintf(szSwitchIdSection,"%s%d",SWITCH_PREFIX, i);
-	m_pOutputStream = new COutputStream("test");
-	CMediaSwitch *pPublishSwitch = new CMediaSwitch(szSwitchIdSection);
-
-	for(ServerNodeMap::iterator it = m_PublishServerList.begin(); it != m_PublishServerList.end(); it++){
-		pServerNode = (CRtspServerNode *)it->second;
-		if(pServerNode) {
-			CRtspPublishBridge *pRtspSrvBridge = pServerNode->m_pRtspPublishBridge;
-			pRtspSrvBridge->Init(m_pOutputStream);
-			pPublishSwitch->AddOutput(pRtspSrvBridge);
-		}
-	}
-	ConnCtxT   *m_pVidConnSrc = CreateStrmConn(1024*1024,3);
-	ConnCtxT   *m_pAudConnSrc = CreateStrmConn(16*1024, 3);
-
-	pPublishSwitch->SetSource(m_pVidConnSrc, m_pAudConnSrc);
-	m_pPublishSwitch = pPublishSwitch;
-	pPublishSwitch->Run();
+	CServerNode *pNode = getServerNode(url);
+	if(pNode)
+		pNode->start();
 }
 
-int CRtspPlayer::sendAudioData(const char *pData, int numBytes, long Pts, int Flags)
+int CRtspPlayer::getAudioData(std::string url, const char *pData, int numBytes, long Pts, int Flags)
 {
 	long long llPts = Pts;
 	m_pAudConnSrc->Write(m_pAudConnSrc, (char *)pData, numBytes, (unsigned int)Flags, llPts);
 	return 0;
 }
 
-int CRtspPlayer::sendVideoData(const char *pData, int numBytes, long Pts, int Flags)
+int CRtspPlayer::getVideoData(std::string url, const char *pData, int numBytes, long Pts, int Flags)
 {
 	long long llPts = Pts;
 	m_pVidConnSrc->Write(m_pAudConnSrc, (char *)pData, numBytes, (unsigned int)Flags, llPts);
 	return 0;
 }
 
-int CRtspPlayer::stop()
+int CRtspPlayer::stop(std::string url)
 {
-	m_pPublishSwitch->Stop();
-	for(ServerNodeMap::iterator it = m_PublishServerList.begin(); it != m_PublishServerList.end(); it++){
-		CRtspServerNode *pServerNode = (CRtspServerNode *)it->second;
-		CRtspPublishBridge *pRtspPublishBridge = pServerNode->m_pRtspPublishBridge;
-		if(pRtspPublishBridge) {
-			delete pRtspPublishBridge;
-		}
-		m_PublishServerList.erase(it);
-	}
-	delete m_pPublishSwitch;
+	CServerNode *pNode = getServerNode(url);
+	if(pNode)
+		pNode->stop();
 }
 
 CPlayerBase *CRtspPlayer::openInstance(CPublishEventBase *pEventBase)

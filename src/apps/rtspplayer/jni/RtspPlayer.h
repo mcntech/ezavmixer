@@ -45,24 +45,26 @@ public:
 	static CPublishClntBase *openInstance(CPublishEventBase *pEventBase);
 	//void closeInstancce(CPublishClntBase *pInst);
 
-	int AddPublishServer(std::string url, std::string appName, int localRtpPort=0, int remoteRtpPort=0, int serverPort=554);
-	int RemovePublishServer(std::string url);
+	int AddServer(std::string url);
+	int RemoveServer(std::string url);
 
-	int sendAudioData(const char *pData, int numBytes, long Pts, int Flags);
-	int sendVideoData(const char *pData, int numBytes, long Pts, int Flags);
+	int getAudioData(std::string url, const char *pData, int numBytes, long Pts, int Flags);
+	int getVideoData(std::string url, const char *pData, int numBytes, long Pts, int Flags);
 
-	int start();
-	int stop();
+	int start(std::string url);
+	int stop(std::string url);
 
 public:
 	CRtspPlayer(CPublishEventBase *pEventBase);
 	CRtspMultiPublishClnt(CConfigBase *pConfig);
 	CMediaSwitch       *m_pPublishSwitch;
 	COutputStream      *m_pOutputStream;
-	ServerNodeMap      m_PublishServerList;
+	ServerNodeMap      m_ServerList;
 	ConnCtxT           *m_pAudConnSrc;
 	ConnCtxT           *m_pVidConnSrc;
 	CPublishEventBase  *m_EventCallback;
+private:
+	CServerNode *getServerNode(std::string url);
 };
 
 #endif

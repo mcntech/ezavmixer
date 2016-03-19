@@ -44,10 +44,11 @@ public class OnyxApi {
 	private OnyxApi() {
 	}
 	
-	public static void initialize(int protocol) {
+	public static long initialize(int protocol) {
 		if(mHandle == 0) {
 			mHandle = mSelf.init(protocol);
 		}
+		return mHandle;
 	}
 
 	public static void deinitialize() {
@@ -79,87 +80,6 @@ public class OnyxApi {
 		return false;
 	}
 	
-	public static boolean startSession(MpdModel mpdSession, boolean enableAud, boolean enabeVid) {
-
-		boolean result = true;
-		mMpdSession = mpdSession;
-		String jPublishId = mpdSession.mPublishId;
-		String jswitchId = mpdSession.mSwcitchId;
-		String jinputId = mpdSession.mInputId;
-		String jInputType = mpdSession.mInputType;
-		String jUrl = mpdSession.mInputUrl;		
-		CreateInputStream(mHandle, jinputId, jInputType, jUrl);
-		CreateSwitch(mHandle, jswitchId);
-		ConnectSwitchInput(mHandle, jswitchId, jinputId);
-		
-		OnyxRemoteNode node = mpdSession.mNode;
-		String jserverId = node.mNickname;
-		String jhost = node.mHost;
-		String jaccessId = node.mAccessid;
-		String jsecKey = node.mSecuritykey;
-		String jbucket = node.mBucket;
-		String jfolder = node.mFolder;
-		String jfilePerfix = node.mFileprefix;
-	
-		boolean fIsLive = CodecModel.mIsLiveStream;
-		int nBitrate = CodecModel.mVideoBitrate;
-		int nWidth = CodecModel.getVideoWidth();
-		int nHeight = CodecModel.getVideoHeight();
-		int nFramerate = CodecModel.getVideoFramerate();
-		int segmentDurationMs = CodecModel.mSegmentDuration * 1000;
-		String strMimeType = CodecModel.mMuxType;
-		String strCodecType = CodecModel.mVidCodecType;
-		
-		addS3PublishNode(mHandle, jserverId,
-				jhost, jaccessId, jsecKey,
-				jbucket, jfolder, jfilePerfix);
-		
-		String jmpdId = mpdSession.mMpdId;
-		result = CreateMpd(mHandle, jmpdId, fIsLive, segmentDurationMs);
-		if(!result) {
-			mError = "Failed to create MPD";
-			return result;
-		}
-
-		String jperiodId = mpdSession.mPeriodId;
-		result = CreatePeriod(mHandle, jmpdId, jperiodId);
-		if(!result) {
-			mError = "Failed to create PERIOD";
-			return result;
-		}
-
-		String jadaptId = mpdSession.mAdaptId;		
-		result  = CreateAdaptationSet(mHandle, jmpdId, jperiodId, jadaptId);
-		if(!result) {
-			mError = "Failed to create ADAPTATION";
-			return result;
-		}
-		
-		String jrepId = mpdSession.mRepId;		
-		result  = CreateRepresentation(mHandle,  jmpdId, jperiodId,jadaptId, jrepId, strMimeType, strCodecType);
-		if(!result) {
-			mError = "Failed to create Representation";
-			return result;
-		}
-
-		//String jserverNode = MpdSession.mServerId;
-		result = CreateMpdPublishStream(mHandle, jPublishId, jmpdId, jperiodId, jadaptId, jrepId, jswitchId, jserverId);
-
-		if(!result) {
-			mError = "Failed to create PublishStream";
-			return result;
-		}
-
-		result = StartSwitch(mHandle, jswitchId);
-		result= StartMpdPublishStream(mHandle, jPublishId);
-		if(!result) {
-			mError = "Failed to StartPublishStream";
-			return result;
-		}
-		
-		mError = "Succcess";
-		return result;
-	}
 
 	public static void stopSession(){
 		
@@ -272,31 +192,31 @@ public class OnyxApi {
 		return getClockUs(mHandle);
 	}
 
-	private native long init(int protocol);
-	private native boolean deinit(long handle);
-	private native static void stopSession(long handle);
+	native long init(int protocol);
+	native boolean deinit(long handle);
+	native static void stopSession(long handle);
 
-	private native static boolean addRtspPublishNode(long handle, String url, String appname);	
-	private native static boolean removeRemoteNode(long handle, String url);	
+	native static boolean addRtspPublishNode(long handle, String url, String appname);	
+	native static boolean removeRemoteNode(long handle, String url);	
 		
-	public native static String getVersion(long handle);
+	native static String getVersion(long handle);
 	
-	private native static int sendAudioData(long handle,String inputId, byte[] pcmBytes, int numBytes, long lPts, int nFlags);
-	private native static int sendVideoData(long handle,String inputId, byte[] vidBytes, int numBytes, long Pts, int Flags);	
-	private native static long getClockUs(long handle);	
-	private native static boolean addS3PublishNode(long handle, String jid,
+	native static int sendAudioData(long handle,String inputId, byte[] pcmBytes, int numBytes, long lPts, int nFlags);
+	native static int sendVideoData(long handle,String inputId, byte[] vidBytes, int numBytes, long Pts, int Flags);	
+	native static long getClockUs(long handle);	
+	native static boolean addS3PublishNode(long handle, String jid,
 			String jhost, String jaccessId, String jsecKey,
 			String jbucket, String jfolder, String jfilePerfix);
-	private native static boolean CreateMpd(long  handle, String jid, boolean isLive, int durationMs);	
-	private native static boolean CreatePeriod(long handle, String jmpdId, String jperiodId);
-	private native static boolean CreateAdaptationSet(long handle, String jmpdId, String jperiodId, String jadaptId);
-	private native static boolean CreateRepresentation(long handle,  String jmpdId, String jperiodId, String jadaptId, String jrepId, String mimeType, String mCodecType);
-	private native static boolean CreateMpdPublishStream(long handle,  String jId, String jmpdId, String jperiodId, String jadaptId, String jrepId, String jswitchId, String jserverNode);
-	private native static boolean ConfigMpdPublishStream(long handle,  String jId, String jrepId, boolean fIsLive, int nBitrate, int nWidth, int nHeight, int nFramerate);
-	private native static boolean StartMpdPublishStream(long handle,  String jId);
-	private native static boolean CreateInputStream(long handle, String jid, String jInputType, String jUrl);
-	private native static boolean CreateSwitch(long handle, String jid);
-	private native static boolean ConnectSwitchInput(long handle, String jSwitchId, String jInputId);
-	private native static boolean StartSwitch(long handle, String jid);
-	private native static boolean UpdateMpdPublishStatus(long mHandle, String mPublishId);
+	native static boolean CreateMpd(long  handle, String jid, boolean isLive, int durationMs);	
+	native static boolean CreatePeriod(long handle, String jmpdId, String jperiodId);
+	native static boolean CreateAdaptationSet(long handle, String jmpdId, String jperiodId, String jadaptId);
+	native static boolean CreateRepresentation(long handle,  String jmpdId, String jperiodId, String jadaptId, String jrepId, String mimeType, String mCodecType);
+	native static boolean CreateMpdPublishStream(long handle,  String jId, String jmpdId, String jperiodId, String jadaptId, String jrepId, String jswitchId, String jserverNode);
+	native static boolean ConfigMpdPublishStream(long handle,  String jId, String jrepId, boolean fIsLive, int nBitrate, int nWidth, int nHeight, int nFramerate);
+	native static boolean StartMpdPublishStream(long handle,  String jId);
+	native static boolean CreateInputStream(long handle, String jid, String jInputType, String jUrl);
+	native static boolean CreateSwitch(long handle, String jid);
+	native static boolean ConnectSwitchInput(long handle, String jSwitchId, String jInputId);
+	native static boolean StartSwitch(long handle, String jid);
+	native static boolean UpdateMpdPublishStatus(long mHandle, String mPublishId);
 }

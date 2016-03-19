@@ -9,14 +9,11 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
-import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 import android.widget.Toast;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,8 +68,8 @@ public class ScreenRecorder extends Thread {
     private long mStartExtVClkUs = 0;
     private Context mContext = null;
     private boolean mfSlaveToExtClock = false;
-    MpdModel mMpdSession = null;
-    public ScreenRecorder(Context context, MpdModel mpdSession, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
+    BaseSession mMpdSession = null;
+    public ScreenRecorder(Context context, BaseSession mpdSession, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
         super(TAG);
         mContext = context;
         mMpdSession = mpdSession; 
@@ -112,7 +109,7 @@ public class ScreenRecorder extends Thread {
                 	mMuxer = new MediaMuxer(mDstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
                 }
                 if(CodecModel.mEnableVideo || CodecModel.mEnableAudio) {
-                	boolean result = OnyxApi.startSession(mMpdSession, CodecModel.mEnableAudio, CodecModel.mEnableVideo);
+                	boolean result = mMpdSession.startSession(CodecModel.mEnableAudio, CodecModel.mEnableVideo);
                 	if(!result) {
                 		Toast.makeText(mContext, OnyxApi.mError, Toast.LENGTH_SHORT).show();
                 		return;

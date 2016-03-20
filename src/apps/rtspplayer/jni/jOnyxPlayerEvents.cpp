@@ -5,101 +5,132 @@
 #include <pthread.h>
 #include <android/log.h>
 
-//global context must be maintained for these variable to be valid when scope changes
-static JavaVM* g_vm;
-static jobject g_jniGlobalSelf = NULL;
-static jclass g_deviceClass = NULL;
+JavaVM* g_vm;
+jobject g_jniGlobalSelf = NULL;
+jclass g_deviceClass = NULL;
+static int  modDbgLevel = CJdDbg::LVL_TRACE;
 
-CjOnyxPlayerEvents::CjOnyxPlayerEvents(JNIEnv* env, jobject javaReceiver){
-	//do not share global jvm objects from JNI_OnLoad. get/share local jvm from env instead
+COnyxPlayerEvents::COnyxPlayerEvents(JNIEnv* env,jobject javaReceiver){
 	env->GetJavaVM(&g_vm);
 	g_jniGlobalSelf = env->NewGlobalRef(javaReceiver);
-	g_deviceClass = env->FindClass("com/mcntech/rtspplayer/Device");
+	g_deviceClass = env->FindClass("com/mcntech/rtspplayer/OnyxApi");
 	g_deviceClass = (jclass)env->NewGlobalRef(g_deviceClass);
-
-	pthread_mutex_init( &m_eventMutex, NULL);
-
-	Clogger::redirect(&printlog);//enable MIDSLOG
+	pthread_mutex_init(&m_eventMutex, NULL);
 }
 
-int CjOnyxPlayerEvents::printlog(const char *tag, const char *msg, va_list args)
+int COnyxPlayerEvents::printlog(const char *tag, const char *msg, va_list args)
 {
-	__android_log_vprint(ANDROID_LOG_DEBUG  , "[mcn_rtsp]", msg, args);
+	__android_log_vprint(ANDROID_LOG_INFO  , "[app]", msg, args);
 	return 0;
 }
 
-jobject CjOnyxPlayerEvents::createJDevice(JNIEnv* env, const TDEVICE_INFO& info){
-	jthrowable exc = 0;
 
-	if(g_deviceClass == 0){//assigned when app was created to keep thread context
-		MIDSLOG("", "CjniEventHandler::createJDevice 1");		
-		g_deviceClass = env->FindClass("com/mcntech/rtspplayer/Device"");
-		exc = env->ExceptionOccurred();
-		if(exc){
-			env->ExceptionDescribe(); // write exception data to the console 
-	    	env->ExceptionClear();    // clear the exception that was pending 
-	    	return NULL;
-	    }
-		if(g_deviceClass == 0)
-			return NULL;
-		
-
-		g_deviceClass = (jclass)env->NewGlobalRef(g_deviceClass);
-
-		env->ExceptionOccurred();	
-		if(exc){
-			env->ExceptionDescribe(); 
-    		env->ExceptionClear(); 
-    		return NULL;
-    	}     		
-		//return NULL;
-    }
-    
-	jfieldID labelID = env->GetFieldID(g_deviceClass, "label","Ljava/lang/String;");
-	env->ExceptionOccurred();	
-	if(exc){
-		env->ExceptionDescribe(); 
-		env->ExceptionClear(); 
-		return NULL;
-	}   
-    if(labelID == NULL)
-		return NULL;
-
-	env->ExceptionOccurred();	
-	if(exc){
-		env->ExceptionDescribe(); 
-		env->ExceptionClear(); 
-		return NULL;
-	}   
-      
-	jmethodID nodeConstructor = env->GetMethodID(g_deviceClass, "<init>", "()V");
-	env->ExceptionOccurred();	
-	if(exc){
-		env->ExceptionDescribe(); 
-		env->ExceptionClear(); 
-		return NULL;
-	}      
-	if(nodeConstructor == NULL)
-		return NULL;
-	jobject jnode = env->NewObject(g_deviceClass,nodeConstructor);
-	env->ExceptionOccurred();	
-	if(exc){
-		env->ExceptionDescribe(); 
-		env->ExceptionClear(); 
-		return NULL;
-	}      
-	if(jnode == NULL)
-		return NULL;
-	return jnode;
+bool COnyxPlayerEvents::onNativeMessage(char *szTitle, char *szMsg)
+{
+	JNIEnv* env;
+	safeAttach(&env);//must always call safeDetach() before returning
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	jmethodID callback = env->GetStaticMethodID(onyxApi, "onNativeMessage", "(Ljava/lang/Object;Ljava/lang/Object;)V");
+	jstring jtitle = env->NewStringUTF(szTitle);
+	jstring jmessage = env->NewStringUTF(szMsg);
+	env->CallStaticVoidMethod(onyxApi, callback,jtitle,jmessage);
+	env->DeleteLocalRef(jtitle);
+	env->DeleteLocalRef(jmessage);
 }
 
+bool COnyxPlayerEvents::onRemoteNodeError(char *url, char *szErr)
+{
+	JNIEnv* env;
+	safeAttach(&env);//must always call safeDetach() before returning
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	jstring jurl = env->NewStringUTF(url);
+	jstring jmsg = env->NewStringUTF(szErr);
 
-bool CjOnyxPlayerEvents::attachThread(JNIEnv** env){
+	jmethodID callback = env->GetStaticMethodID(onyxApi, "onRemoteNodeError", "(Ljava/lang/Object;Ljava/lang/Object;)V");
+	env->CallStaticVoidMethod(onyxApi, callback,jurl,jmsg);
+	env->DeleteLocalRef(jurl);
+	env->DeleteLocalRef(jmsg);
+
+	safeDetach();
+	return true;
+}
+
+bool COnyxPlayerEvents::onRtspServerStatus(const char *szUrl, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime)
+{
+	JNIEnv* env;
+	safeAttach(&env);
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	if(onyxApi != NULL) {
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onMpdPublishStatus", "(Ljava/lang/String;IIII)V");
+		if(callback != NULL) {
+			jstring jPublishId = env->NewStringUTF(szUrl);
+
+			env->CallStaticVoidMethod(onyxApi, callback, jPublishId, nState, nStrmInTime, nStrmOutTime,  nLostBufferTime);
+			env->DeleteLocalRef(jPublishId);
+		} else {
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onMpdPublishStatus on com/mcntech/ezscreencast/OnyxApi"));
+		}
+
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find com/mcntech/ezscreencast/OnyxApi"));
+	}
+	safeDetach();
+	return true;
+}
+
+bool COnyxPlayerEvents::onConnectRemoteNode(char *url)
+{
+	JNIEnv* env;
+	safeAttach(&env);//must always call safeDetach() before returning
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	jstring jurl = env->NewStringUTF(url);
+
+	jmethodID callback = env->GetStaticMethodID(onyxApi, "onConnectRemoteNode", "(Ljava/lang/Object;)V");
+	env->CallStaticVoidMethod(onyxApi, callback, jurl);
+	env->DeleteLocalRef(jurl);
+
+
+	safeDetach();
+	return true;
+}
+
+bool COnyxPlayerEvents::onDisconnectRemoteNode(char *url)
+{
+	JNIEnv* env;
+	safeAttach(&env);//must always call safeDetach() before returning
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	jstring jurl = env->NewStringUTF(url);
+
+	jmethodID callback = env->GetStaticMethodID(onyxApi, "onDisconnectRemoteNode", "(Ljava/lang/Object;)V");
+	env->CallStaticVoidMethod(onyxApi, callback,jurl);
+	env->DeleteLocalRef(jurl);
+
+	safeDetach();
+	return true;
+}
+
+bool COnyxPlayerEvents::onStatusRemoteNode(char *url, char *szErr)
+{
+	JNIEnv* env;
+	safeAttach(&env);//must always call safeDetach() before returning
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	jstring jurl = env->NewStringUTF(url);
+	jstring jmsg = env->NewStringUTF(szErr);
+
+	jmethodID callback = env->GetStaticMethodID(onyxApi, "onStatusRemoteNode", "(Ljava/lang/Object;Ljava/lang/Object;)V");
+	env->CallStaticVoidMethod(onyxApi, callback,jurl,jmsg);
+	env->DeleteLocalRef(jurl);
+	env->DeleteLocalRef(jmsg);
+
+	safeDetach();
+	return true;
+}
+
+bool COnyxPlayerEvents::attachThread(JNIEnv** env){
   bool changed = false;
   switch (g_vm->GetEnv((void**)env, JNI_VERSION_1_6))
   {
   	case JNI_OK:
-  		//MIDSLOG("", "attachThread: already attached");
     	break;
   	case JNI_EDETACHED:
 	    if (g_vm->AttachCurrentThread(env, NULL)!=0)
@@ -108,11 +139,9 @@ bool CjOnyxPlayerEvents::attachThread(JNIEnv** env){
 	      	(*env)->ExceptionClear();    // clear the exception that was pending 
 	      	break;
 	   	}
-   		//MIDSLOG("", "attachThread: Attached to current thread");
     	changed = true;
     	break;
 	  case JNI_EVERSION:
-	    MIDSLOG("", "attachThread: Invalid java version");
     	break;
 	  default:
 		break;
@@ -120,50 +149,45 @@ bool CjOnyxPlayerEvents::attachThread(JNIEnv** env){
   return m_jniThreadChanged= changed;	
 }
 
-bool CjOnyxPlayerEvents::safeAttach(JNIEnv** env){
+bool COnyxPlayerEvents::safeAttach(JNIEnv** env){
 	if(*env == NULL){
 		JNIEnv envalloc;
 		*env = &envalloc;
 	}
-
-	m_eventStarted = true;
-	m_lastEventThread = pthread_self();
-
+	pthread_mutex_lock(&m_eventMutex);
+	//m_eventStarted = true;
+	//m_lastEventThread = pthread_self();
 	return attachThread(env);
 }
 
-void CjOnyxPlayerEvents::safeDetach()
+void COnyxPlayerEvents::safeDetach()
 {
 	if(m_jniThreadChanged)
 		g_vm->DetachCurrentThread();
-	m_eventStarted = false;	
-	m_waitForEvent = false;
-	//pthread_mutex_unlock(&m_eventMutex);
+	//m_eventStarted = false;
+	//m_waitForEvent = false;
+	pthread_mutex_unlock(&m_eventMutex);
 }
 
-void CjOnyxPlayerEvents::onStartPlay()
-{
-	JNIEnv* env;
-	safeAttach(&env);
-	jclass cls = env->GetObjectClass(g_jniGlobalSelf);
+/*
+long myMethod (int n, String s, int[] arr);
+is seen from JNI with the signature
+(ILJAVA/LANG/STRING;[I)J
 
-	jmethodID midOnStartPlay = env->GetStaticMethodID(cls, "onStartPlay", "()V");
-	if(midOnStartPlay)
-		env->CallStaticVoidMethod(cls, midOnStartPlay);
 
-	safeDetach();
-	//pthread_mutex_unlock(&g_mutex);
-}
+Type     Chararacter
+boolean      Z
+byte         B
+char         C
+double       D
+float        F
+int          I
+long         J
+object       L
+short        S
+void         V
+array        [
+Note that to specify an object, the "L" is followed by the object's class name and ends with a semi-colon, ';' .
+Ljava/lang/String;
 
-void  CjOnyxPlayerEvents::onStopPlay()
-{
-	JNIEnv* env;
-	safeAttach(&env);
-	jclass cls = env->GetObjectClass(g_jniGlobalSelf);
-
-	jmethodID midOnStopPlay = env->GetStaticMethodID(cls, "onStopPlay", "()V");
-	if(midOnStopPlay)
-		env->CallStaticVoidMethod(cls, midOnStopPlay);
-
-	safeDetach();
-}
+*/

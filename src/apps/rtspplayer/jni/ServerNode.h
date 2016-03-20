@@ -40,7 +40,7 @@ class CServerNode
 {
 public:
 	CServerNode(){}
-	virtual void start(COutputStream *pOutputStream) = 0;
+	virtual void start() = 0;
 	virtual void stop() = 0;
 };
 
@@ -49,19 +49,24 @@ typedef std::map<std::string, CServerNode *> ServerNodeMap;
 class CRtspServerNode : public CServerNode
 {
 public:
-	CRtspServerNode(std::string url, std::string appName)
-	//:m_Config(url.c_str(), appName.c_str(), localRtpPort, remoteRtpPort, serverPort)
-{
-		//m_pRtspCommonCfg = new CRtspCommonConfig(/*TODO*/NULL, NULL,1,1,1);
-		m_pRtspClntBridge = new CRtspClntBridge(pInputStream->pszInputUri, pInputStream->fEnableAud, pInputStream->fEnableVid, &nResult);
-	}
-	void start(COutputStream *pOutputStream);
+	CRtspServerNode(CRtspClntBridge *pRtspClntBridge);
+	void start();
 	void stop();
+	int getVideoData(char *pData, int numBytes);
+	int getAudioData(char *pData, int numBytes);
+
+	long long getVideoPts();
+	long long getAudioPts();
+	int getAudioCodecType();
+	int getAudioCodecType();
+	int getStatus(std::string &status);
 
 public:
-	//CRtspPublishConfig m_Config;
 	CRtspClntBridge *m_pRtspClntBridge;
-	//CRtspCommonConfig  *m_pRtspCommonCfg;
+	long long       m_llAudPts;
+	unsigned long   m_ulAudFlags;
+	long long       m_llVidPts;
+	unsigned long   m_ulVidFlags;
 };
 
 

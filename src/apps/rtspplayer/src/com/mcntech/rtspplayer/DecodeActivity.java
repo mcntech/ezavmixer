@@ -5,8 +5,6 @@ import java.nio.ByteBuffer;
 
 import org.json.JSONException;
 
-
-//import android.app.ActionBar.LayoutParams;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -34,19 +32,18 @@ import android.widget.LinearLayout;
 import com.bfrx.fcvdst.R;
 import com.mcntech.rtspplayer.Configure;
 import com.mcntech.rtspplayer.OnyxPlayerApi;
+import com.mcntech.rtspplayer.OnyxPlayerApi.RemoteNodeHandler;
 import com.mcntech.rtspplayer.Settings;
-import com.mcntech.rtspplayer.OnyxPlayerApi.SessionHandler;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.WindowSurface;
 
 public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 	
-	public final String LOG_TAG = "fcvdst";
+	public final String LOG_TAG = "rtsp";
 
 	private PlayerThread          mVidPlayer = null;
-	public static DecodeActivity  instance;
-	SessionHandler                mSessionHandler;
+	RemoteNodeHandler             mNodeHandler;
 	Handler                       mHandler;
 	SurfaceView                   mVideoSv = null;
 	Surface                       mVideoSurface = null;
@@ -86,8 +83,8 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
     private final Object             mPlayLock = new Object();
     private boolean                  mExitPlayerLoop = false;
     private int                      mCodecType = 1;
-    int                              mMaxVidWidth =  1920;//3840;
-    int                              mMaxVidHeight = 1080;//2160;
+    int                              mMaxVidWidth =  3840;
+    int                              mMaxVidHeight = 2160;
     int                              currentapiVersion = android.os.Build.VERSION.SDK_INT;
 
     private boolean                  mfSendCsd0DuringInit = false;
@@ -110,8 +107,6 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		instance = this;
-		
 		mHandler = new LocalHandler();
 		
 		boolean isSystemApp = (getApplicationInfo().flags
@@ -200,44 +195,46 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 
 		boolean retry = true;//blocking
-		mRole = 219;
-		if(Configure.mEnableAudio && Configure.mEnableVideo){
-			mRole = 219;
-		} else if(Configure.mEnableAudio) {
-			mRole = 21;
-		} else if(Configure.mEnableVideo) {
-			mRole = 9;
-		}
 
 		//DeviceController.initialize(instance,retry, role, mAudFramesPerPeriod, mAudNumPeriods, mAudDelayUs);
 		
-		mSessionHandler = new SessionHandler(){
-	 		@Override
-	 		public void onStartPlay() {
+		mNodeHandler = new RemoteNodeHandler(){
+
+			@Override
+			public void onConnectRemoteNode(String url) {
 	 			Log.d(LOG_TAG, "transition:onStartPlay");
 	 			mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
 	 			if(Configure.mEnableVideo)
 	 				waitForVideoPlay();
-	 	    }
+			}
 
-	 		@Override
-	 		public void onStopPlay() {
+			@Override
+			public void onDisconnectRemoteNode(String url) {
 	 			Log.d(LOG_TAG, "transition:onStopPlay:Begin");
 	 			mHandler.sendEmptyMessage(PLAYER_CMD_STOP);
 	 			if(Configure.mEnableVideo)
 	 				waitForVideoStop();
 	 			Log.d(LOG_TAG, "transition:onStopPlay:End");
-	 		}
-	 		@Override
-	 		public void onNetworkDisconnected()
-	 		{
-	 			
-	 		}
-	 		@Override
-	 		public void onSessionError(final long sessionid,final String message)
-	 		{
-	 			
-	 		}
+				
+			}
+
+			@Override
+			public void onStatusRemoteNode(String url, String message) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onRemoteNodeError(String url, String message) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onNetworkDisconnected() {
+				// TODO Auto-generated method stub
+				
+			}
 	 	}; 
 	 	
 	 	View.OnTouchListener  onTouchListner = new View.OnTouchListener() {
@@ -292,16 +289,11 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
    			}		
 	 	};
 	 	
-		//mDispWidth = getResources().getDisplayMetrics().widthPixels;
-		//mDispHeight = getResources().getDisplayMetrics().heightPixels;
-	 	
-	 	//mDispWidth = getResources().getDisplayMetrics().widthPixels;
-	 	//mDispHeight = getResources().getDisplayMetrics().heightPixels;
 	 	if(mEnableRuiTouch) {
 		 	RuiClient.init(this);
 		 	mVideoSv.setOnTouchListener(onTouchListner);
 	 	}
-	 	OnyxPlayerApi.setDeviceHandler(mSessionHandler);
+	 	OnyxPlayerApi.setDeviceHandler(mNodeHandler);
 	}
 
 	private class LocalHandler extends Handler {	
@@ -339,7 +331,7 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						OnyxPlayerApi.initialize(instance, true, mRole, mAudFramesPerPeriod, mAudNumPeriods, mAudDelayUs);
+						OnyxPlayerApi.initialize();
 					}
  				}).start();
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_INIT");

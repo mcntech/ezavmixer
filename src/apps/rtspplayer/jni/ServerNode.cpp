@@ -4,9 +4,13 @@
 CRtspServerNode::CRtspServerNode(CRtspClntBridge *pRtspClntBridge)
 {
 	m_pRtspClntBridge = pRtspClntBridge;
+	m_llAudPts = 0;
+	m_ulAudFlags = 0;
+	m_llVidPts = 0;
+	m_ulVidFlags = 0;
 }
 
-void CRtspServerNode::start(COutputStream *pOutputStream)
+void CRtspServerNode::start()
 {
 	m_pRtspClntBridge->StartStreaming();
 }
@@ -18,12 +22,12 @@ void CRtspServerNode::stop()
 
 int CRtspServerNode::getVideoData(char *pData, int numBytes)
 {
-	int numBytes = 0;
-	ConnCtxT *pConnSrc = m_pRtspClntBridge->mDataLocatorVideo.pAddress;
+	int res = 0;
+	ConnCtxT *pConnSrc = (ConnCtxT *)m_pRtspClntBridge->mDataLocatorVideo.pAddress;
 	if(pConnSrc) {
-		numBytes =  pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulVidFlags, &m_llVidPts);
+		res =  pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulVidFlags, &m_llVidPts);
 	}
-	return numBytes;
+	return res;
 }
 
 long long CRtspServerNode::getVideoPts()
@@ -33,12 +37,12 @@ long long CRtspServerNode::getVideoPts()
 
 int CRtspServerNode::getAudioData(char *pData, int numBytes)
 {
-	int numBytes = 0;
-	ConnCtxT *pConnSrc = m_pRtspClntBridge->mDataLocatorAudio.pAddress;
+	int res = 0;
+	ConnCtxT *pConnSrc = (ConnCtxT *)m_pRtspClntBridge->mDataLocatorAudio.pAddress;
 	if(pConnSrc) {
-		numBytes = pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulAudFlags, &m_llAudPts);
+		res = pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulAudFlags, &m_llAudPts);
 	}
-	return numBytes;
+	return res;
 }
 
 long long CRtspServerNode::getAudioPts()
@@ -51,9 +55,40 @@ int CRtspServerNode::getAudioCodecType()
 	return 0;
 }
 
+long long CRtspServerNode::getClkUs()
+{
+	return 0;
+}
+
 int CRtspServerNode::getVideoCodecType()
 {
 	return 0;
+}
+
+int CRtspServerNode::getNumAvailVideoFrames()
+{
+	int res = 0;
+	ConnCtxT *pConnSrc = (ConnCtxT *)m_pRtspClntBridge->mDataLocatorVideo.pAddress;
+	if(pConnSrc) {
+		if(pConnSrc->IsEmpty(pConnSrc))
+			res = 0;
+		else
+			res = 1;
+	}
+	return res;
+}
+int CRtspServerNode::getNumAvailAudioFrames()
+{
+	int res = 0;
+	ConnCtxT *pConnSrc = (ConnCtxT *)m_pRtspClntBridge->mDataLocatorAudio.pAddress;
+	if(pConnSrc) {
+		if(pConnSrc->IsEmpty(pConnSrc))
+			res = 0;
+		else
+			res = 1;
+	}
+	return res;
+
 }
 
 int CRtspServerNode::getStatus(std::string &status)

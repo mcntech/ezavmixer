@@ -45,10 +45,13 @@ public:
 
 	long long getVideoPts(std::string url);
 	long long getAudioPts(std::string url);
+	long long getClkUs(std::string url);
 
 	virtual int  getVideoCodecType(std::string url);
 	virtual int  getAudioCodecType(std::string url);
 
+	int  getNumAvailVideoFrames(std::string url);
+	int  getNumAvailAudioFrames(std::string url);
 	int start(std::string url);
 	int stop(std::string url);
 
@@ -59,6 +62,7 @@ public:
 
 private:
 	CServerNode *getServerNode(std::string url);
+	void remServerNode(std::string url);
 };
 
 #endif

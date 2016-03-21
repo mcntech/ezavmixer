@@ -1,0 +1,71 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:id="@+id/container"
+    android:layout_margin="30dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+	    <TextView
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_marginTop="10dip"
+	        android:text="@string/options"
+	        android:layout_marginBottom="5dp"
+	    />
+	    <CheckBox
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:id="@+id/enable_audio"
+	        android:text="@string/enable_audio" 
+	        android:checked="true" />
+	   
+	   
+	   <CheckBox
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/enable_auto_start" 
+	        android:layout_gravity ="right"
+	        android:checked="true" 
+	        android:id="@+id/enable_auto_start" /> 
+
+	   <CheckBox
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/enable_logo" 
+	        android:layout_gravity ="right"
+	        android:checked="true" 
+	        android:id="@+id/enable_logo" />
+
+	   <CheckBox
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:text="Stats" 
+	        android:layout_gravity ="right"
+	        android:checked="true" 
+	        android:id="@+id/enable_stats" />
+<!-- 	   
+		<TextView
+	       android:id="@+id/textAudDelay"
+	       android:layout_width="wrap_content"
+	       android:layout_height="wrap_content"
+	       android:text="@string/aud_delay"
+	       android:textAppearance="?android:attr/textAppearanceMedium" />
+
+	   <EditText
+	       android:id="@+id/editAudDelay"
+	       android:layout_width="160dp"
+	       android:layout_height="wrap_content"
+	       android:ems="10"
+	       android:inputType="numberSigned" >
+
+	       <requestFocus />
+	   </EditText>
+ -->	        	   	
+	    <Button
+	        android:layout_marginTop="30dip"
+	        android:layout_width="160dp"
+	        android:layout_height="wrap_content"
+	        android:id="@+id/restart"
+	        android:onClick="selfRestart"
+	        android:text="Save Settings" />       
+</LinearLayout>

@@ -16,25 +16,16 @@
 #include <assert.h>
 #include "minini.h"
 
-#include "JdRtspSrv.h"
-#include "JdRtspClntRec.h"
-#include "RtspConfigure.h"
+#include "JdRtspClnt.h"
+#include "RtspClntBridge.h"
 #include "JdDbg.h"
 #include "strmconn.h"
-#include "strmconn_ipc.h"
-#include "strmconn_zmq.h"
-#include "sock_ipc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 
 #include <signal.h>
-
-#include "MediaSwitch.h"
-#include "RtspPublishBridge.h"
-#include "ConfigBase.h"
-#include "JdAwsContext.h"
 
 class CServerNode
 {
@@ -57,8 +48,12 @@ public:
 
 	long long getVideoPts();
 	long long getAudioPts();
+	long long getClkUs();
 	int getAudioCodecType();
-	int getAudioCodecType();
+	int getVideoCodecType();
+	int getNumAvailVideoFrames();
+	int getNumAvailAudioFrames();
+
 	int getStatus(std::string &status);
 
 public:

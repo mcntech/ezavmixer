@@ -19,7 +19,7 @@ import android.view.SurfaceView;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.WindowSurface;
-import com.bfrx.fcvdst.R;
+import com.mcntech.rtspplyer.R;;
 
 public class Overlay  {
     private Bitmap bmp;

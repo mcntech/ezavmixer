@@ -12,8 +12,7 @@ public class Device {
 
 	}
 	public Device(Device dev){
-		this.uniqueID = dev.uniqueID;
-		this.nError = dev.nError;
+	
 	}
 
 	@Override 

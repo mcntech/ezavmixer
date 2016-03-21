@@ -1,12 +1,13 @@
 #include <string.h>
 #include <jni.h>
 #include <android/log.h>
-#include <RtspPlayer.h>
-#include "jEventHandler.h"
+#include "RtspMultiPlayer.h"
+#include "jOnyxPlayerEvents.h"
+#include "JdDbg.h"
 
+static int  modDbgLevel = CJdDbg::LVL_TRACE;
 
-CRtspMultiPlayer	*g_pRtspPlayer = NULL;
-CjOnyxPlayerEvents	*g_pEventHandler = NULL;
+COnyxPlayerEvents	*g_pEventHandler = NULL;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern "C" {
@@ -14,37 +15,36 @@ extern "C" {
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
-	MIDSLOG("", "JNI_OnLoad ");
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("", "JNI_OnLoad "));
 	return JNI_VERSION_1_6;
 }
 
-jlong Java_com_mcntech_rtspplayer_DeviceController_init(JNIEnv *env, jobject self)
+jlong Java_com_mcntech_rtspplayer_OnyxPlayerApi_init(JNIEnv *env, jobject self)
 {
 	pthread_mutex_lock(&g_mutex);
-	CjOnyxPlayerEvents *pEventHandler;
+	COnyxPlayerEvents *pEventHandler;
 	CPlayerBase *pPlayer = NULL;
 
 	COnyxPlayerEvents *pEventCallback = new COnyxPlayerEvents(env, self);
-	g_pEventHandler  = new CjOnyxPlayerEvents(env,self);
+	g_pEventHandler  = pEventCallback;
 
-	MIDSLOG("", "initializing Onyx Player");
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("initializing Onyx Player"));
 	pPlayer =  CRtspMultiPlayer::openInstance(pEventCallback);
 	pthread_mutex_unlock(&g_mutex);
-	return (jlong)g_pRtspPlayer;
+	return (jlong)pPlayer;
 }
 
-jboolean Java_com_mcntech_rtspplayer_DeviceController_deinit(JNIEnv *env, jobject self, jlong ctx)
+jboolean Java_com_mcntech_rtspplayer_OnyxPlayerApi_deinit(JNIEnv *env, jobject self, jlong ctx)
 {
 	pthread_mutex_lock(&g_mutex);
 	CPlayerBase* pb = (CPlayerBase*)ctx;
-	pb->exit();
 	delete pb;
-	g_pRtspPlayer = NULL;
+	g_pEventHandler = NULL;
 	pthread_mutex_unlock(&g_mutex);
 	return true;
 }
 
-int Java_com_mcntech_rtspplayer_DeviceController_addServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+int Java_com_mcntech_rtspplayer_OnyxPlayerApi_addServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -53,7 +53,7 @@ int Java_com_mcntech_rtspplayer_DeviceController_addServer(JNIEnv *env, jobject 
 	env->ReleaseStringUTFChars(jurl, szUrl);
 }
 
-int Java_com_mcntech_rtspplayer_DeviceController_removeServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+int Java_com_mcntech_rtspplayer_OnyxPlayerApi_removeServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -62,7 +62,7 @@ int Java_com_mcntech_rtspplayer_DeviceController_removeServer(JNIEnv *env, jobje
 	env->ReleaseStringUTFChars(jurl, szUrl);
 }
 
-int Java_com_mcntech_rtspplayer_DeviceController_getStatus(JNIEnv *env, jobject self, jlong ctx, jstring jurl, std::string &status)
+int Java_com_mcntech_rtspplayer_OnyxPlayerApi_getStatus(JNIEnv *env, jobject self, jlong ctx, jstring jurl, std::string &status)
 {
 
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
@@ -71,7 +71,7 @@ int Java_com_mcntech_rtspplayer_DeviceController_getStatus(JNIEnv *env, jobject 
 	env->ReleaseStringUTFChars(jurl, szUrl);
 }
 
-jint Java_com_mcntech_rtspplayer_DeviceController_getVideoFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jobject buf, jint numBytes, jint nTimeoutMs)
+jint Java_com_mcntech_rtspplayer_OnyxPlayerApi_getVideoFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jobject buf, jint numBytes, jint nTimeoutMs)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -86,7 +86,7 @@ jint Java_com_mcntech_rtspplayer_DeviceController_getVideoFrame(JNIEnv *env, job
 	return result;
 }
 
-jlong Java_com_mcntech_rtspplayer_DeviceController_getVideoPts(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jlong Java_com_mcntech_rtspplayer_OnyxPlayerApi_getVideoPts(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -100,18 +100,21 @@ jlong Java_com_mcntech_rtspplayer_DeviceController_getVideoPts(JNIEnv *env, jobj
 	return pts;
 }
 
-jlong Java_com_mcntech_rtspplayer_DeviceController_getClockUs(JNIEnv *env, jobject self, jlong ctx,jstring ur)
+jlong Java_com_mcntech_rtspplayer_OnyxPlayerApi_getClockUs(JNIEnv *env, jobject self, jlong ctx,jstring jurl)
 {
 	//pthread_mutex_lock(&g_mutex);
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	jlong clock = 0;
+	const char *szUrl = env->GetStringUTFChars(jurl, 0);
+	std::string url = szUrl;
+
 
 	clock = pPlayer->getClkUs(url);
 	env->ReleaseStringUTFChars(jurl, szUrl);
 	return clock;
 }
 
-jint Java_com_mcntech_rtspplayer_DeviceController_getVidCodecType(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jint Java_com_mcntech_rtspplayer_OnyxPlayerApi_getVidCodecType(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -126,7 +129,7 @@ jint Java_com_mcntech_rtspplayer_DeviceController_getVidCodecType(JNIEnv *env, j
 	return nCodecType;
 }
 
-jint Java_com_mcntech_rtspplayer_DeviceController_getAudCodecType(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jint Java_com_mcntech_rtspplayer_OnyxPlayerApi_getAudCodecType(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -141,7 +144,7 @@ jint Java_com_mcntech_rtspplayer_DeviceController_getAudCodecType(JNIEnv *env, j
 	return nCodecType;
 }
 
-jint Java_com_mcntech_rtspplayer_DeviceController_getAudioFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jobject buf, jint numBytes, jint nTimeoutMs)
+jint Java_com_mcntech_rtspplayer_OnyxPlayerApi_getAudioFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jobject buf, jint numBytes, jint nTimeoutMs)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -158,7 +161,7 @@ jint Java_com_mcntech_rtspplayer_DeviceController_getAudioFrame(JNIEnv *env, job
 	return result;
 }
 
-jlong Java_com_mcntech_rtspplayer_DeviceController_getAudioPts(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jlong Java_com_mcntech_rtspplayer_OnyxPlayerApi_getAudioPts(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -167,6 +170,33 @@ jlong Java_com_mcntech_rtspplayer_DeviceController_getAudioPts(JNIEnv *env, jobj
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	jlong pts = 0;
 	pts = pPlayer->getAudioPts(url);
+
+	env->ReleaseStringUTFChars(jurl, szUrl);
+	return pts;
+}
+
+jlong Java_com_mcntech_rtspplayer_OnyxPlayerApi_getNumAvailVideoFrames(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+{
+	const char *szUrl = env->GetStringUTFChars(jurl, 0);
+	std::string url = szUrl;
+
+	//pthread_mutex_lock(&g_mutex);
+	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
+	jlong pts = 0;
+	pts = pPlayer->getNumAvailVideoFrames(url);
+
+	env->ReleaseStringUTFChars(jurl, szUrl);
+	return pts;
+}
+jlong Java_com_mcntech_rtspplayer_OnyxPlayerApi_getNumAvailAudioFrames(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+{
+	const char *szUrl = env->GetStringUTFChars(jurl, 0);
+	std::string url = szUrl;
+
+	//pthread_mutex_lock(&g_mutex);
+	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
+	jlong pts = 0;
+	pts = pPlayer->getNumAvailAudioFrames(url);
 
 	env->ReleaseStringUTFChars(jurl, szUrl);
 	return pts;

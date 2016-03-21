@@ -2,6 +2,8 @@
 #define __RTSP_CLNT_BRIDGE_H__
 
 #include "StrmInBridgeBase.h"
+#include "JdRfc3640.h"
+#include "JdRfc3984.h"
 
 #define MAX_NAME_SIZE	256
 class CRtspClntBridge : public CStrmInBridgeBase

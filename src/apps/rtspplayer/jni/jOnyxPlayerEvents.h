@@ -7,20 +7,24 @@
 #include <PlayerEventBase.h>
 #include <jni.h>
 
-class CjOnyxPlayerEvents : public CPlayerEventsBase {
+class COnyxPlayerEvents : public CPlayerEventBase
+{
 public:	
-	CjOnyxPlayerEvents(){};
-	CjOnyxPlayerEvents(JNIEnv* env,jobject javaReceiver);
-	~CjOnyxPlayerEvents(){
-	}
+	COnyxPlayerEvents(JNIEnv* env,jobject javaReceiver);
+
 	bool attachThread(JNIEnv** env);
 	bool safeAttach(JNIEnv** env);
 	void safeDetach();
-	jobject createJDevice(JNIEnv* env, const TDEVICE_INFO& info);
- 	jclass m_deviceClass;
 
- 	void onStartPlay();
- 	void onStopPlay();
+  	bool onNativeMessage(char *szTitle, char *szMsg);
+  	bool onRemoteNodeError(char *url, char *szErr);
+  	bool onConnectRemoteNode(char *url);
+  	bool onDisconnectRemoteNode(char *url);
+  	bool onStatusRemoteNode(char *url, char *szMsg);
+  	bool onRtspServerStatus(const char *szPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime);
+
+  	jclass m_deviceClass;
+
 private:
 	bool m_jniThreadChanged;
 	pthread_mutex_t m_eventMutex;

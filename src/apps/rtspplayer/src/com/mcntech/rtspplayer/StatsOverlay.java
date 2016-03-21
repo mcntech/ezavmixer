@@ -1,7 +1,7 @@
 package com.mcntech.rtspplayer;
 
 
-import com.bfrx.fcvdst.R;
+import com.mcntech.rtspplyer.R;
 import com.mcntech.rtspplayer.StatsGraphView.SamplesBuffer;
 
 import android.app.Activity;

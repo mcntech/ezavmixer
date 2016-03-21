@@ -1,6 +1,6 @@
 package com.mcntech.rtspplayer;
 
-import com.bfrx.fcvdst.R;
+import com.mcntech.rtspplyer.R;
 
 import android.app.Activity;
 import android.content.Context;

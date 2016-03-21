@@ -28,7 +28,7 @@ public class Configure {
 				.getDefaultSharedPreferences(context);
 		mEnableVideo = sharedPreferences.getBoolean(KEY_ENABLE_VIDEO, true);
 		mEnableAudio = sharedPreferences.getBoolean(KEY_ENABLE_AUDIO, false);
-		mEnableAutoStart = sharedPreferences.getBoolean(KEY_ENABLE_AUTO_START, true);
+		mEnableAutoStart = sharedPreferences.getBoolean(KEY_ENABLE_AUTO_START, false);
 		mEnableLogo = sharedPreferences.getBoolean(KEY_ENABLE_LOGO, true);
 		mEnableStats = sharedPreferences.getBoolean(KEY_ENABLE_STATS, false);		
 		mUseAudioTrack = sharedPreferences.getBoolean(KEY_USE_AUTIO_TRACK, false);

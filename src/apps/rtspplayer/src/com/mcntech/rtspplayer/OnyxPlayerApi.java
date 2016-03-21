@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.mcntech.ezscreencast.OnyxApi.RemoteNodeHandler;
-
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.media.MediaPlayer;
@@ -119,7 +117,7 @@ public class OnyxPlayerApi {
 	}
 
 	static {
-		System.loadLibrary("onyxplayer");
+		System.loadLibrary("OnyxPlayerApi");
 	}
 
 	public static long addServer(String url)
@@ -166,7 +164,17 @@ public class OnyxPlayerApi {
 	{
 		return getVidCodecType(mHandle, url);
 	}		
-	
+
+	public static int getNumAvailVideoFrames(String url)
+	{
+		return getNumAvailVideoFrames(mHandle, url);
+	}		
+
+	public static int getNumAvailAudioFrames(String url)
+	{
+		return getNumAvailAudioFrames(mHandle, url);
+	}		
+
 	private native long init();
 	private native boolean deinit(long handle);
 
@@ -182,4 +190,6 @@ public class OnyxPlayerApi {
 	public native static long getAudioPts(long handle, String inputId);	
 	public native static int getVidCodecType(long handle, String inputId);
 	public native static int getAudCodecType(long handle, String inputId);	
+	public native static int getNumAvailVideoFrames(long handle, String inputId);
+	public native static int getNumAvailAudioFrames(long handle, String inputId);
 }

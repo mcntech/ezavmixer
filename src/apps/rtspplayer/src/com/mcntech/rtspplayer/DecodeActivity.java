@@ -29,7 +29,7 @@ import android.view.MotionEvent;
 import android.view.View.MeasureSpec;
 import android.widget.LinearLayout;
 
-import com.bfrx.fcvdst.R;
+import com.mcntech.rtspplyer.R;
 import com.mcntech.rtspplayer.Configure;
 import com.mcntech.rtspplayer.OnyxPlayerApi;
 import com.mcntech.rtspplayer.OnyxPlayerApi.RemoteNodeHandler;
@@ -41,7 +41,7 @@ import com.android.grafika.gles.WindowSurface;
 public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 	
 	public final String LOG_TAG = "rtsp";
-
+	String                        mUrl = "rtsp://192.168.0.103/v01";                   
 	private PlayerThread          mVidPlayer = null;
 	RemoteNodeHandler             mNodeHandler;
 	Handler                       mHandler;
@@ -202,20 +202,23 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 
 			@Override
 			public void onConnectRemoteNode(String url) {
-	 			Log.d(LOG_TAG, "transition:onStartPlay");
+/*
+				Log.d(LOG_TAG, "transition:onStartPlay");
 	 			mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
 	 			if(Configure.mEnableVideo)
 	 				waitForVideoPlay();
+*/	 			
 			}
 
 			@Override
 			public void onDisconnectRemoteNode(String url) {
-	 			Log.d(LOG_TAG, "transition:onStopPlay:Begin");
+/*
+				Log.d(LOG_TAG, "transition:onStopPlay:Begin");
 	 			mHandler.sendEmptyMessage(PLAYER_CMD_STOP);
 	 			if(Configure.mEnableVideo)
 	 				waitForVideoStop();
 	 			Log.d(LOG_TAG, "transition:onStopPlay:End");
-				
+*/				
 			}
 
 			@Override
@@ -332,9 +335,12 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 					@Override
 					public void run() {
 						OnyxPlayerApi.initialize();
+						//OnyxPlayerApi.addServer(mUrl);
+		 				mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
 					}
  				}).start();
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_INIT");
+ 				
 		    }   else if(what == PLAYER_CMD_DEINIT) {
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_DEINIT");
  				new Thread(new Runnable() {
@@ -459,7 +465,7 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 		
 		@Override
 		public void run() {
-			mCodecType = OnyxPlayerApi.getVidCodecType();
+			mCodecType = OnyxPlayerApi.getVidCodecType(mUrl);
 			try {
 				if(mCodecType == 2 ) {
 					Log.d(LOG_TAG, "decoder create video/hevc");
@@ -492,9 +498,9 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 			//long startMs = System.currentTimeMillis();
 			if(mfSendCsd0DuringInit) {
 				while (!Thread.interrupted() && !mExitPlayerLoop) {
-					mFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames();
+					mFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mUrl);
 					if (!isEOS && mFramesInBuff > 0) {
-						sampleSize = OnyxPlayerApi.getVideoFrame(mBuff, mBuff.capacity(),  100 * 1000);
+						sampleSize = OnyxPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
 						if (sampleSize > 0) {
 							byte [] arCsd0 = null;
 							mBuff.limit(sampleSize);
@@ -538,7 +544,7 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 			}
 			
 			while (!Thread.interrupted() && !mExitPlayerLoop) {
-				mFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames();
+				mFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mUrl);
 				if (!isEOS && mFramesInBuff > 0) {
 
 					int inIndex;
@@ -564,9 +570,9 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 						if(fFrameAvail) {
 							fFrameAvail = false;
 						} else {
-							sampleSize = OnyxPlayerApi.getVideoFrame(mBuff, mBuff.capacity(),  100 * 1000);
+							sampleSize = OnyxPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
 						}
-						mPts = OnyxPlayerApi.getVideoPts();// + 500000; // video pipeline delay
+						mPts = OnyxPlayerApi.getVideoPts(mUrl);// + 500000; // video pipeline delay
 						if (sampleSize <= 0) {
 							// We shouldn't stop the playback at this point, just pass the EOS
 							// flag to decoder, we will get it again from the
@@ -603,7 +609,7 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 					break;
 				}
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:End outIndex=" + outIndex);
-				long fcvclk = OnyxPlayerApi.getFcClockUs();
+				long sysclk = OnyxPlayerApi.getClockUs(mUrl);
 				switch (outIndex) {
 				case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
 					Log.d(LOG_TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
@@ -618,11 +624,11 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 					break;
 				default:
 					if(outIndex >= 0) {
-						Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + fcvclk / 1000 + " wait=" + (info.presentationTimeUs - fcvclk) / 1000);				
-						if(info.presentationTimeUs > fcvclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
+						Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);				
+						if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
 							Log.d(LOG_TAG, "FreeRun ");
 						} else {
-							while ((info.presentationTimeUs + 2 * mVideoDelay > fcvclk) && !Thread.interrupted() && !mExitPlayerLoop) {
+							while ((info.presentationTimeUs + 2 * mVideoDelay > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
 								try {
 									sleep(10);
 								} catch (InterruptedException e) {
@@ -630,7 +636,7 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 									interrupt();
 									break;
 								}
-								fcvclk = OnyxPlayerApi.getFcClockUs();
+								sysclk = OnyxPlayerApi.getClockUs(mUrl);
 							}
 						}
 						//Log.d(LOG_TAG, "releaseOutputBuffer:Begin surfacevalid=" + surface.isValid());

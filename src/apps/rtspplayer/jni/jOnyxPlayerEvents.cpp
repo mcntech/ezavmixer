@@ -4,16 +4,18 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <android/log.h>
+#include "JdDbg.h"
 
 JavaVM* g_vm;
 jobject g_jniGlobalSelf = NULL;
 jclass g_deviceClass = NULL;
 static int  modDbgLevel = CJdDbg::LVL_TRACE;
 
-COnyxPlayerEvents::COnyxPlayerEvents(JNIEnv* env,jobject javaReceiver){
+COnyxPlayerEvents::COnyxPlayerEvents(JNIEnv* env,jobject javaReceiver)
+{
 	env->GetJavaVM(&g_vm);
 	g_jniGlobalSelf = env->NewGlobalRef(javaReceiver);
-	g_deviceClass = env->FindClass("com/mcntech/rtspplayer/OnyxApi");
+	g_deviceClass = env->FindClass("com/mcntech/rtspplayer/OnyxPlayerApi");
 	g_deviceClass = (jclass)env->NewGlobalRef(g_deviceClass);
 	pthread_mutex_init(&m_eventMutex, NULL);
 }

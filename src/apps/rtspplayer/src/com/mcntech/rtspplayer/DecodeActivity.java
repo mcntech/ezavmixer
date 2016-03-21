@@ -335,7 +335,7 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 					@Override
 					public void run() {
 						OnyxPlayerApi.initialize();
-						//OnyxPlayerApi.addServer(mUrl);
+						OnyxPlayerApi.addServer(mUrl);
 		 				mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
 					}
  				}).start();

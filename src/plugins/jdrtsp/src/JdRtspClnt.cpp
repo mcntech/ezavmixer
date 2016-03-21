@@ -27,6 +27,11 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include "JdDbg.h"
+
+static int modDbgLevel = CJdDbg::LVL_STRM;
+#define TRACE_ENTER 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
+#define TRACE_LEAVE 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 
 #ifdef WIN32
 #define close		closesocket
@@ -49,9 +54,6 @@
 #define HEADER_BUF_SIZE 		1024
 #define DEFAULT_REDIRECTS       3       /* Number of HTTP redirects to follow */
 
-
-#define CHECK_ALLOC(x) if(x==NULL) {fprintf(stderr,"malloc failed at %s %d, exiting..\n", __FUNCTION__, __LINE__); goto Exit;}
-
 /* Globals */
 static int followRedirects = DEFAULT_REDIRECTS;	/* # of redirects to follow */
 
@@ -60,6 +62,7 @@ static int followRedirects = DEFAULT_REDIRECTS;	/* # of redirects to follow */
  */
 int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff, int nMaxLen)
 {
+	TRACE_ENTER
 	int tempSize = 0;
 	switch(nHeaderId)
 	{
@@ -121,6 +124,7 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 		return -1;
 
 	default:
+		TRACE_LEAVE
 		return -1;
 	}
 }
@@ -135,6 +139,7 @@ int CJdRtspClntSession::CreateSetupHeader(
 			char           *pBuff, 
 			int             nMaxLen)
 {
+	TRACE_ENTER
 	int tempSize = 0;
 	std::string control;
 	m_sdp.GetControl(control,pszTrack);
@@ -153,6 +158,7 @@ int CJdRtspClntSession::CreateSetupHeader(
 
 		return strlen(pBuff);
 	}
+	TRACE_LEAVE
 	return -1;
 }
 
@@ -166,6 +172,7 @@ int CJdRtspClntSession::CreateSetupHeader(
 */
 int CJdRtspClntSession::ParseResponseMessage(char *pData, int nLen)
 {
+	TRACE_ENTER
 	resp_headers.clear();
 	
     char                *pBbuff = (char *)malloc(nLen);
@@ -217,6 +224,9 @@ int CJdRtspClntSession::ParseResponseMessage(char *pData, int nLen)
 		}
 	} while(0);
 	free(pBbuff);
+
+	TRACE_LEAVE
+
 	return statusCode;
 }
 #if 0
@@ -248,6 +258,7 @@ Exit:
 
 int CJdRtspClntSession::GetVideoCodec()
 {
+	TRACE_ENTER
 	for (int i =0; i < m_sdp.m_NumeMediaDescriptions; i++) {
 		if(stricmp(m_sdp.m_listMediaDescription[i]->m_pszMedia, "video") == 0){
 			unsigned char ucPl = m_sdp.m_listMediaDescription[i]->m_ucPl;
@@ -262,11 +273,15 @@ int CJdRtspClntSession::GetVideoCodec()
 			}
 		}
 	}
+
+	TRACE_LEAVE
+
 	return CODEC_UNSUPPORTED;
 }
 
 bool CJdRtspClntSession::GetVideoCodecConfig(unsigned char *pCfg, int *pnSize)
 {
+	TRACE_ENTER
 	for (int i =0; i < m_sdp.m_NumeMediaDescriptions; i++) {
 		if(stricmp(m_sdp.m_listMediaDescription[i]->m_pszMedia, "video") == 0){
 			unsigned char ucPl = m_sdp.m_listMediaDescription[i]->m_ucPl;
@@ -284,11 +299,15 @@ bool CJdRtspClntSession::GetVideoCodecConfig(unsigned char *pCfg, int *pnSize)
 			}
 		}
 	}
+
+	TRACE_LEAVE
+
 	return false;
 }
 
 int CJdRtspClntSession::GetAudioCodec()
 {
+	TRACE_ENTER
 	for (int i =0; i < m_sdp.m_NumeMediaDescriptions; i++) {
 		if(stricmp(m_sdp.m_listMediaDescription[i]->m_pszMedia, "audio") == 0){
 			unsigned char ucPl = m_sdp.m_listMediaDescription[i]->m_ucPl;
@@ -306,6 +325,9 @@ int CJdRtspClntSession::GetAudioCodec()
 				return RTP_CODEC_PCMA;
 		}
 	}
+
+	TRACE_LEAVE
+
 	return CODEC_UNSUPPORTED;
 }
 
@@ -317,6 +339,8 @@ int CJdRtspClntSession::GetAudioCodec()
  */
 int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCodec)
 {
+	TRACE_ENTER
+
 	char headerBuf[HEADER_BUF_SIZE];
 	char *pHeader = NULL;
 	char *szTmpUrl = NULL, *requestBuf = NULL, *host, *charIndex;
@@ -340,14 +364,18 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
 			host = charIndex;
 			charIndex = strchr(charIndex, '/');
 		} else {
-			fprintf(stderr,"Protocol field missing %s",szTmpUrl);
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Protocol field missing %s",szTmpUrl));
 			goto Exit;
 		}
 
 		/* Compose a request string */
 		requestBuf = (char *)malloc(bufsize);
 		pHeader = requestBuf;
-		CHECK_ALLOC(requestBuf)
+
+		if(requestBuf==NULL) {
+			JDBG_LOG(CJdDbg::LVL_ERR, ("malloc failed at %s %d, exiting..\n", __FUNCTION__, __LINE__));
+			goto Exit;
+		}
 
 		int len = CreateHeader(RTSP_METHOD_DESCRIBE, NULL, pHeader, bufsize);
 		pHeader += len;
@@ -466,11 +494,16 @@ Exit:
 		free(szTmpUrl);
 	if(requestBuf)
 		free(requestBuf);
+
+	TRACE_LEAVE
+
 	return result;
 }
 
 void CJdRtspClntSession::HandleAnswerSetup(char *szStrmType, char *headerBuf)
 {
+	TRACE_ENTER
+
 	char *charIndex = strstr(headerBuf, "Session: ");
 	CRtspRequestTransport Transport;
 	if(charIndex != NULL) {
@@ -486,10 +519,14 @@ void CJdRtspClntSession::HandleAnswerSetup(char *szStrmType, char *headerBuf)
 	} else if (strcmp(szStrmType, "audio") == 0){
 		m_pARtp	= pRtp;
 	}
+
+	TRACE_LEAVE
 }
 
 void CJdRtspClntSession::HandleAnswerDescribe(char *headerBuf)
 {
+	TRACE_ENTER
+
 	ParseResponseMessage(headerBuf, strlen(headerBuf));
 	header_map_t::const_iterator iter = resp_headers.find("content-length");
 	if(iter != resp_headers.end()) {
@@ -503,6 +540,9 @@ void CJdRtspClntSession::HandleAnswerDescribe(char *headerBuf)
 			free(pBuff);
 		}
 	}
+
+	TRACE_LEAVE
+
 }
 
 int CJdRtspClntSession::SendSetup(
@@ -510,6 +550,8 @@ int CJdRtspClntSession::SendSetup(
 				unsigned short rtpport, 
 				unsigned short rtcpport)
 {
+	TRACE_ENTER
+
 	int bufsize = REQUEST_BUF_SIZE;
 	int tempSize;
 	char headerBuf[HEADER_BUF_SIZE];
@@ -523,11 +565,16 @@ int CJdRtspClntSession::SendSetup(
 		return 0;
 	}
 Exit:
+
+	TRACE_LEAVE
+
 	return -1;
 }
 
 void CJdRtspClntSession::SendPlay(char *szStrmType /*audio or video*/)
 {
+	TRACE_ENTER
+
 	int bufsize = REQUEST_BUF_SIZE;
 	int tempSize;
 	char headerBuf[HEADER_BUF_SIZE];
@@ -545,11 +592,14 @@ void CJdRtspClntSession::SendPlay(char *szStrmType /*audio or video*/)
 		ret = ReadHeader(m_hSock, headerBuf);	/* errorSource set within */
 	}
 Exit:
+	TRACE_LEAVE
 	return;
 }
 
 void CJdRtspClntSession::Close()
 {
+	TRACE_ENTER
+
 	int bufsize = REQUEST_BUF_SIZE;
 	int tempSize;
 	char *requestBuf = (char *)malloc(bufsize);
@@ -590,6 +640,8 @@ void CJdRtspClntSession::Close()
 	}
 
 Exit:
+
+	TRACE_LEAVE
 	return;
 }
 
@@ -605,6 +657,8 @@ int CJdRtspClntSession::makeSocket(
 		unsigned short port, 
 		int sock_type)
 {
+	TRACE_ENTER
+
 	int sock;										/* Socket descriptor */
 	struct sockaddr_in sa;							/* Socket address */
 	struct hostent *hp;								/* Host entity */
@@ -612,6 +666,7 @@ int CJdRtspClntSession::makeSocket(
 
 	hp = gethostbyname(host);
 	if(hp == NULL) { 
+		JDBG_LOG(CJdDbg::LVL_ERR,("makeSocket:gethostbyname %s failed", host));
 		return -1; 
 	}
 		
@@ -620,17 +675,21 @@ int CJdRtspClntSession::makeSocket(
 	sa.sin_family = hp->h_addrtype;		/* Set service sin_family to PF_INET */
 	sa.sin_port = htons(port);      	/* Put portnum into sockaddr */
 
+	JDBG_LOG(CJdDbg::LVL_TRACE,("makeSocket:gethostbyname addr=0x%x port=%d", sa.sin_addr.s_addr, port));
+
 	sock = socket(hp->h_addrtype, sock_type, 0);
 	if(sock == -1) {  
+		JDBG_LOG(CJdDbg::LVL_ERR,("makeSocket:socket failed"));
 		return -1; 
 	}
 
 	ret = connect(sock, (struct sockaddr *)&sa, sizeof(sa));
 
 	if(ret == -1) {  
+		JDBG_LOG(CJdDbg::LVL_ERR,("makeSocket:connect failed"));
 		return -1; 
 	}
-
+	TRACE_LEAVE
 	return sock;
 }
 

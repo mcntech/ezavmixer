@@ -44,8 +44,8 @@ public:
 	virtual int  getNumAvailVideoFrames(std::string url) = 0;
 	virtual int  getNumAvailAudioFrames(std::string url) = 0;
 
-	virtual int start(std::string url) = 0;
-	virtual int stop(std::string url) = 0;
+	virtual int startServer(std::string url) = 0;
+	virtual int stopServer(std::string url) = 0;
 
 };
 

@@ -1,8 +1,7 @@
 package com.mcntech.rtspplayer;
 
-import com.mcntech.ezscreencast.Bundle;
-
 import android.app.Activity;
+import android.os.Bundle;
 import android.view.View;
 
 public class ServerList extends Activity implements View.OnClickListener {

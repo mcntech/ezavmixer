@@ -52,8 +52,8 @@ public:
 
 	int  getNumAvailVideoFrames(std::string url);
 	int  getNumAvailAudioFrames(std::string url);
-	int start(std::string url);
-	int stop(std::string url);
+	int startServer(std::string url);
+	int stopServer(std::string url);
 
 public:
 	CRtspMultiPlayer(CPlayerEventBase *pEventBase);

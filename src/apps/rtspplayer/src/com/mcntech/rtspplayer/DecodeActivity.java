@@ -484,6 +484,8 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 				return;
 			}
 
+			OnyxPlayerApi.startServer(mUrl);
+			
 			ByteBuffer[] inputBuffers = null;
 			ByteBuffer[] outputBuffers = null;
 			BufferInfo info = new BufferInfo();

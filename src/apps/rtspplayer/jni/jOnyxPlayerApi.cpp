@@ -71,6 +71,24 @@ int Java_com_mcntech_rtspplayer_OnyxPlayerApi_getStatus(JNIEnv *env, jobject sel
 	env->ReleaseStringUTFChars(jurl, szUrl);
 }
 
+int Java_com_mcntech_rtspplayer_OnyxPlayerApi_startServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+{
+	const char *szUrl = env->GetStringUTFChars(jurl, 0);
+	std::string url = szUrl;
+	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
+	pPlayer->startServer(url);
+	env->ReleaseStringUTFChars(jurl, szUrl);
+}
+
+int Java_com_mcntech_rtspplayer_OnyxPlayerApi_stopServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+{
+	const char *szUrl = env->GetStringUTFChars(jurl, 0);
+	std::string url = szUrl;
+	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
+	pPlayer->stopServer(url);
+	env->ReleaseStringUTFChars(jurl, szUrl);
+}
+
 jint Java_com_mcntech_rtspplayer_OnyxPlayerApi_getVideoFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jobject buf, jint numBytes, jint nTimeoutMs)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);

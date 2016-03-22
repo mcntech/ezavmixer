@@ -13,12 +13,12 @@ CRtspMultiPlayer::CRtspMultiPlayer(CPlayerEventBase *pEventBase)
 CServerNode *CRtspMultiPlayer::getServerNode(std::string url)
 {
 	CServerNode *pNode = NULL;
-	TRACE_ENTER
+	//TRACE_ENTER
 	ServerNodeMap::iterator it = m_ServerList.find(url);
 	if(m_ServerList.end() != it){
 		pNode = it->second;
 	}
-	TRACE_LEAVE
+	//TRACE_LEAVE
 	return pNode;
 }
 
@@ -55,7 +55,7 @@ int CRtspMultiPlayer::removeServer(std::string url)
 	return 0;
 }
 
-int CRtspMultiPlayer::start(std::string url)
+int CRtspMultiPlayer::startServer(std::string url)
 {
 	TRACE_ENTER
 	CServerNode *pNode = getServerNode(url);
@@ -129,7 +129,7 @@ int  CRtspMultiPlayer::getAudioCodecType(std::string url)
 
 }
 
-int CRtspMultiPlayer::stop(std::string url)
+int CRtspMultiPlayer::stopServer(std::string url)
 {
 	TRACE_ENTER
 	CRtspServerNode *pNode = (CRtspServerNode *)getServerNode(url);

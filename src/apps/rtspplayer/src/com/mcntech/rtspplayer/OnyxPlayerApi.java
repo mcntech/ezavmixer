@@ -130,6 +130,17 @@ public class OnyxPlayerApi {
 		return removeServer(mHandle, url);
 	}
 
+	public static long startServer(String url)
+	{
+		return startServer(mHandle, url);
+	}
+
+	public static long stopServer(String url)
+	{
+		return stopServer(mHandle, url);
+	}
+
+	
 	public static int getVideoFrame(String url, ByteBuffer data, int size, int nTimeoutMs)
 	{
 		return getVideoFrame(mHandle, url, data, size);
@@ -182,6 +193,9 @@ public class OnyxPlayerApi {
 
 	public native static long addServer(long handle, String url);	
 	public native static long removeServer(long handle, String url);
+	
+	public native static long startServer(long handle, String url);	
+	public native static long stopServer(long handle, String url);	
 	
 	public native static int getVideoFrame(long handle, String inputId, ByteBuffer vidData, int numBytes);
 	public native static int getAudioFrame(long handle, String inputId, ByteBuffer vidData, int numBytes);	

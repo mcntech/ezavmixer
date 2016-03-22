@@ -200,6 +200,7 @@ long CRtspClntBridge::ProcessVideoFrame()
 		ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
 	}
 	pConnSink->Write(pConnSink, m_pData, m_lUsedLen,  ulFlags, m_lPts * 1000 / 90);
+	JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Write %d PTS=%lld", m_lUsedLen, m_lPts));
 
 Exit:
 
@@ -233,7 +234,7 @@ long CRtspClntBridge::ProcessAudioFrame()
 	//ChkPktLoss(pRtpHdr);
 
 	pConnSink->Write(pConnSink, m_pAudData, lBytesRead,  ulFlags, m_lPts * 1000 / 90);
-
+	JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Write %d PTS=%lld", m_lUsedLen, m_lPts));
 Exit:
 	TRACE_LEAVE
 	return lResult;

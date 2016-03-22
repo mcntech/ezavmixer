@@ -63,6 +63,7 @@ static int followRedirects = DEFAULT_REDIRECTS;	/* # of redirects to follow */
 int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff, int nMaxLen)
 {
 	TRACE_ENTER
+	int res = -1;
 	int tempSize = 0;
 	switch(nHeaderId)
 	{
@@ -78,11 +79,9 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 					++m_ulSeq,
 					RTSP_CLIENT_NAME);
 
-			return strlen(pBuff);
+			res = strlen(pBuff);
 		}
-
-		return -1;
-
+		break;
 
 	case RTSP_METHOD_PLAY:
 		{
@@ -98,11 +97,10 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 					RTSP_CLIENT_NAME,
 					m_ulSessionId);
 
-				return strlen(pBuff);
+				res = strlen(pBuff);
 			}
 		}
-		return -1;
-
+		break;
 	case RTSP_METHOD_TEARDOWN:
 		{
 			std::string url;
@@ -118,15 +116,17 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 					RTSP_CLIENT_NAME,
 					m_ulSessionId);
 
-				return strlen(pBuff);
+				res =  strlen(pBuff);
 			}
 		}
-		return -1;
+		break;
 
 	default:
-		TRACE_LEAVE
-		return -1;
+		res = -1;
 	}
+
+	TRACE_LEAVE
+	return res;
 }
 
 /**
@@ -140,6 +140,7 @@ int CJdRtspClntSession::CreateSetupHeader(
 			int             nMaxLen)
 {
 	TRACE_ENTER
+	int res = -1;
 	int tempSize = 0;
 	std::string control;
 	m_sdp.GetControl(control,pszTrack);
@@ -156,10 +157,10 @@ int CJdRtspClntSession::CreateSetupHeader(
 			RTSP_CLIENT_NAME,
 			usRtpPort, usRtcpPort);
 
-		return strlen(pBuff);
+		res =  strlen(pBuff);
 	}
 	TRACE_LEAVE
-	return -1;
+	return res;
 }
 
 /*
@@ -259,6 +260,7 @@ Exit:
 int CJdRtspClntSession::GetVideoCodec()
 {
 	TRACE_ENTER
+	int codec = CODEC_UNSUPPORTED;
 	for (int i =0; i < m_sdp.m_NumeMediaDescriptions; i++) {
 		if(stricmp(m_sdp.m_listMediaDescription[i]->m_pszMedia, "video") == 0){
 			unsigned char ucPl = m_sdp.m_listMediaDescription[i]->m_ucPl;
@@ -266,22 +268,24 @@ int CJdRtspClntSession::GetVideoCodec()
 				const char *pszRtmap = m_sdp.m_listMediaDescription[i]->GetAttributeValue("rtpmap", 0);
 				CAttribRtpmap Rtpmap(pszRtmap);
 				if (stricmp(Rtpmap.EncodingName.c_str(), "H264") == 0){
-					return RTP_CODEC_H264;
+					codec = RTP_CODEC_H264;
+					break;
 				}
 			} else if (ucPl == RTP_PT_MP2T) {
-				return RTP_CODEC_MP2T;
+				codec = RTP_CODEC_MP2T;
+				break;
 			}
 		}
 	}
 
 	TRACE_LEAVE
-
-	return CODEC_UNSUPPORTED;
+	return codec;
 }
 
 bool CJdRtspClntSession::GetVideoCodecConfig(unsigned char *pCfg, int *pnSize)
 {
 	TRACE_ENTER
+	bool res = false;
 	for (int i =0; i < m_sdp.m_NumeMediaDescriptions; i++) {
 		if(stricmp(m_sdp.m_listMediaDescription[i]->m_pszMedia, "video") == 0){
 			unsigned char ucPl = m_sdp.m_listMediaDescription[i]->m_ucPl;
@@ -293,7 +297,8 @@ bool CJdRtspClntSession::GetVideoCodecConfig(unsigned char *pCfg, int *pnSize)
 						int len = *pnSize < Fmtp.mSpsSize ? *pnSize : Fmtp.mSpsSize;
 						memcpy(pCfg, Fmtp.mSpsConfig, len);
 						*pnSize = len;
-						return true;
+						res =  true;
+						break;
 					}
 				}
 			}
@@ -302,33 +307,40 @@ bool CJdRtspClntSession::GetVideoCodecConfig(unsigned char *pCfg, int *pnSize)
 
 	TRACE_LEAVE
 
-	return false;
+	return res;
 }
 
 int CJdRtspClntSession::GetAudioCodec()
 {
 	TRACE_ENTER
+
+	int codec = CODEC_UNSUPPORTED;
 	for (int i =0; i < m_sdp.m_NumeMediaDescriptions; i++) {
 		if(stricmp(m_sdp.m_listMediaDescription[i]->m_pszMedia, "audio") == 0){
 			unsigned char ucPl = m_sdp.m_listMediaDescription[i]->m_ucPl;
 			if(ucPl >= RTP_PT_DYNAMIC_START && ucPl <= RTP_PT_DYNAMIC_END) {
 				const char *pszRtmap = m_sdp.m_listMediaDescription[i]->GetAttributeValue("rtpmap", 0);
 				CAttribRtpmap Rtpmap(pszRtmap);
-				if(stricmp(Rtpmap.EncodingName.c_str(), "MP4A") == 0)
-					return RTP_CODEC_AAC;
-				else if(stricmp(Rtpmap.EncodingName.c_str(), "PCMU") == 0)
-					return RTP_CODEC_PCMU;
+				if(stricmp(Rtpmap.EncodingName.c_str(), "MP4A") == 0) {
+					codec = RTP_CODEC_AAC;
+					break;
+				} else if(stricmp(Rtpmap.EncodingName.c_str(), "PCMU") == 0) {
+					codec = RTP_CODEC_PCMU;
+					break;
+				}
+			} else if (ucPl == RTP_PT_PCMU) {
+				codec =  RTP_CODEC_PCMU;
+				break;
+			} else if (ucPl == RTP_PT_PCMA) {
+				codec = RTP_CODEC_PCMA;
+				break;
 			}
-			else if (ucPl == RTP_PT_PCMU)
-				return RTP_CODEC_PCMU;
-			else if (ucPl == RTP_PT_PCMA)
-				return RTP_CODEC_PCMA;
 		}
 	}
 
 	TRACE_LEAVE
 
-	return CODEC_UNSUPPORTED;
+	return codec;
 }
 
 
@@ -398,12 +410,13 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
 
 		sock = makeSocket(host, m_usServerRtspPort, SOCK_STREAM);		/* errorSource set within makeSocket */
 		if(sock == -1) { 
+			JDBG_LOG(CJdDbg::LVL_ERR, ("makeSocket failed at %s %d, exiting..\n", __FUNCTION__, __LINE__));
 			goto Exit;
 		}
 
 		int sentBytes = send(sock, requestBuf, strlen(requestBuf),0);
 		if(sentBytes <= 0)	{
-			close(sock);
+			JDBG_LOG(CJdDbg::LVL_ERR, ("send failed at %s %d, exiting..\n", __FUNCTION__, __LINE__));
 			goto Exit;
 		}
 
@@ -414,13 +427,14 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
 		/* Grab enough of the response to get the metadata */
 		ret = ReadHeader(sock, headerBuf);	/* errorSource set within */
 		if(ret < 0)  { 
-			close(sock); 
+			JDBG_LOG(CJdDbg::LVL_ERR, ("ReadHeader failed at %s %d, exiting..\n", __FUNCTION__, __LINE__));
 			goto Exit;
 		}
 
 		/* Get the return code */
 		charIndex = strstr(headerBuf, "RTSP/");
 		if(charIndex == NULL) {
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Missing return code failed at %s %d, exiting..\n", __FUNCTION__, __LINE__));
 			goto Exit;
 		}
 
@@ -430,9 +444,11 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
 
 		ret = sscanf(charIndex, "%d", &i);
 		if(ret != 1){
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Malformed return code failed at %s %d, exiting..\n", __FUNCTION__, __LINE__));
 			goto Exit;
 		}
-		if(i<200 || i>307)	{
+		if(i < 200 || i > 307)	{
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d:return code %d out of range(200 307)  , exiting..\n", __FUNCTION__, __LINE__, i));
 			goto Exit;
 		}
 
@@ -440,7 +456,8 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
 		 * If a redirect, repeat operation until final URL is found or we redirect followRedirects times.  
 		 */
 		if(i >= 300) {
-		    redirectsFollowed++;
+			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d:return code %d redirecting redirectsFollowed=%d..\n", __FUNCTION__, __LINE__, redirectsFollowed));
+			redirectsFollowed++;
 
 			/* Pick up redirect URL, allocate new url, and repeat process */
 			charIndex = strstr(headerBuf, "Location:");
@@ -452,6 +469,7 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
             while(*charIndex != '\0' && isspace(*charIndex))
                 charIndex++;
             if(*charIndex == '\0') {
+    			JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d:Invalid Location..\n", __FUNCTION__, __LINE__));
 				goto Exit;
 			}
 
@@ -475,6 +493,7 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
 	}
     
     if(redirectsFollowed >= followRedirects && !found) {
+    		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d:redirectsFollowed excceeds followRedirects=%d..\n", __FUNCTION__, __LINE__, followRedirects));
 			goto Exit;
 	}
 
@@ -485,8 +504,10 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
 
 	*pnVidCodec = GetVideoCodec();
 	*pnAudCodec = GetAudioCodec();
-	//return SendSetup();
+
+	TRACE_LEAVE
 	return 0;
+
 Exit:
 	if(sock != -1)
 		close(sock);
@@ -558,17 +579,22 @@ int CJdRtspClntSession::SendSetup(
 	int ret = -1;
 	if(m_hSock >= 0){
 		int len = CreateSetupHeader(szStrmType, rtpport, rtcpport, headerBuf, HEADER_BUF_SIZE);
-		send(m_hSock, headerBuf, strlen(headerBuf), 0);
-
-		ret = ReadHeader(m_hSock, headerBuf);	/* errorSource set within */
-		HandleAnswerSetup(szStrmType, headerBuf);
-		return 0;
+		if(send(m_hSock, headerBuf, strlen(headerBuf), 0) > 0) {
+			int nBytes  = ReadHeader(m_hSock, headerBuf);	/* errorSource set within */
+			if(nBytes > 0) {
+				HandleAnswerSetup(szStrmType, headerBuf);
+				ret = 0;
+			} else {
+	    		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d:ReadHeader failed\n", __FUNCTION__, __LINE__));
+			}
+		} else {
+    		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d:send failed\n", __FUNCTION__, __LINE__));
+		}
 	}
 Exit:
-
 	TRACE_LEAVE
 
-	return -1;
+	return ret;
 }
 
 void CJdRtspClntSession::SendPlay(char *szStrmType /*audio or video*/)
@@ -588,8 +614,11 @@ void CJdRtspClntSession::SendPlay(char *szStrmType /*audio or video*/)
 	}
 	if(m_hSock >= 0){
 		int len = CreateHeader(RTSP_METHOD_PLAY, szStrmType, headerBuf, HEADER_BUF_SIZE);
-		send(m_hSock, headerBuf, strlen(headerBuf), 0);
-		ret = ReadHeader(m_hSock, headerBuf);	/* errorSource set within */
+		if(send(m_hSock, headerBuf, strlen(headerBuf), 0) > 0) {
+			ret = ReadHeader(m_hSock, headerBuf);	/* errorSource set within */
+		} else {
+    		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d:send failed\n", __FUNCTION__, __LINE__));
+		}
 	}
 Exit:
 	TRACE_LEAVE
@@ -662,12 +691,11 @@ int CJdRtspClntSession::makeSocket(
 	int sock;										/* Socket descriptor */
 	struct sockaddr_in sa;							/* Socket address */
 	struct hostent *hp;								/* Host entity */
-	int ret;
-
+	int ret = -1;
 	hp = gethostbyname(host);
 	if(hp == NULL) { 
 		JDBG_LOG(CJdDbg::LVL_ERR,("makeSocket:gethostbyname %s failed", host));
-		return -1; 
+		goto Exit;
 	}
 		
 	/* Copy host address from hostent to (server) socket address */
@@ -679,17 +707,19 @@ int CJdRtspClntSession::makeSocket(
 
 	sock = socket(hp->h_addrtype, sock_type, 0);
 	if(sock == -1) {  
-		JDBG_LOG(CJdDbg::LVL_ERR,("makeSocket:socket failed"));
-		return -1; 
+		JDBG_LOG(CJdDbg::LVL_ERR,("makeSocket:socket creation failed"));
+		goto Exit;
 	}
 
 	ret = connect(sock, (struct sockaddr *)&sa, sizeof(sa));
 
 	if(ret == -1) {  
 		JDBG_LOG(CJdDbg::LVL_ERR,("makeSocket:connect failed"));
-		return -1; 
+		goto Exit;
 	}
+	ret = sock;
+Exit:
 	TRACE_LEAVE
-	return sock;
+	return ret;
 }
 

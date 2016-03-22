@@ -65,22 +65,6 @@ public class OnyxApi {
 		}
 	}
 	
-	public static boolean startSession(RtspModel rtsp, boolean enableAud, boolean enabeVid) {
-/*
-		boolean result = true;
-		mMpdSession = mpdSession;
-		String jPublishId = mpdSession.mPublishId;
-		String jswitchId = mpdSession.mSwcitchId;
-		String jinputId = mpdSession.mInputId;
-		String jInputType = mpdSession.mInputType;
-		String jUrl = mpdSession.mInputUrl;		
-		CreateInputStream(mHandle, jinputId, jInputType, jUrl);
-		CreateSwitch(mHandle, jswitchId);
-*/	
-		return false;
-	}
-	
-
 	public static void stopSession(){
 		
 	}
@@ -207,6 +191,7 @@ public class OnyxApi {
 	native static boolean addS3PublishNode(long handle, String jid,
 			String jhost, String jaccessId, String jsecKey,
 			String jbucket, String jfolder, String jfilePerfix);
+
 	native static boolean CreateMpd(long  handle, String jid, boolean isLive, int durationMs);	
 	native static boolean CreatePeriod(long handle, String jmpdId, String jperiodId);
 	native static boolean CreateAdaptationSet(long handle, String jmpdId, String jperiodId, String jadaptId);
@@ -214,9 +199,14 @@ public class OnyxApi {
 	native static boolean CreateMpdPublishStream(long handle,  String jId, String jmpdId, String jperiodId, String jadaptId, String jrepId, String jswitchId, String jserverNode);
 	native static boolean ConfigMpdPublishStream(long handle,  String jId, String jrepId, boolean fIsLive, int nBitrate, int nWidth, int nHeight, int nFramerate);
 	native static boolean StartMpdPublishStream(long handle,  String jId);
+	
 	native static boolean CreateInputStream(long handle, String jid, String jInputType, String jUrl);
 	native static boolean CreateSwitch(long handle, String jid);
 	native static boolean ConnectSwitchInput(long handle, String jSwitchId, String jInputId);
 	native static boolean StartSwitch(long handle, String jid);
+
+	native static boolean CreateRtspServer(long handle,  String jId, String jswitchId);
+	native static boolean StartRtspServer(long handle,  String jId);
+	
 	native static boolean UpdateMpdPublishStatus(long mHandle, String mPublishId);
 }

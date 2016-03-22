@@ -25,7 +25,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RtspActivity extends Activity implements BaseSession, View.OnClickListener {
+public class RtspPublishActivity extends Activity implements BaseSession, View.OnClickListener {
 	private static final String TAG = "ezscreencast";
     private static final int MEDIAPROJECTION_REQUEST_CODE = 1;
     private static final int SETTING_DIALOG_CODE = 2;
@@ -40,6 +40,9 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
     private static long mHandle = 0;
     
     RemoteNodeHandler mDeviceHandler;
+	public static ListView mRemoteNodeListView = null;
+	public static ArrayList<OnyxRemoteNode> mOnyxRemoteNodeList = null;
+	ArrayAdapter<OnyxRemoteNode> mListAdapter;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +52,7 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
 		CodecModel.loadSavedPreferences(this, isSystemApp);
         
-		setContentView(R.layout.activity_rtsp);
+		setContentView(R.layout.activity_rtsp_publish);
 		mBtnStart = (Button) findViewById(R.id.button_startstop);
 		mBtnStart.setText("Start");
 		mBtnStart.setOnClickListener(this);
@@ -57,14 +60,49 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 				
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		
+        mOnyxRemoteNodeList = CodecModel.mOnyxRemoteNodeList;
+        mRemoteNodeListView =  (ListView)findViewById(R.id.listRemoteNodes);
+
+	    mListAdapter = new ArrayAdapter<OnyxRemoteNode>(getApplicationContext(), 
+				android.R.layout.simple_list_item_checked, mOnyxRemoteNodeList); 
+		mRemoteNodeListView.setAdapter(mListAdapter ); 
+		mRemoteNodeListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+		mRemoteNodeListView.setOnItemClickListener(new AdapterView.OnItemClickListener()
+		{
+		    @Override
+		    public void onItemClick(AdapterView<?> parent, View item,
+		            int position, long id)
+		    {
+		    	//boolean checked = false;
+		    	OnyxRemoteNode node = (OnyxRemoteNode)mListAdapter.getItem(position); 
+		    	doEditRemoteNode(node);
+		    }
+		});
+
         mDeviceHandler = new RemoteNodeHandler(){
     		@Override
     		public void onConnectRemoteNode(final String url) {
+    			boolean newDevice = true;
+    			if(mOnyxRemoteNodeList == null)
+    				return;
+    			// TODO Update status
     	    }
 
     		@Override
     		public void onDisconnectRemoteNode(String deviceid) {
     			final String url = deviceid;
+    			if(mOnyxRemoteNodeList == null)
+    				return;
+    			runOnUiThread(new Runnable() {
+                    public void run(){
+                		for(int i=0;i<mOnyxRemoteNodeList.size();i++){
+                			if(mOnyxRemoteNodeList.get(i).mNickname == url){
+                				//mOnyxRemoteNodeList.remove(i);
+                				// TODO : Upda
+                			}
+                		}
+                    }
+                });    			
     		}
 
     		@Override
@@ -84,9 +122,24 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 				
 			}
     	};        
-
-    	mHandle = OnyxApi.initialize(OnyxApi.PROTOCOL_RTSP);
+    	//ConfigDatabase.loadSavedPreferences(this, isSystemApp);
+    	int recordCount = new PublishSrversModel(this).count();
+    	if(recordCount <= 0){
+    		// Initialize Database
+        	OnyxRemoteNode node1 = new OnyxRemoteNode(DEF_SERVER1);
+        	new PublishSrversModel(this).createRow(node1);
+    	}
+        mHandle = OnyxApi.initialize(OnyxApi.PROTOCOL_RTSP);
         OnyxApi.setRemoteNodeHandler(mDeviceHandler);
+        
+        
+        List<OnyxRemoteNode> RemoteNodes = new PublishSrversModel(this).read();
+        
+        if (RemoteNodes.size() > 0) {
+            for (OnyxRemoteNode obj : RemoteNodes) {
+            	mOnyxRemoteNodeList.add(obj);
+            }
+        }
     }
     
     
@@ -166,6 +219,8 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     	if(requestCode == SETTING_DIALOG_CODE){
     		return;
+    	} else if(requestCode == NODE_LIST_DIALOG_CODE){
+    		mListAdapter.notifyDataSetChanged();
     	} else if(requestCode == MEDIAPROJECTION_REQUEST_CODE){
 	        MediaProjection mediaProjection = mMediaProjectionManager.getMediaProjection(resultCode, data);
 	        if (mediaProjection == null) {

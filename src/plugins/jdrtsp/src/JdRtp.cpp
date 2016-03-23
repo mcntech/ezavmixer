@@ -31,7 +31,7 @@
 #endif
 
 #define DEFAULT_READ_TIMEOUT	10		//Seconds to wait before giving up
-static int modDbgLevel = CJdDbg::LVL_ERR;
+static int modDbgLevel = CJdDbg::LVL_TRACE;
 /* Globals */
 static int timeout = DEFAULT_READ_TIMEOUT;
 

@@ -26,7 +26,8 @@ public:
 	}
     virtual int StartStreaming(void) = 0;
     virtual int StopStreaming(void) = 0;
-
+    const void   *GetAudioConn(){return mDataLocatorAudio.pAddress;}
+    const void   *GetVideoConn(){return mDataLocatorVideo.pAddress;}
 protected:
 	// Methods for using Externally created stream connection
 	int CreateH264OutputPin(void *pStrmConn = NULL);

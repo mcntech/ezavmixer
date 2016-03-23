@@ -45,7 +45,6 @@ static int modDbgLevel = CJdDbg::LVL_STRM;
 #define stricmp  strcasecmp
 #endif
 
-#define EN_QUIRK_VLC		// For testing with VLC
 #define DEF_RTSP_PORT 			554
 #define DEF_RTP_PORT 			59427
 
@@ -323,6 +322,9 @@ int CJdRtspClntSession::GetAudioCodec()
 				CAttribRtpmap Rtpmap(pszRtmap);
 				if(stricmp(Rtpmap.EncodingName.c_str(), "MP4A") == 0) {
 					codec = RTP_CODEC_AAC;
+					break;
+				} else if(stricmp(Rtpmap.EncodingName.c_str(), "MPA") == 0) {
+					codec = RTP_CODEC_AAC; // todo cadd mp3 support
 					break;
 				} else if(stricmp(Rtpmap.EncodingName.c_str(), "PCMU") == 0) {
 					codec = RTP_CODEC_PCMU;

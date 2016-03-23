@@ -300,13 +300,17 @@ int CRtspClntBridge::StartStreaming()
 	TRACE_ENTER
 
 	m_fRun = 1;
-	if(m_fEnableVid) {
+	if(m_fEnableVid && GetVideoConn() != NULL) {
 		InitVideoStreaming();
 		jdoalThreadCreate((void **)&m_thrdHandleVideo, DoVideoBufferProcessing, this);
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Video not started"));
 	}
-	if(m_fEnableAud) {
+	if(m_fEnableAud && GetAudioConn() != NULL) {
 		InitAudioStreaming();
 		jdoalThreadCreate((void **)&m_thrdHandleAudio, DoAudioBufferProcessing, this);
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Audio not started m_fEnableAud=%d", m_fEnableAud));
 	}
 
 	TRACE_LEAVE

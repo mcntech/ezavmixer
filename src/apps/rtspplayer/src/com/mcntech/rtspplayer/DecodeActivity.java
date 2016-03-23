@@ -41,7 +41,7 @@ import com.android.grafika.gles.WindowSurface;
 public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 	
 	public final String LOG_TAG = "rtsp";
-	String                        mUrl = "rtsp://192.168.0.103/v01";                   
+	String                        mUrl = "rtsp://10.0.0.20:8554/v01";                   
 	private PlayerThread          mVidPlayer = null;
 	RemoteNodeHandler             mNodeHandler;
 	Handler                       mHandler;

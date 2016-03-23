@@ -5,12 +5,16 @@ CRtspMultiPublishClnt::CRtspMultiPublishClnt(CPublishEventBase *pEventBase)
 	m_EventCallback = pEventBase;
 }
 
+int CRtspMultiPublishClnt::CreateRtspPublishStream(const char *szId,  const char *szSwitchId)
+{
+	CRtspPublishBridge *pRtspPublishBridge = new CRtspPublishBridge;
+	pRtspPublishBridge->SetStreamCfg(pServerNode->m_pRtspCommonCfg);
+}
+
 int CRtspMultiPublishClnt::AddPublishServer(std::string url, std::string appName, int localRtpPort, int remoteRtpPort, int serverPort)
 {
 	CRtspServerNode *pServerNode = new CRtspServerNode(url, appName, localRtpPort, remoteRtpPort, serverPort);
 	m_PublishServerList[url] = pServerNode;
-	CRtspPublishBridge *pRtspPublishBridge = new CRtspPublishBridge;
-	pRtspPublishBridge->SetStreamCfg(pServerNode->m_pRtspCommonCfg);
 	pServerNode->m_pRtspPublishBridge = pRtspPublishBridge;
 }
 
@@ -23,6 +27,11 @@ int CRtspMultiPublishClnt::RemovePublishServer(std::string url)
 			delete pNode->m_pRtspPublishBridge;
 		m_PublishServerList.erase(it);
 	}
+}
+
+void CRtspMultiPublishClnt::enableRtspLocalServer(const char *szId, const char *szInterfaceName, const char *szStreamName, int nPort, bool fEnableMux)
+{
+	m_pRtspSrvConfig = new CRtspSrvConfig(szInterfaceName, szStreamName, nPort, szStreamName);
 }
 
 int CRtspMultiPublishClnt::start()

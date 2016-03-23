@@ -22,8 +22,7 @@ import com.mcntech.ezscreencast.OnyxApi.RemoteNodeHandler;
 import com.mcntech.ezscreencast.R;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+
 
 public class RtspActivity extends Activity implements BaseSession, View.OnClickListener {
 	private static final String TAG = "ezscreencast";
@@ -100,14 +99,17 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 		String jinputId = rtsp.mInputId;
 		String jInputType = rtsp.mInputType;
 		String jUrl = rtsp.mInputUrl;	
-		
+		String jInterface = "auto";
+		String jStreamName = "V01";
+		int nLocalServerPort = 554;
+		boolean fEnableMux = false;
 		String mError = "";
 		
 		OnyxApi.CreateInputStream(mHandle, jinputId, jInputType, jUrl);
 		OnyxApi.CreateSwitch(mHandle, jswitchId);
 		OnyxApi.ConnectSwitchInput(mHandle, jswitchId, jinputId);
 		
-		OnyxApi.CreateRtspServer(mHandle, jPublishId, jswitchId);
+		OnyxApi.CreateRtspPublishStream(mHandle, jPublishId, jswitchId);
 		
 		boolean fIsLive = CodecModel.mIsLiveStream;
 		int nBitrate = CodecModel.mVideoBitrate;
@@ -119,7 +121,8 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 		String strCodecType = CodecModel.mVidCodecType;
 		
 		result = OnyxApi.StartSwitch(mHandle, jswitchId);
-		result= OnyxApi.StartRtspServer(mHandle, jPublishId);
+		OnyxApi.EnableRtspLocalServer(mHandle, jswitchId, jInterface, jStreamName, nLocalServerPort, fEnableMux);
+		result= OnyxApi.StartRtspPublishStream(mHandle, jPublishId);
 		if(!result) {
 			mError = "Failed to StartPublishStream";
 			return result;

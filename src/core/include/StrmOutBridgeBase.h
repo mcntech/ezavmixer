@@ -58,9 +58,10 @@ class CRtspSrvConfig
 {
 public:
 	CRtspSrvConfig(const char *pszConfFile);
-
+	CRtspSrvConfig(const char *network_interface, const char *szStreamName, int port, int fEnableMux);
 public:
-	char szStreamName[128];
+	char           network_interface[128];
+	char           szStreamName[128];
 	unsigned short usServerRtspPort;
 	int            fEnableMux;
 };

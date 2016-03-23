@@ -22,9 +22,6 @@
 #include "RtspConfigure.h"
 #include "JdDbg.h"
 #include "strmconn.h"
-#include "strmconn_ipc.h"
-#include "strmconn_zmq.h"
-#include "sock_ipc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,15 +42,17 @@ class CPublishEventBase;
 class CRtspMultiPublishClnt : public CPublishClntBase
 {
 public:
-	CConfigBase *m_pConfig;
+
 	static CPublishClntBase *openInstance(CPublishEventBase *pEventBase);
 	//void closeInstancce(CPublishClntBase *pInst);
-
+	int CreateRtspPublishStream(const char *szId,  const char *szSwitchId);
 	int AddPublishServer(std::string url, std::string appName, int localRtpPort=0, int remoteRtpPort=0, int serverPort=554);
 	int RemovePublishServer(std::string url);
 
 	int sendAudioData(const char *pData, int numBytes, long Pts, int Flags);
 	int sendVideoData(const char *pData, int numBytes, long Pts, int Flags);
+
+	void enableRtspLocalServer(const char *szId, const char *szInterfaceName, const char *szStreamName, int nPort, bool fEnableMux);
 
 	int start();
 	int stop();
@@ -67,6 +66,9 @@ public:
 	ConnCtxT           *m_pAudConnSrc;
 	ConnCtxT           *m_pVidConnSrc;
 	CPublishEventBase  *m_EventCallback;
+	CRtspSrvConfig     *m_pRtspSrvConfig;
+	CConfigBase        *m_pConfig;
+	CRtspPublishBridge *m_pRtspSrvBridge;
 };
 
 #endif

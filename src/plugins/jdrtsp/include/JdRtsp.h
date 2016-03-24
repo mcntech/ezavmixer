@@ -28,6 +28,7 @@
 
 #define RTP_PT_PCMU             0
 #define RTP_PT_PCMA             8
+#define RTP_PT_MPA              14
 #define RTP_PT_MP2T             33
 #define RTP_PT_JPEG             26
 #define RTP_PT_DYNAMIC_START    96

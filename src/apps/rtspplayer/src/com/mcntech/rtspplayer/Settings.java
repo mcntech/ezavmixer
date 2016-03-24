@@ -70,14 +70,14 @@ public class Settings extends Activity implements OnItemSelectedListener {
         mEnAutoStartCheckBox.setChecked(Configure.mEnableAutoStart);
 
         /* Logo Enable */
-        mEnLogoCheckBox = (CheckBox) findViewById(R.id.enable_logo);
+/*        mEnLogoCheckBox = (CheckBox) findViewById(R.id.enable_logo);
         mEnLogoCheckBox.setOnClickListener(new OnClickListener() {
 		        public void onClick(View v) {
 		        	 Configure.mEnableLogo = mEnLogoCheckBox.isChecked();
 		        	 Configure.savePreferences(getApplicationContext(), Configure.KEY_ENABLE_LOGO, Configure.mEnableLogo);
 		        }
         	}); 
-        mEnLogoCheckBox.setChecked(Configure.mEnableLogo);
+        mEnLogoCheckBox.setChecked(Configure.mEnableLogo);*/
         
         /* Stats Enable */
         mEnStatsCheckBox = (CheckBox) findViewById(R.id.enable_stats);
@@ -96,7 +96,7 @@ public class Settings extends Activity implements OnItemSelectedListener {
 */        
         mRtspUrl1 = (EditText) findViewById(R.id.editRtspUrl1);
         mRtspUrl1.setText(String.valueOf(Configure.mRtspUrl1));
-        mRtspUrl1.setOnEditorActionListener( new DoneOnEditorActionListener());
+        mRtspUrl1.setOnEditorActionListener( new DoneOnEditorUrlListener());
         
      }
 

@@ -330,6 +330,9 @@ int CJdRtspClntSession::GetAudioCodec()
 					codec = RTP_CODEC_PCMU;
 					break;
 				}
+			} else if (ucPl == RTP_PT_MPA) {
+				codec =  RTP_CODEC_AAC; // TODO
+				break;
 			} else if (ucPl == RTP_PT_PCMU) {
 				codec =  RTP_CODEC_PCMU;
 				break;

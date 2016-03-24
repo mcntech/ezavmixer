@@ -15,6 +15,8 @@ public class Configure {
 	
 	public static boolean mSystemApp;
 	public static int     mAudioDelay;	
+	public static String  mRtspUrl1;
+	
 	final static String KEY_ENABLE_AUDIO = "enable_audio";
 	final static String KEY_ENABLE_VIDEO = "enable_video";
 	final static String KEY_ENABLE_AUTO_START = "enable_auto_start";
@@ -22,6 +24,7 @@ public class Configure {
 	final static String KEY_ENABLE_STATS = "enable_stats";	
 	final static String KEY_USE_AUTIO_TRACK = "use_audio_track";
 	final static String KEY_AUDIO_DELAY = "audio_delay";
+	final static String KEY_RTSP_URL_1 = "rtsp_url_1";
 	
 	public static void loadSavedPreferences(Context context, boolean isSytemApp) {
 		SharedPreferences sharedPreferences = PreferenceManager
@@ -32,7 +35,8 @@ public class Configure {
 		mEnableLogo = sharedPreferences.getBoolean(KEY_ENABLE_LOGO, true);
 		mEnableStats = sharedPreferences.getBoolean(KEY_ENABLE_STATS, false);		
 		mUseAudioTrack = sharedPreferences.getBoolean(KEY_USE_AUTIO_TRACK, false);
-		mAudioDelay = sharedPreferences.getInt(KEY_AUDIO_DELAY, 0);		
+		mAudioDelay = sharedPreferences.getInt(KEY_AUDIO_DELAY, 0);
+		mRtspUrl1 = sharedPreferences.getString(KEY_RTSP_URL_1, "192.168.1.200:8854/v01");		
 		mSystemApp = isSytemApp;
 	}
 

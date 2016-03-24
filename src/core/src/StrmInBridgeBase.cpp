@@ -47,8 +47,6 @@ CStrmInBridgeBase::~CStrmInBridgeBase()
 int CStrmInBridgeBase::CreateH264OutputPin(void *pStrmConn)
 {
 	int hr = 0;
-//    CSourceStream *pStreamV = new CH264Stream(&hr, this, L"H264 AnnexB Source!");
-	// TODO: Prepare mDataSrcVideo
 	mDataLocatorVideo.locatorType = XA_DATALOCATOR_ADDRESS;
 	if(pStrmConn) {
 		mDataLocatorVideo.pAddress = pStrmConn;
@@ -64,14 +62,6 @@ int CStrmInBridgeBase::CreateH264OutputPin(void *pStrmConn)
 int CStrmInBridgeBase::CreateMP4AOutputPin(void *pStrmConn)
 {
 	int hr = 0;
-//    CSourceStream *pStreamA = new CTsStream(&hr, this, L"AAC Source!");
-//	if(*phr == S_OK) {
-//		if(*phr == S_OK) {
-//			m_pQ2nbuff = (unsigned char *)CoTaskMemAlloc(MAX_DEMUX_BUFF);
-//			m_pDemux = new CQbox2Nalu(m_pQ2nbuff, MAX_DEMUX_BUFF);
-//		}
-//	}
-	// TODO: Prepare mDataSrcAudio
 	mDataLocatorAudio.locatorType = XA_DATALOCATOR_ADDRESS;
 	if(pStrmConn) {
 		mDataLocatorAudio.pAddress = pStrmConn;

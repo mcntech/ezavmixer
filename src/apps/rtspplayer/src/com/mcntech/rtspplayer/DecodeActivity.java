@@ -41,7 +41,7 @@ import com.android.grafika.gles.WindowSurface;
 public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 	
 	public final String LOG_TAG = "rtsp";
-	String                        mUrl = "rtsp://10.0.0.20:8554/v01";                   
+	String                        mUrl;                   
 	private PlayerThread          mVidPlayer = null;
 	RemoteNodeHandler             mNodeHandler;
 	Handler                       mHandler;
@@ -112,6 +112,8 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 		boolean isSystemApp = (getApplicationInfo().flags
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;	
 		Configure.loadSavedPreferences(this, isSystemApp);
+		mUrl = Configure.mRtspUrl1;
+		
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
 		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
 		if(mfAvcUHdSupported) {

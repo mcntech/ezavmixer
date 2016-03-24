@@ -27,6 +27,7 @@ public class Settings extends Activity implements OnItemSelectedListener {
 	CheckBox mEnAutoStartCheckBox;
 	CheckBox mEnLogoCheckBox;
 	CheckBox mEnStatsCheckBox;
+	EditText mRtspUrl1;
 	/*EditText mAudDealy;*/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,6 +94,10 @@ public class Settings extends Activity implements OnItemSelectedListener {
         mAudDealy.setText(String.valueOf(Configure.mAudioDelay));
         mAudDealy.setOnEditorActionListener( new DoneOnEditorActionListener());
 */        
+        mRtspUrl1 = (EditText) findViewById(R.id.editRtspUrl1);
+        mRtspUrl1.setText(String.valueOf(Configure.mRtspUrl1));
+        mRtspUrl1.setOnEditorActionListener( new DoneOnEditorActionListener());
+        
      }
 
      class DoneOnEditorActionListener implements OnEditorActionListener {
@@ -111,6 +116,23 @@ public class Settings extends Activity implements OnItemSelectedListener {
 				return false;
 			}
      }    
+     class DoneOnEditorUrlListener implements OnEditorActionListener {
+			@Override
+			public boolean onEditorAction(TextView v, int actionId,
+					KeyEvent event) {
+               if (actionId == EditorInfo.IME_ACTION_DONE) {
+                   InputMethodManager imm = (InputMethodManager)v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                   imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+            	   if(v.getText().length() > 0) {
+            		   Configure.mRtspUrl1 = v.getText().toString();
+            		   Configure.savePreferences(getApplicationContext(), Configure.KEY_RTSP_URL_1, Configure.mRtspUrl1);
+            	   }
+                   return true;
+               }
+				return false;
+			}
+     }    
+     
 	public void selfRestart(View v) {
 		System.exit(2);
 	}

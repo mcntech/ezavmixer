@@ -67,7 +67,9 @@ int CRtspClntBridge::StartClient(const char *lpszRspServer)
 		nResult = -1;
 		goto EXIT;
 	}
+	JDBG_LOG(CJdDbg::LVL_ERR, ("Open successful codecs aud=%d vid=%d", m_nAudCodec, m_nVidCodec));
 	if (m_nVidCodec ==  RTP_CODEC_MP2T) {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Setup:RTP_CODEC_MP2T"));
 		m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
 		//CreateTsOutputPin();
 	} else {
@@ -81,12 +83,16 @@ int CRtspClntBridge::StartClient(const char *lpszRspServer)
 				}
 			}
 
+			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_H264"));
 			m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
 			CreateH264OutputPin();
 		}
 		if(m_nAudCodec == RTP_CODEC_AAC) {
+			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_AAC"));
+			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
 			CreateMP4AOutputPin();
 		} else if(m_nAudCodec == RTP_CODEC_PCMU) {
+			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_PCMU"));
 			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
 			CreatePCMUOutputPin();
 		}

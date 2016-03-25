@@ -40,7 +40,7 @@ import com.mcntech.rtspplayer.Settings;
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.WindowSurface;
 
-public class MultiStreamDecodeActivity extends Activity  {
+public class MultiPlayerActivity extends Activity  {
 	
 	public final String LOG_TAG = "rtsp";
 	List<DecodeCtx>               mListDecCtx;                   

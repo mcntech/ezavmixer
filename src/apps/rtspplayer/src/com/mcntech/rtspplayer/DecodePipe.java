@@ -47,7 +47,7 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 	String                        mUrl;                   
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler;
-	TextureView                   mTextureView = null;
+	TextureView                   mVideoTexView = null;
 	Surface                       mVideoSurface = null;
 	
 	ByteBuffer                    mBuff;
@@ -98,13 +98,13 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
     LinearLayout                     mStatsLayout;
 
     
-	public DecodePipe(Activity activity, String url) {
+	public DecodePipe(Activity activity, String url, TextureView textureView) {
 
 		mHandler = new LocalHandler();
-		
+		mVideoTexView = textureView;
 		Context context = activity.getApplicationContext();
 		Configure.loadSavedPreferences(context, false);
-		mUrl = Configure.mRtspUrl1;
+		mUrl = url;//Configure.mRtspUrl1;
 		
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
 		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
@@ -113,6 +113,7 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 			mMaxVidHeight = 2160;
 		}
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
+		mVideoTexView.setSurfaceTextureListener(this);
 	}
 
 	private class LocalHandler extends Handler {	

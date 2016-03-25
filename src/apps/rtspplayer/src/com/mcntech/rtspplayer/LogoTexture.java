@@ -23,6 +23,7 @@ import android.view.TextureView;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.WindowSurface;
+import com.mcntech.rtspplyer.R;
 
 public class LogoTexture  implements TextureView.SurfaceTextureListener {
     private Bitmap bmp;

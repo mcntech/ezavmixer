@@ -62,41 +62,11 @@ public class MultiPlayerActivity extends Activity  {
 
 		//mHandler = new LocalHandler();
 		Configure.loadSavedPreferences(this, false);
-		setContentView(R.layout.player);
-			mOverlaySv = (SurfaceView) findViewById(R.id.overlay_surface);
-			mOverlaySv.setZOrderMediaOverlay(true);
-			mOverlaySv.getHolder().setFormat(PixelFormat.TRANSLUCENT);
-			mOverlay =  new Overlay(this.getApplicationContext(), mOverlaySv);
-			mOverlaySv.setOnClickListener(new View.OnClickListener() {					
-				@Override
-				public void onClick(View v) {
-					doSettings();
-				}
-			});
+		setContentView(R.layout.activity_multi_player);
 		mStatsLayout = (LinearLayout)findViewById(R.id.stats_layout);
-		
-		
-		if(Configure.mEnableStats) {
-			mStatsOverlay =  new StatsOverlay(this);
-		} else {
-			mStatsLayout.setVisibility(4);
-		}
-				
-		mVideoSurfaceHolder = mVideoSv.getHolder();
-		mVideoSurfaceHolder.addCallback(this);
-		
-		if(mUseStaticLayout) {			
-			// Do nothing
-		} else {
-			setContentView(mVideoSv);
-		}
-		
-		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
-
-		boolean retry = true;//blocking
-
-		//DeviceController.initialize(instance,retry, role, mAudFramesPerPeriod, mAudNumPeriods, mAudDelayUs);
-		
+		TextureView mTextureView1 = (TextureView)findViewById(R.id.multi_player_surface1);
+		String url = Configure.mRtspUrl1;
+		DecodePipe decPipe1 = new DecodePipe(this, url, mTextureView1);
 		mNodeHandler = new RemoteNodeHandler(){
 
 			@Override
@@ -158,11 +128,7 @@ public class MultiPlayerActivity extends Activity  {
 	
    @Override
     protected void onPause() {
-	   super.onPause();
-	   if(Configure.mEnableLogo && mOverlay != null)
-		   mOverlay.onPause();
-	   if(Configure.mEnableStats && mStatsOverlay != null)
-		   mStatsOverlay.onPause();	   
+
    }
   
    void doSettings(){
@@ -170,25 +136,4 @@ public class MultiPlayerActivity extends Activity  {
        startActivity(intent);
    }
 
-
-@Override
-public void surfaceCreated(SurfaceHolder holder) {
-	// TODO Auto-generated method stub
-	
-}
-
-
-@Override
-public void surfaceChanged(SurfaceHolder holder, int format, int width,
-		int height) {
-	// TODO Auto-generated method stub
-	
-}
-
-
-@Override
-public void surfaceDestroyed(SurfaceHolder holder) {
-	// TODO Auto-generated method stub
-	
-}
 }

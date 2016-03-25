@@ -206,4 +206,7 @@ public class OnyxPlayerApi {
 	public native static int getAudCodecType(long handle, String inputId);	
 	public native static int getNumAvailVideoFrames(long handle, String inputId);
 	public native static int getNumAvailAudioFrames(long handle, String inputId);
+	
+	public native static int onvifDiscvrStart(long handle);
+	public native static int onvifDiscvrStop(long handle);	
 }

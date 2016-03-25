@@ -67,6 +67,14 @@ public class MultiPlayerActivity extends Activity  {
 		TextureView mTextureView1 = (TextureView)findViewById(R.id.multi_player_surface1);
 		String url = Configure.mRtspUrl1;
 		DecodePipe decPipe1 = new DecodePipe(this, url, mTextureView1);
+		
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				OnyxPlayerApi.onvifDiscvrStart(0);
+			}
+		}).start();
+		
 		mNodeHandler = new RemoteNodeHandler(){
 
 			@Override

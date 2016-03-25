@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <android/log.h>
 #include "JdDbg.h"
+#include "Onvif.h"
 
 JavaVM* g_vm;
 jobject g_jniGlobalSelf = NULL;

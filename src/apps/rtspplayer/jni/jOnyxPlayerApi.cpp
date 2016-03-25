@@ -4,6 +4,7 @@
 #include "RtspMultiPlayer.h"
 #include "jOnyxPlayerEvents.h"
 #include "JdDbg.h"
+#include "Onvif.h"
 
 static int  modDbgLevel = CJdDbg::LVL_TRACE;
 
@@ -219,4 +220,37 @@ jlong Java_com_mcntech_rtspplayer_OnyxPlayerApi_getNumAvailAudioFrames(JNIEnv *e
 	env->ReleaseStringUTFChars(jurl, szUrl);
 	return pts;
 }
+
+void onvifCallback(ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response) {
+
+	u_int16_t loop;
+	if ((discovery_response.no_of_camera_found > 0)
+			&& (discovery_response.discovery_result != NULL)) {
+		JDBG_LOG(CJdDbg::LVL_TRACE,("[%d] ONVIF IP Camera found in network\n", discovery_response.no_of_camera_found));
+
+		for (loop = 0; loop < discovery_response.no_of_camera_found; loop++) {
+			JDBG_LOG(CJdDbg::LVL_TRACE, ("ONVIF IP Camera Found at [%s]\n",
+					discovery_response.discovery_result[loop].ip_addr));
+		}
+	} else {
+		JDBG_LOG(CJdDbg::LVL_TRACE, ("No ONVIF IP Camera found in network\n"));
+	}
+}
+
+int Java_com_mcntech_rtspplayer_OnyxPlayerApi_onvifDiscvrStart(JNIEnv *env, jobject self, jlong ctx) {
+
+	ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request;
+
+	discovery_request.callback = onvifCallback;
+	discovery_request.user_data = NULL;
+	ONVIF_Device_Discover(discovery_request);
+
+	return 0;
+}
+
+void Java_com_mcntech_rtspplayer_OnyxPlayerApi_onvifDiscvrStop(JNIEnv *env, jobject self, jlong ctx) {
+
+}
+
+
 }//end extern C

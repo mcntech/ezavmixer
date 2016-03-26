@@ -71,11 +71,11 @@ bool COnyxPlayerEvents::onRtspServerStatus(const char *szUrl, int nState, int nS
 			env->CallStaticVoidMethod(onyxApi, callback, jPublishId, nState, nStrmInTime, nStrmOutTime,  nLostBufferTime);
 			env->DeleteLocalRef(jPublishId);
 		} else {
-			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onMpdPublishStatus on com/mcntech/ezscreencast/OnyxApi"));
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onMpdPublishStatus on com/mcntech/rtspplayer/OnyxPlayerApi"));
 		}
 
 	} else {
-		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find com/mcntech/ezscreencast/OnyxApi"));
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find com/mcntech/rtspplayer/OnyxPlayerApi"));
 	}
 	safeDetach();
 	return true;
@@ -86,12 +86,18 @@ bool COnyxPlayerEvents::onDiscoverRemoteNode(char *url)
 	JNIEnv* env;
 	safeAttach(&env);//must always call safeDetach() before returning
 	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
-	jstring jurl = env->NewStringUTF(url);
-
-	jmethodID callback = env->GetStaticMethodID(onyxApi, "onDiscoverRemoteNode", "(Ljava/lang/Object;)V");
-	env->CallStaticVoidMethod(onyxApi, callback, jurl);
-	env->DeleteLocalRef(jurl);
-
+	if(onyxApi != NULL) {
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onDiscoverRemoteNode", "(Ljava/lang/String;)V");
+		if(callback != NULL) {
+			jstring jurl = env->NewStringUTF(url);
+			env->CallStaticVoidMethod(onyxApi, callback, jurl);
+			env->DeleteLocalRef(jurl);
+		}else {
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onDiscoverRemoteNode on com/mcntech/rtspplayer/OnyxPlayerApi"));
+		}
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find com/mcntech/rtspplayer/OnyxPlayerApi"));
+	}
 
 	safeDetach();
 	return true;

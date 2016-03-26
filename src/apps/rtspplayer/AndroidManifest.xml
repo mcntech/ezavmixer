@@ -27,6 +27,17 @@
 		        	<action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
 		    </intent-filter>
 		</receiver> 
+            
+        <activity
+            android:name="com.mcntech.rtspplayer.MainActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+   
 <!--             
         <activity
             android:name="com.mcntech.rtspplayer.DecodeActivity"
@@ -38,14 +49,11 @@
             </intent-filter>
         </activity>
  -->        
+       
         <activity
             android:name="com.mcntech.rtspplayer.MultiPlayerActivity"
             android:label="@string/app_name"
             android:screenOrientation="landscape" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
                 
        <activity

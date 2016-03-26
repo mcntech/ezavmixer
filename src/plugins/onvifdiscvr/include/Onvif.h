@@ -47,4 +47,7 @@ typedef struct {
  */
 int ONVIF_Device_Discover(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request);
 
+int onvifdicvrStart(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request);
+int onvifdicvrSop();
+
 #endif /* ONVIF_H_ */

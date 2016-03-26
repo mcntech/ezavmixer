@@ -3,43 +3,26 @@ package com.mcntech.rtspplayer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.json.JSONException;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
-import android.media.AudioManager;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
 import android.media.MediaCodecInfo;
 
 import android.media.MediaFormat;
-import android.opengl.GLES20;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.TextureView;
-import android.view.View;
-import android.view.MotionEvent;
-import android.view.View.MeasureSpec;
 import android.widget.LinearLayout;
 
-import com.mcntech.rtspplyer.R;
+
 import com.mcntech.rtspplayer.Configure;
 import com.mcntech.rtspplayer.OnyxPlayerApi;
-import com.mcntech.rtspplayer.OnyxPlayerApi.RemoteNodeHandler;
-import com.mcntech.rtspplayer.Settings;
 
-import com.android.grafika.gles.EglCore;
-import com.android.grafika.gles.WindowSurface;
 
 public class DecodePipe  implements TextureView.SurfaceTextureListener {
 	
@@ -54,12 +37,6 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 	long                          mPts;
 	public static int             mFramesInBuff = 0;
 	public static int             mFramesRendered = 0;
-	// Audio Parameters
-    static final int          SAMPLE_RATE = 44100;
-    static final int          SAMPLE_INTERVAL = 20; // milliseconds
-    static final int          SAMPLE_SIZE = 2; // bytes per sample
-    static final int          BUF_SIZE = SAMPLE_INTERVAL*SAMPLE_INTERVAL*SAMPLE_SIZE*2;
-    static final int          MIN_AUDIO_FRAMES_PER_PERIOD = 256;// Using 256 to make it align with wavepack frame setting for live mode
 
 	//Video Parameters
 	int                              maxBuffSize = (4 * 1024 * 1024);
@@ -67,7 +44,7 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 	final long                       MAX_VIDEO_SYNC_THRESHOLD_US = 10000000;
 	final long                       MAX_AUDIO_SYNC_THRESHOLD_US = 10000000;
 	
-    private final boolean            mUseStaticLayout = true;
+
     private boolean                  mfPlaying = false;
     
     final int                        PLAYER_CMD_RUN = 1;
@@ -78,40 +55,30 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
     private final Object             mPlayLock = new Object();
     private boolean                  mExitPlayerLoop = false;
     private int                      mCodecType = 1;
-    int                              mMaxVidWidth =  3840;
-    int                              mMaxVidHeight = 2160;
+    int                              mMaxVidWidth =  1920;
+    int                              mMaxVidHeight = 1080;
     int                              currentapiVersion = android.os.Build.VERSION.SDK_INT;
 
     private boolean                  mfSendCsd0DuringInit = false;
     private boolean                  mfAvcUHdSupported = false;
-    private boolean                  mfHevcSupported = false;
-    private boolean                  mAudioLowLatency = false;
-    private int                      mAudioSampleRate = 44100;
-    private int                      mAudFramesPerPeriod = 1024;
-    private int                      mAudNumPeriods = 3;
-    private int                      mVideoDelay = 0; // micro secs
-    private int                      mAudDelayUs = 0;
-    private int                      mDispWidth = 0;
-    private int                      mDispHeight = 0;
-    private boolean                  mEnableRuiTouch = true;
-    int                              mRole = 9;
     LinearLayout                     mStatsLayout;
-
+    boolean mfHevcSupported = false;
     
-	public DecodePipe(Activity activity, String url, TextureView textureView) {
+	public DecodePipe(Activity activity, String url, TextureView textureView, int maxVidWidth, int maxVidHeight) {
 
 		mHandler = new LocalHandler();
 		mVideoTexView = textureView;
 		Context context = activity.getApplicationContext();
 		Configure.loadSavedPreferences(context, false);
 		mUrl = url;//Configure.mRtspUrl1;
-		
+		mMaxVidWidth = maxVidWidth;
+		mMaxVidHeight = maxVidHeight;
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
 		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
-		if(mfAvcUHdSupported) {
+/*		if(mfAvcUHdSupported) {
 			mMaxVidWidth = 3840;
 			mMaxVidHeight = 2160;
-		}
+		}*/
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mVideoTexView.setSurfaceTextureListener(this);
 	}
@@ -139,7 +106,7 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						OnyxPlayerApi.initialize();
+						//OnyxPlayerApi.initialize();
 						OnyxPlayerApi.addServer(mUrl);
 		 				mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
 					}
@@ -395,7 +362,7 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 						if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
 							Log.d(LOG_TAG, "FreeRun ");
 						} else {
-							while ((info.presentationTimeUs + 2 * mVideoDelay > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
+							while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
 								try {
 									sleep(10);
 								} catch (InterruptedException e) {
@@ -473,10 +440,7 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 
 	@Override
 	public void onSurfaceTextureAvailable(SurfaceTexture surface, int width,
-			int height) {
-	 	mDispWidth = width;
-	 	mDispHeight = height;		
-	 	
+			int height) {	 	
 		mVideoSurface = new Surface(surface);
 		mHandler.sendEmptyMessage(PLAYER_CMD_INIT);	 	
 	}

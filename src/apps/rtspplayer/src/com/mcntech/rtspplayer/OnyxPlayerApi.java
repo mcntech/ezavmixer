@@ -28,6 +28,7 @@ public class OnyxPlayerApi {
 	private static long mHandle = 0;
 	private static OnyxPlayerApi mSelf = null;
 	private static RemoteNodeHandler m_nodeHandler = null;
+	private static ArrayList<String> mActiveRemoteNodes = new ArrayList<String>();
 	
 	private OnyxPlayerApi() {
 
@@ -74,8 +75,13 @@ public class OnyxPlayerApi {
 
 	public static void onDiscoverRemoteNode(final String url ) 
 	{		
-		if(m_nodeHandler != null)
+		if(m_nodeHandler != null) {
+			Log.d("OnyxPlayerApi", "onDiscoverRemoteNode:" + url);
 			m_nodeHandler.onDiscoverRemoteNode(url);
+			if(!mActiveRemoteNodes.contains(url)) {
+				mActiveRemoteNodes.add(url);
+			}
+		}
 	}
 
 	public static void onConnectRemoteNode(final String url ) 

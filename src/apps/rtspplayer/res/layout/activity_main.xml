@@ -13,7 +13,7 @@
         android:orientation="vertical" >
 
 	
-	    	<TextView android:layout_width="100dp"
+	    	<TextView android:layout_width="400dp"
 	    		android:layout_height="wrap_content"
 	    		android:layout_gravity="center"
 	    		 android:background="#DCDCDC"
@@ -21,91 +21,83 @@
 	    		android:layout_marginBottom="20dp"
 	    		android:layout_marginTop="10dp" 
 	    		android:gravity="center"
-	    		android:text="@string/options" 
+	    		android:text="ONVIF Cameras" 
 	    		android:textStyle="bold"
 	    		android:textSize="20sp" />
 	   
 
-	    <CheckBox
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:id="@+id/enable_audio"
-	        android:text="@string/enable_audio" 
-	         android:padding="15dp"
-	         android:paddingTop="25dp"
-	         android:textColor="#FFFFFF"
-	         android:textSize="20sp"
-	         android:textStyle="bold" 
-	        android:checked="true" />
-	   
-	   
-	   <CheckBox
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:text="@string/enable_auto_start" 
-	        android:layout_gravity ="right"
-	         android:padding="15dp"
-	         android:paddingTop="25dp"
-	         android:textColor="#FFFFFF"
-	         android:textSize="20sp"
-	         android:textStyle="bold" 
-	        android:checked="true" 
-	        android:id="@+id/enable_auto_start" /> 
 
-<!-- 	   <CheckBox
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:text="@string/enable_logo" 
-	        android:layout_gravity ="right"
-	        android:checked="true" 
-	        android:id="@+id/enable_logo" /> 
--->
+   
 
-	   <CheckBox
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:text="Stats" 
-	        android:layout_gravity ="right"
-	        android:paddingTop="25dp"
-	         android:padding="15dp"
-	         android:textColor="#FFFFFF"
-	         android:textSize="20sp"
-	         android:textStyle="bold" 
-	        android:checked="true" 
-	        android:id="@+id/enable_stats" />
-
-		<TextView
-	       android:id="@+id/textAudDelay"
-	       android:layout_width="wrap_content"
-	       android:layout_height="wrap_content"
-	       android:text="RTSP URL"
-	       android:paddingTop="25sp"
-	       android:paddingBottom="5dp"
-	         android:textColor="#FFFFFF"
-	         android:textStyle="bold" 
-	       android:textAppearance="?android:attr/textAppearanceMedium" />
-
-	   <EditText
-	       android:id="@+id/editRtspUrl1"
-	       android:layout_width="wrap_content"
-	       android:layout_height="wrap_content"
-	       android:ems="10" >
-
-	       <requestFocus />
-	   </EditText>
-
-	   <Button
-	       android:id="@+id/restart"
-	       android:layout_width="100dp"
+	   <ListView  android:id="@+id/listRemoteNodes"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp" >
+	  </ListView>
+	
+	   	   <Button
+	       android:id="@+id/singlestream"
+	       android:layout_width="400dp"
 	       android:layout_height="wrap_content"
 	       android:layout_marginTop="30dip"
-	       android:onClick="selfRestart"
-	       android:text="Start"
+	       android:onClick="start_1_1"
+	       android:text="Start Single Stream"
 	       android:textColor="#000000"
 	       android:textSize="20sp"
 	       android:layout_gravity="center_horizontal"
 	       android:textStyle="bold" />
-   
-	   </LinearLayout>  
+	   
+	   	   	   <Button
+	       android:id="@+id/multi_2_2"
+	       android:layout_width="400dp"
+	       android:layout_height="wrap_content"
+	       android:layout_marginTop="30dip"
+	       android:onClick="start_2_2"
+	       android:text="Start Multi (2x2)"
+	       android:textColor="#000000"
+	       android:textSize="20sp"
+	       android:layout_gravity="center_horizontal"
+	       android:textStyle="bold" />
+	   	   
+	   	   	   	   <Button
+	       android:id="@+id/multi_3_3"
+	       android:layout_width="400dp"
+	       android:layout_height="wrap_content"
+	       android:layout_marginTop="30dip"
+	       android:onClick="start_3_3"
+	       android:text="Start Multi (3 x 3)"
+	       android:textColor="#000000"
+	       android:textSize="20sp"
+	       android:layout_gravity="center_horizontal"
+	       android:textStyle="bold" />
+	   	   	   
+
+	   	   	   	      	   	   	   <Button
+	       android:id="@+id/multi_4_4"
+	       android:layout_width="400dp"
+	       android:layout_height="wrap_content"
+	       android:layout_marginTop="30dip"
+	       android:onClick="start_4_4"
+	       android:text="Start Multi (4 x 4)"
+	       android:textColor="#000000"
+	       android:textSize="20sp"
+	       android:layout_gravity="center_horizontal"
+	       android:textStyle="bold" />
+
+	   	   	   	      	   	   	      	   	   	      	   	   	   <Button
+	       android:id="@+id/multi_8_8"
+	       android:layout_width="400dp"
+	       android:layout_height="wrap_content"
+	       android:layout_marginTop="30dip"
+	       android:onClick="start_8_8"
+	       android:text="Start Multi (8 x 8)"
+	       android:textColor="#000000"
+	       android:textSize="20sp"
+	       android:layout_gravity="center_horizontal"
+	       android:textStyle="bold" />
+	   	   	   	      	   	   	      	   	   	      	   	   	   	   	   	   	      	   	   	   	   
+	   </LinearLayout>  	       
+
 	 </ScrollView>
 </LinearLayout>

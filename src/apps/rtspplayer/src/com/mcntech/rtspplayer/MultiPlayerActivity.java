@@ -54,24 +54,60 @@ public class MultiPlayerActivity extends Activity  {
 	    boolean                   mVisible;
 	}
 
-    LinearLayout                     mStatsLayout;
+    //LinearLayout                     mStatsLayout;
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		Bundle b = getIntent().getExtras();
+		int value = b.getInt("windows");
+		String[] urls = b.getStringArray("urls");
+		
 		//mHandler = new LocalHandler();
 		Configure.loadSavedPreferences(this, false);
-		setContentView(R.layout.activity_multi_player);
-		mStatsLayout = (LinearLayout)findViewById(R.id.stats_layout);
-		TextureView mTextureView1 = (TextureView)findViewById(R.id.multi_player_surface1);
-		String url = Configure.mRtspUrl1;
-		DecodePipe decPipe1 = new DecodePipe(this, url, mTextureView1);
+		switch(value) {
+			case 1:
+			{
+				setContentView(R.layout.activity_multi_player_1_1);
+				TextureView mTextureView1 = (TextureView)findViewById(R.id.multi_player_surface1);
+				DecodePipe decPipe1 = new DecodePipe(this, urls[0], mTextureView1, 3840, 2160);		
+			}
+				break;
+			case 4:
+			{
+				setContentView(R.layout.activity_multi_player_2_2);
+				TextureView textureView1 = (TextureView)findViewById(R.id.multi_player_surface_2_2_1);
+				TextureView textureView2 = (TextureView)findViewById(R.id.multi_player_surface_2_2_2);
+				TextureView textureView3 = (TextureView)findViewById(R.id.multi_player_surface_2_2_3);
+				TextureView textureView4 = (TextureView)findViewById(R.id.multi_player_surface_2_2_4);
+				DecodePipe decPipe1 = new DecodePipe(this, urls[0], textureView1, 1920, 1080);
+				DecodePipe decPipe2 = new DecodePipe(this, urls[1], textureView2, 1920, 1080);
+				DecodePipe decPipe3 = new DecodePipe(this, urls[2], textureView3, 1920, 1080);
+				DecodePipe decPipe4 = new DecodePipe(this, urls[3], textureView4, 1920, 1080);
+			}
+				break;
+	
+			case 9:
+				setContentView(R.layout.activity_multi_player_3_3);
+				break;
+	
+			case 16:
+				setContentView(R.layout.activity_multi_player_4_4);
+				break;
+	
+			case 64:
+				setContentView(R.layout.activity_multi_player_8_8);
+				break;
+		}
+		//mStatsLayout = (LinearLayout)findViewById(R.id.stats_layout);
+
 		
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				OnyxPlayerApi.onvifDiscvrStart(0);
+				//OnyxPlayerApi.initialize();
+				//OnyxPlayerApi.onvifDiscvrStart(0);
 			}
 		}).start();
 		
@@ -146,9 +182,6 @@ public class MultiPlayerActivity extends Activity  {
 
    }
   
-   void doSettings(){
-       Intent intent = new Intent(this, Settings.class);
-       startActivity(intent);
-   }
-
+ 
+   
 }

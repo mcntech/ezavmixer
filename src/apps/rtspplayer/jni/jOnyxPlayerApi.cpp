@@ -249,8 +249,8 @@ void onvifCallback(ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response) {
 	u_int16_t loop;
 	if ((discovery_response.no_of_camera_found > 0)
 			&& (discovery_response.discovery_result != NULL)) {
-		JDBG_LOG(CJdDbg::LVL_TRACE,("[%d] ONVIF IP Camera found in network\n", discovery_response.no_of_camera_found));
-		std::tring host = discovery_response.discovery_result[0].ip_addr;
+
+		char *host = discovery_response.discovery_result[0].ip_addr;
 		JDBG_LOG(CJdDbg::LVL_TRACE, ("ONVIF IP Camera Found at [%s]\n",
 			discovery_response.discovery_result[0].ip_addr));
 		// Callback Java
@@ -281,7 +281,7 @@ int Java_com_mcntech_rtspplayer_OnyxPlayerApi_onvifDiscvrStart(JNIEnv *env, jobj
 	g_discovery_request.callback = onvifCallback;
 	g_discovery_request.user_data = NULL;
 	//ONVIF_Device_Discover(discovery_request);
-	onvifdicvrStart(discovery_request);
+	onvifdicvrStart(g_discovery_request);
 	return 0;
 }
 

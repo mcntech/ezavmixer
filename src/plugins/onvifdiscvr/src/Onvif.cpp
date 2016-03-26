@@ -313,7 +313,7 @@ static void parse_discovry_response_single(
 	char * searchPtr = NULL;
 	char * endPtr = NULL;
 	uint16_t loop = 0;
-	ONVIF_DEVICE_DISCOVERY_RESULT_t  node = *discovery_result;
+	ONVIF_DEVICE_DISCOVERY_RESULT_t  *node = discovery_result;
 
 	// Get Position of XAddrs in which entry point is given
 	if ((searchPtr = strcasestr(recv_msg, ONVIF_ENTRY_POINT_TAG)) != NULL) {
@@ -328,13 +328,12 @@ static void parse_discovry_response_single(
 					endPtr++;
 
 				if ((endPtr - searchPtr) < MAX_IP_ADDRESS_WIDTH) {
-
 						if (node != NULL) {
-							strncpy(head_node->ip_addr, searchPtr, (endPtr - searchPtr));
+							strncpy(node->ip_addr, searchPtr, (endPtr - searchPtr));
 							node->ip_addr[(endPtr - searchPtr)] = '\0';
 
 							// Try to parse HTTP Port
-							if (sscanf((endPtr + 1), "%hd", &head_node->port) != 1) {
+							if (sscanf((endPtr + 1), "%hd", &node->port) != 1) {
 								// Set to Default if in case camera don't provide it
 								node->port = 80;
 							}
@@ -347,7 +346,7 @@ static void parse_discovry_response_single(
 
 int m_fRun = 0;
 
-int onvifdicvrThread(void *pArg) {
+void *onvifdicvrThread(void *pArg) {
 	struct sockaddr_in sock_addr;
 	short conn_fd;
 	fd_set readFd;
@@ -358,7 +357,7 @@ int onvifdicvrThread(void *pArg) {
 	int length;
 	uint randNo = 0;
 
-	ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request  = *(ONVIF_DEVICE_DISCOVERY_REQ_t *)pArg;
+	ONVIF_DEVICE_DISCOVERY_REQ_t *discovery_request  = (ONVIF_DEVICE_DISCOVERY_REQ_t *)pArg;
 
 	ONVIF_DEVICE_DISCOVERY_RESULT_t *discovery_result = NULL;
 	u_int16_t no_of_camera_found = 0;
@@ -448,11 +447,11 @@ int onvifdicvrThread(void *pArg) {
 
 								ONVIF_DEVICE_DISCOVERY_RESULT_t discovery_result;
 								parse_discovry_response_single(buffer, &discovery_result);
-								if (discovery_request.callback != NULL) {
-									discovery_response.discovery_result = discovery_result;
+								if (discovery_request->callback != NULL) {
+									discovery_response.discovery_result = &discovery_result;
 									discovery_response.no_of_camera_found = 1;
-									discovery_response.user_data = discovery_request.user_data;
-									discovery_request.callback(discovery_response);
+									discovery_response.user_data = discovery_request->user_data;
+									discovery_request->callback(discovery_response);
 								}
 							} else {
 								printf("Failed to read\n");
@@ -479,7 +478,7 @@ int onvifdicvrThread(void *pArg) {
 	return 0;
 }
 
-ONVIF_DEVICE_DISCOVERY_REQ_t g_discovery_request;
+static ONVIF_DEVICE_DISCOVERY_REQ_t g_discovery_request;
 #ifdef WIN32
 	HANDLE              m_thrdHandleOnvif;
 #else
@@ -488,7 +487,7 @@ ONVIF_DEVICE_DISCOVERY_REQ_t g_discovery_request;
 
 int onvifdicvrStart(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request) {
 	g_discovery_request = discovery_request;
-	jdoalThreadCreate((void **)&m_thrdHandleOnvif, onvifdicvrThread, &g_discovery_request);
+	jdoalThreadCreate((void **)&m_thrdHandleOnvif, onvifdicvrThread, (void *)&g_discovery_request);
 }
 
 int onvifdicvrSop() {
@@ -497,5 +496,4 @@ int onvifdicvrSop() {
 		jdoalThreadJoin((void *)m_thrdHandleOnvif, 3000);
 	}
 
-}
 }

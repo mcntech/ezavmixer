@@ -115,6 +115,13 @@ public class MultiPlayerActivity extends Activity  {
 				// TODO Auto-generated method stub
 				
 			}
+
+			@Override
+			public void onDiscoverRemoteNode(String url) {
+				// TODO Auto-generated method stub
+				Log.d(LOG_TAG, "transition:onStartPlay");
+				
+			}
 	 	}; 
 	 	
 	 	OnyxPlayerApi.setDeviceHandler(mNodeHandler);

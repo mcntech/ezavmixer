@@ -221,6 +221,12 @@ jlong Java_com_mcntech_rtspplayer_OnyxPlayerApi_getNumAvailAudioFrames(JNIEnv *e
 	return pts;
 }
 
+//=====================================================================================================================
+
+ONVIF_DEVICE_DISCOVERY_REQ_t g_discovery_request;
+
+/*
+
 void onvifCallback(ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response) {
 
 	u_int16_t loop;
@@ -236,7 +242,27 @@ void onvifCallback(ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response) {
 		JDBG_LOG(CJdDbg::LVL_TRACE, ("No ONVIF IP Camera found in network\n"));
 	}
 }
+*/
 
+void onvifCallback(ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response) {
+
+	u_int16_t loop;
+	if ((discovery_response.no_of_camera_found > 0)
+			&& (discovery_response.discovery_result != NULL)) {
+		JDBG_LOG(CJdDbg::LVL_TRACE,("[%d] ONVIF IP Camera found in network\n", discovery_response.no_of_camera_found));
+		std::tring host = discovery_response.discovery_result[0].ip_addr;
+		JDBG_LOG(CJdDbg::LVL_TRACE, ("ONVIF IP Camera Found at [%s]\n",
+			discovery_response.discovery_result[0].ip_addr));
+		// Callback Java
+		if(g_pEventHandler) {
+			g_pEventHandler->onDiscoverRemoteNode(host);
+		}
+	} else {
+		JDBG_LOG(CJdDbg::LVL_TRACE, ("No ONVIF IP Camera found in network\n"));
+	}
+}
+
+/*
 int Java_com_mcntech_rtspplayer_OnyxPlayerApi_onvifDiscvrStart(JNIEnv *env, jobject self, jlong ctx) {
 
 	ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request;
@@ -245,6 +271,17 @@ int Java_com_mcntech_rtspplayer_OnyxPlayerApi_onvifDiscvrStart(JNIEnv *env, jobj
 	discovery_request.user_data = NULL;
 	ONVIF_Device_Discover(discovery_request);
 
+	return 0;
+}
+*/
+
+int Java_com_mcntech_rtspplayer_OnyxPlayerApi_onvifDiscvrStart(JNIEnv *env, jobject self, jlong ctx) {
+
+
+	g_discovery_request.callback = onvifCallback;
+	g_discovery_request.user_data = NULL;
+	//ONVIF_Device_Discover(discovery_request);
+	onvifdicvrStart(discovery_request);
 	return 0;
 }
 

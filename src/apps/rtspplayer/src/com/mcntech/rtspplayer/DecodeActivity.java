@@ -240,6 +240,12 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 				// TODO Auto-generated method stub
 				
 			}
+
+			@Override
+			public void onDiscoverRemoteNode(String url) {
+				// TODO Auto-generated method stub
+				
+			}
 	 	}; 
 	 	
 	 	View.OnTouchListener  onTouchListner = new View.OnTouchListener() {

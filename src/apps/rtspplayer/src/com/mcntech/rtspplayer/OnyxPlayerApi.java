@@ -17,6 +17,7 @@ import android.widget.TabHost;
 public class OnyxPlayerApi {	
 	
 	public interface RemoteNodeHandler {
+		void onDiscoverRemoteNode(String url);
 		void onConnectRemoteNode(String url);
 		void onDisconnectRemoteNode(String url);
 		void onStatusRemoteNode(String url, final String message);		
@@ -69,6 +70,12 @@ public class OnyxPlayerApi {
 	
 	public static void onNativeMessage(final Object title,final Object message) {		
 		System.out.println("java onNativeMessage:" + title + " message:" + message);
+	}
+
+	public static void onDiscoverRemoteNode(final String url ) 
+	{		
+		if(m_nodeHandler != null)
+			m_nodeHandler.onDiscoverRemoteNode(url);
 	}
 
 	public static void onConnectRemoteNode(final String url ) 

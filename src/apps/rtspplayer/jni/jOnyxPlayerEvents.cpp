@@ -81,6 +81,22 @@ bool COnyxPlayerEvents::onRtspServerStatus(const char *szUrl, int nState, int nS
 	return true;
 }
 
+bool COnyxPlayerEvents::onDiscoverRemoteNode(char *url)
+{
+	JNIEnv* env;
+	safeAttach(&env);//must always call safeDetach() before returning
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	jstring jurl = env->NewStringUTF(url);
+
+	jmethodID callback = env->GetStaticMethodID(onyxApi, "onDiscoverRemoteNode", "(Ljava/lang/Object;)V");
+	env->CallStaticVoidMethod(onyxApi, callback, jurl);
+	env->DeleteLocalRef(jurl);
+
+
+	safeDetach();
+	return true;
+}
+
 bool COnyxPlayerEvents::onConnectRemoteNode(char *url)
 {
 	JNIEnv* env;

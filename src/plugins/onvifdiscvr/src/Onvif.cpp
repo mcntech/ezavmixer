@@ -23,10 +23,9 @@
 #endif
 
 #include <stdlib.h>
-
 #include <ctype.h>
-
 #include "Onvif.h"
+#include "JdOsal.h"
 
 #define ONVIF_MULTICAST_ADDRESS  		"239.255.255.250"
 #define ONVIF_MULTICAST_PORT  			3702
@@ -302,4 +301,201 @@ int ONVIF_Device_Discover(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request) {
 		free(discovery_result);
 	}
 	return no_of_camera_found;
+}
+
+
+
+static void parse_discovry_response_single(
+	char                            *recv_msg,
+	ONVIF_DEVICE_DISCOVERY_RESULT_t *discovery_result
+	)
+{
+	char * searchPtr = NULL;
+	char * endPtr = NULL;
+	uint16_t loop = 0;
+	ONVIF_DEVICE_DISCOVERY_RESULT_t  node = *discovery_result;
+
+	// Get Position of XAddrs in which entry point is given
+	if ((searchPtr = strcasestr(recv_msg, ONVIF_ENTRY_POINT_TAG)) != NULL) {
+		searchPtr = (searchPtr + strlen(ONVIF_ENTRY_POINT_TAG));
+
+		if ((endPtr = strchr(searchPtr, '<')) != NULL) {
+			// Check if it is in format http://ipAdderss/RelativePath
+			if (strncmp(searchPtr, "http://", strlen("http://")) == 0) {
+				endPtr = searchPtr = (searchPtr + strlen("http://"));
+
+				while (isdigit(endPtr[0]) || (endPtr[0] == '.'))
+					endPtr++;
+
+				if ((endPtr - searchPtr) < MAX_IP_ADDRESS_WIDTH) {
+
+						if (node != NULL) {
+							strncpy(head_node->ip_addr, searchPtr, (endPtr - searchPtr));
+							node->ip_addr[(endPtr - searchPtr)] = '\0';
+
+							// Try to parse HTTP Port
+							if (sscanf((endPtr + 1), "%hd", &head_node->port) != 1) {
+								// Set to Default if in case camera don't provide it
+								node->port = 80;
+							}
+						}
+				}
+			}
+		}
+	}
+}
+
+int m_fRun = 0;
+
+int onvifdicvrThread(void *pArg) {
+	struct sockaddr_in sock_addr;
+	short conn_fd;
+	fd_set readFd;
+	short retVal;
+	int reuse = 1;
+	struct timeval time;
+	char *buffer;
+	int length;
+	uint randNo = 0;
+
+	ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request  = *(ONVIF_DEVICE_DISCOVERY_REQ_t *)pArg;
+
+	ONVIF_DEVICE_DISCOVERY_RESULT_t *discovery_result = NULL;
+	u_int16_t no_of_camera_found = 0;
+	ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response;
+	static const char *onvif_device_discovery_message =
+
+			"<?xml version='1.0' encoding='utf-8'?><soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\" "
+					"xmlns:d=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:wsadis=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\""
+					"xmlns:dn=\"http://www.onvif.org/ver10/network/wsdl\">"
+					"<soap:Header>"
+					"<wsadis:MessageID>uuid:%08x-%08x-%08x-%08x</wsadis:MessageID>"
+					"<wsadis:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsadis:To>"
+					"<wsadis:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsadis:Action>"
+					"</soap:Header>"
+					"<soap:Body>"
+					"<d:Probe>"
+					"<d:Types/><d:Scopes/>"
+					"</d:Probe>"
+					"</soap:Body>"
+					"</soap:Envelope>";
+
+	/*
+	 * Flow Of Function
+	 *
+	 *	1) Prepare Message
+	 *	2) Multicast Message
+	 *	3) Receive Responses of Devices if Time Out/ Error Occurs go to Step 7)
+	 *	4) Parse Necessary Information
+	 *	5) Store It in Search Result
+	 *	6) go to Step 3)
+	 *	7) Give callback to user with the information of Devices Found
+	 */
+
+	// Allocate temporary memory
+	buffer = (char *) malloc(MAX_MULTICAST_MESSAGE_LEN);
+
+	if (buffer != NULL) {
+		randNo = GetSeed();
+
+		// Generate Multicast Message
+		length = sprintf(buffer, onvif_device_discovery_message,
+				rand_r(&randNo), rand_r(&randNo), rand_r(&randNo),
+				rand_r(&randNo));
+
+		// create socket to multicast message
+		conn_fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+		if (conn_fd < 0) {
+			printf("Creating multicast Socket Failed ");
+		} else {
+			if (setsockopt(conn_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
+					sizeof(reuse)) < 0) {
+				printf("Setting SO_REUSEADDR error ");
+			} else {
+				sock_addr.sin_family = AF_INET;
+				sock_addr.sin_addr.s_addr = inet_addr(ONVIF_MULTICAST_ADDRESS);
+				sock_addr.sin_port = htons(ONVIF_MULTICAST_PORT);
+
+				// Multicast Discovery Message
+				if (sendto(conn_fd, buffer, length, MSG_NOSIGNAL,
+						(struct sockaddr*) &sock_addr, sizeof(sock_addr))
+						< length) {
+					printf("Sending Datagram Failed ");
+
+				} else {
+					time.tv_sec = MAX_RECEIVE_MESSAGE_TIME_OUT;
+					time.tv_usec = 0;
+
+					FD_ZERO(&readFd);
+					FD_SET(conn_fd, &readFd);
+
+					// Receive Response of Camera
+					do {
+						retVal = select(conn_fd + 1, &readFd, NULL, NULL,
+								&time);
+
+						if ((retVal > 0) && (FD_ISSET(conn_fd, &readFd))) {
+							if ((length = recv(conn_fd, buffer,
+									(MAX_MULTICAST_MESSAGE_LEN - 1),
+									MSG_NOSIGNAL)) > 0) {
+								buffer[length] = '\0';
+								// NOTE: here we can directly get IP of camera from sender address
+								// But parsing further for verification
+								// Extract Result from response
+								parse_discovry_response(buffer,
+										&discovery_result, &no_of_camera_found);
+
+								ONVIF_DEVICE_DISCOVERY_RESULT_t discovery_result;
+								parse_discovry_response_single(buffer, &discovery_result);
+								if (discovery_request.callback != NULL) {
+									discovery_response.discovery_result = discovery_result;
+									discovery_response.no_of_camera_found = 1;
+									discovery_response.user_data = discovery_request.user_data;
+									discovery_request.callback(discovery_response);
+								}
+							} else {
+								printf("Failed to read\n");
+							}
+						}
+
+						if (retVal < 0) {
+							printf("Error in message receive \n");
+						}
+
+						if (retVal <= 0) {
+//							printf("Time out occurs in message receive \n");
+						}
+					} while (retVal > 0);
+				}
+			}
+
+			close(conn_fd);
+		}
+
+		free(buffer);
+	}
+
+	return 0;
+}
+
+ONVIF_DEVICE_DISCOVERY_REQ_t g_discovery_request;
+#ifdef WIN32
+	HANDLE              m_thrdHandleOnvif;
+#else
+	pthread_t			m_thrdHandleOnvif;
+#endif
+
+int onvifdicvrStart(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request) {
+	g_discovery_request = discovery_request;
+	jdoalThreadCreate((void **)&m_thrdHandleOnvif, onvifdicvrThread, &g_discovery_request);
+}
+
+int onvifdicvrSop() {
+	m_fRun = 0;
+	if(m_thrdHandleOnvif){
+		jdoalThreadJoin((void *)m_thrdHandleOnvif, 3000);
+	}
+
+}
 }

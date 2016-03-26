@@ -16,6 +16,8 @@ public:
 	bool safeAttach(JNIEnv** env);
 	void safeDetach();
 
+ 	bool onDiscoverRemoteNode(char *host);
+
   	bool onNativeMessage(char *szTitle, char *szMsg);
   	bool onRemoteNodeError(char *url, char *szErr);
   	bool onConnectRemoteNode(char *url);

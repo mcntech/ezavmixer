@@ -61,43 +61,48 @@ public class MultiPlayerActivity extends Activity  {
 		super.onCreate(savedInstanceState);
 
 		Bundle b = getIntent().getExtras();
-		int value = b.getInt("windows");
+		int gridId = b.getInt("windows");
 		String[] urls = b.getStringArray("urls");
 		
 		//mHandler = new LocalHandler();
 		Configure.loadSavedPreferences(this, false);
-		switch(value) {
+		switch(gridId) {
 			case 1:
 			{
 				setContentView(R.layout.activity_multi_player_1_1);
-				TextureView mTextureView1 = (TextureView)findViewById(R.id.multi_player_surface1);
-				DecodePipe decPipe1 = new DecodePipe(this, urls[0], mTextureView1, 3840, 2160);		
+				for(int i=0; i < urls.length; i++){
+					TextureView textureView = getTexture(gridId, i);
+					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 3840, 2160);
+				}
 			}
 				break;
 			case 4:
 			{
 				setContentView(R.layout.activity_multi_player_2_2);
-				TextureView textureView1 = (TextureView)findViewById(R.id.multi_player_surface_2_2_1);
-				TextureView textureView2 = (TextureView)findViewById(R.id.multi_player_surface_2_2_2);
-				TextureView textureView3 = (TextureView)findViewById(R.id.multi_player_surface_2_2_3);
-				TextureView textureView4 = (TextureView)findViewById(R.id.multi_player_surface_2_2_4);
-				DecodePipe decPipe1 = new DecodePipe(this, urls[0], textureView1, 1920, 1080);
-				DecodePipe decPipe2 = new DecodePipe(this, urls[1], textureView2, 1920, 1080);
-				DecodePipe decPipe3 = new DecodePipe(this, urls[2], textureView3, 1920, 1080);
-				DecodePipe decPipe4 = new DecodePipe(this, urls[3], textureView4, 1920, 1080);
+				for(int i=0; i < urls.length; i++){
+					TextureView textureView = getTexture(gridId, i);
+					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 1280, 720);
+				}
 			}
 				break;
 	
 			case 9:
+			{
 				setContentView(R.layout.activity_multi_player_3_3);
+
+				for(int i=0; i < urls.length; i++){
+					TextureView textureView = getTexture(gridId, i);
+					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 1280, 720);
+				}
+			}
 				break;
 	
 			case 16:
 				setContentView(R.layout.activity_multi_player_4_4);
-				break;
-	
-			case 64:
-				setContentView(R.layout.activity_multi_player_8_8);
+				for(int i=0; i < urls.length; i++){
+					TextureView textureView = getTexture(gridId, i);
+					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 640, 360);
+				}				
 				break;
 		}
 		//mStatsLayout = (LinearLayout)findViewById(R.id.stats_layout);
@@ -163,6 +168,65 @@ public class MultiPlayerActivity extends Activity  {
 	 	OnyxPlayerApi.setDeviceHandler(mNodeHandler);
 	}
 
+	TextureView getTexture(int layoutId, int windowId) {
+		switch(layoutId) {
+			case 1:
+			{
+				switch(windowId){
+					case 0: return (TextureView)findViewById(R.id.multi_player_surface_1_1_1);
+				}
+			}
+			case 4:
+			{
+				switch(windowId){
+				case 0: return (TextureView)findViewById(R.id.multi_player_surface_2_2_1);
+				case 1: return (TextureView)findViewById(R.id.multi_player_surface_2_2_2);
+				case 2: return  (TextureView)findViewById(R.id.multi_player_surface_2_2_3);
+				case 3: return  (TextureView)findViewById(R.id.multi_player_surface_2_2_4);
+				}
+			}
+				
+			case 9:
+			{
+				switch(windowId){
+				case 0: return (TextureView)findViewById(R.id.multi_player_surface_3_3_1);
+				case 1: return (TextureView)findViewById(R.id.multi_player_surface_3_3_2);
+				case 2: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_3);
+				case 3: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_4);
+				case 4: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_5);
+				case 5: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_6);
+				case 6: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_7);
+				case 7: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_8);
+				case 8: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_9);	
+				}
+			}
+			break;
+				
+			case 16:
+			{
+				switch(windowId){
+				case 0: return (TextureView)findViewById(R.id.multi_player_surface_4_4_1);
+				case 1: return (TextureView)findViewById(R.id.multi_player_surface_4_4_2);
+				case 2: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_3);
+				case 3: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_4);
+				case 4: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_5);
+				case 5: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_6);
+				case 6: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_7);
+				case 7: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_8);
+				case 8: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_9);	
+				case 9: return (TextureView)findViewById(R.id.multi_player_surface_4_4_10);
+				case 10: return (TextureView)findViewById(R.id.multi_player_surface_4_4_11);
+				case 11: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_12);
+				case 12: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_13);
+				case 13: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_14);
+				case 14: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_15);
+				case 15: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_16);
+				}
+			}
+		}
+		return null;
+	}
+	
     void makeStreamVisible(String url) {
     	// Get Current Visibe
     	
@@ -182,6 +246,9 @@ public class MultiPlayerActivity extends Activity  {
 
    }
   
- 
+   @Override
+   public void onBackPressed() {
+	   System.exit(2);
+  }
    
 }

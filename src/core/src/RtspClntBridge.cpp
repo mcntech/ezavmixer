@@ -16,7 +16,7 @@
 #include "JdRfc5391.h"
 #include "JdOsal.h"
 
-static int modDbgLevel = CJdDbg::LVL_STRM;
+static int modDbgLevel = CJdDbg::LVL_TRACE;
 #define TRACE_ENTER 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
 #define TRACE_LEAVE 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 
@@ -152,7 +152,7 @@ CRtspClntBridge::~CRtspClntBridge()
 
 long CRtspClntBridge::ProcessVideoFrame()
 {
-	TRACE_ENTER
+	//TRACE_ENTER
 
 	unsigned ulFlags = 0;
 	unsigned long dwBytesRead = 0;
@@ -210,13 +210,13 @@ long CRtspClntBridge::ProcessVideoFrame()
 
 Exit:
 
-	TRACE_LEAVE
+	//TRACE_LEAVE
 	return lResult;
 }
 
 long CRtspClntBridge::ProcessAudioFrame()
 {
-	TRACE_ENTER
+	//TRACE_ENTER
 
 	unsigned ulFlags = 0;
 	long lResult = 0;
@@ -242,7 +242,7 @@ long CRtspClntBridge::ProcessAudioFrame()
 	pConnSink->Write(pConnSink, m_pAudData, lBytesRead,  ulFlags, m_lPts * 1000 / 90);
 	JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Write %d PTS=%lld", m_lUsedLen, m_lPts));
 Exit:
-	TRACE_LEAVE
+	//TRACE_LEAVE
 	return lResult;
 }
 

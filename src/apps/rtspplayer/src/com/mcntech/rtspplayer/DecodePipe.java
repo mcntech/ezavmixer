@@ -358,9 +358,9 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 					break;
 				default:
 					if(outIndex >= 0) {
-						Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);				
+						//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);				
 						if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
-							Log.d(LOG_TAG, "FreeRun ");
+							//Log.d(LOG_TAG, "FreeRun ");
 						} else {
 							while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
 								try {

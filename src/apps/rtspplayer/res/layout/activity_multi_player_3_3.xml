@@ -1,65 +1,73 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/container"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
 
-    <TextureView
-       android:id="@+id/logo_texture"
-       android:layout_width="40dp"
-       android:layout_height="40dp" />
-    	
-    <TextureView
-       android:id="@+id/multi_player_surface1"
-       android:layout_width="fill_parent"
-       android:layout_height="fill_parent" />   
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_1" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        />   
+		    </LinearLayout>
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_2" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        />   
+		    </LinearLayout>
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_3" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			         
+			        />   
+		    </LinearLayout>
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_4" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        />   
+		    </LinearLayout>
 
-    <TextureView
-       android:id="@+id/multi_player_surface2"
-       android:layout_width="fill_parent"
-       android:layout_height="fill_parent" />    
- 	   
-        
- 	<LinearLayout
- 	    android:id="@+id/stats_layout"
- 	    android:layout_width="match_parent"
- 	    android:layout_height="120dp"
- 	    android:layout_alignParentBottom="true" 
- 	    android:orientation="horizontal">
-
- 	    <GridLayout
- 	        android:layout_width="wrap_content"
- 	        android:layout_height="match_parent"
- 	        android:columnCount="2"
- 	        android:rowCount="4"
- 	        android:useDefaultMargins="true" >
-
-		 	<TextView
-		 	    android:id="@+id/ap_signal_label"
-		 	    android:layout_width="wrap_content"
-		 	    android:text="AP RSSI" />
-		 	<TextView
-		 	    android:id="@+id/ap_signal"
-		 	    android:layout_width="wrap_content"
-		 	    android:text="Unknown" />
-		 	
-		 	<TextView
-		 	    android:id="@+id/link_speed_label"
-		 	    android:layout_width="wrap_content"
-		 	    android:text="Link Speed" />
-		 	<TextView
-		 	    android:id="@+id/link_speed"
-		 	    android:layout_width="wrap_content"
-		 	    android:text="Unknown" />		 	
-		 	    
-		 	<TextView
-		 	    android:id="@+id/buffer_label"
-		 	    android:layout_width="wrap_content"
-		 	    android:text="Buffer" />
-		 	<TextView
-		 	    android:id="@+id/buffer_level"
-		 	    android:layout_width="wrap_content"
-		 	    android:text="Unknown" />
-		</GridLayout>
-		
- 	</LinearLayout>
-</RelativeLayout>
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_5" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        />   
+		    </LinearLayout>
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_6" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        />   
+		    </LinearLayout>
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_7" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			         
+			        />   
+		    </LinearLayout>
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_8" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        />   
+		    </LinearLayout> 	        		    		    		
+ 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			    <TextureView
+			       android:id="@+id/multi_player_surface_3_3_9" 
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        />   
+		    </LinearLayout> 	        		    		    		
+ 	        		    
+</LinearLayout>

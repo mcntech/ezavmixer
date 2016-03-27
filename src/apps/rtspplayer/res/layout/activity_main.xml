@@ -26,9 +26,6 @@
 	    		android:textSize="20sp" />
 	   
 
-
-   
-
 	   <ListView  android:id="@+id/listRemoteNodes"
         android:layout_width="match_parent"
         android:layout_height="200dp"
@@ -85,17 +82,6 @@
 	       android:layout_gravity="center_horizontal"
 	       android:textStyle="bold" />
 
-	   	   	   	      	   	   	      	   	   	      	   	   	   <Button
-	       android:id="@+id/multi_8_8"
-	       android:layout_width="400dp"
-	       android:layout_height="wrap_content"
-	       android:layout_marginTop="30dip"
-	       android:onClick="start_8_8"
-	       android:text="Start Multi (8 x 8)"
-	       android:textColor="#000000"
-	       android:textSize="20sp"
-	       android:layout_gravity="center_horizontal"
-	       android:textStyle="bold" />
 	   	   	   	      	   	   	      	   	   	      	   	   	   	   	   	   	      	   	   	   	   
 	   </LinearLayout>  	       
 

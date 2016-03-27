@@ -1,23 +1,40 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/container"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
+    android:layout_height="fill_parent"
+     android:orientation="vertical">
 
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+ 	        <LinearLayout android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:orientation="horizontal"> 
+ 	            <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_marginBottom="8dp"
+            android:layout_weight="1" >
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_1" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
-			        />   
-		    </LinearLayout>
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+			        /> 
+			   </LinearLayout>
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_2" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout>
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent"
+ 	             android:layout_weight="1"  
+ 	             android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_3" 
 			        android:layout_width="wrap_content"
@@ -25,29 +42,49 @@
 			         
 			        />   
 		    </LinearLayout>
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent"
+ 	             android:layout_height="fill_parent" 
+ 	             android:layout_weight="1"  
+ 	             android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_4" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout>
-
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+		    </LinearLayout>
+           <LinearLayout android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:orientation="horizontal"> 
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_5" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout>
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_6" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout>
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_7" 
 			        android:layout_width="wrap_content"
@@ -55,67 +92,116 @@
 			         
 			        />   
 		    </LinearLayout>
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_8" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
-		    </LinearLayout> 	        		    		    		
- 	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+		    </LinearLayout> 
+		    </LinearLayout>	 
+		    <LinearLayout 
+		        android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:orientation="horizontal">        		    		    		
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_9" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout> 	        		    		    		
- 	        		    	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+ 	        <LinearLayout 
+ 	            android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent"
+ 	             android:layout_weight="1"  
+ 	             android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_10" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout> 	        		
-		    	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+		    <LinearLayout 
+		        android:layout_width="fill_parent" 
+		        android:layout_height="fill_parent" 
+		        android:layout_weight="1"  
+		        android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_11" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout> 	
-	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+	        <LinearLayout 
+	            android:layout_width="fill_parent" 
+	            android:layout_height="fill_parent" 
+	            android:layout_weight="1"  
+	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_12" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
-		    </LinearLayout> 	        				       
-	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+		    </LinearLayout> 
+		    </LinearLayout>
+		  <LinearLayout 
+		      android:layout_width="fill_parent" 
+ 	            android:layout_height="fill_parent" 
+ 	            android:layout_weight="1"  
+ 	            android:orientation="horizontal">   	        				       
+	        <LinearLayout 
+	            android:layout_width="fill_parent" 
+	            android:layout_height="fill_parent" 
+	            android:layout_weight="1"  
+	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_13" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout> 	        				         		
-	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+	        <LinearLayout 
+	            android:layout_width="fill_parent" 
+	            android:layout_height="fill_parent" 
+	            android:layout_weight="1" 
+	             android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_14" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout> 	        				         		
-	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+	        <LinearLayout 
+	            android:layout_width="fill_parent" 
+	            android:layout_height="fill_parent" 
+	            android:layout_weight="1"  
+	            android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_15" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
 		    </LinearLayout> 				            				         		
-	        <LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1"  android:layout_marginBottom="8dp"> 
+	        <LinearLayout 
+	            android:layout_width="fill_parent" 
+	            android:layout_height="fill_parent"
+	             android:layout_weight="1" 
+	              android:layout_marginBottom="8dp"> 
 			    <TextureView
 			       android:id="@+id/multi_player_surface_4_4_16" 
 			        android:layout_width="wrap_content"
 			        android:layout_height="wrap_content"
 			        />   
-		    </LinearLayout> 	        	        		    
+		    </LinearLayout> 
+		    </LinearLayout>	        	        		    
 </LinearLayout>

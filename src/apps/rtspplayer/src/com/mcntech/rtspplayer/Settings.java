@@ -100,22 +100,6 @@ public class Settings extends Activity implements OnItemSelectedListener {
         
      }
 
-     class DoneOnEditorActionListener implements OnEditorActionListener {
-			@Override
-			public boolean onEditorAction(TextView v, int actionId,
-					KeyEvent event) {
-               if (actionId == EditorInfo.IME_ACTION_DONE) {
-                   InputMethodManager imm = (InputMethodManager)v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                   imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-            	   if(v.getText().length() > 0) {
-            		   Configure.mAudioDelay = Integer.parseInt(v.getText().toString());
-            		   Configure.savePreferences(getApplicationContext(), Configure.KEY_AUDIO_DELAY, Configure.mAudioDelay);
-            	   }
-                   return true;
-               }
-				return false;
-			}
-     }    
      class DoneOnEditorUrlListener implements OnEditorActionListener {
 			@Override
 			public boolean onEditorAction(TextView v, int actionId,

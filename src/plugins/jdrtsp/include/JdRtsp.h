@@ -453,7 +453,7 @@ public:
 	}
 
 public:
-	unsigned long m_ulSessionId;
+	unsigned long long m_ulSessionId;
 	unsigned long m_ulSeq;
 	std::string	mUrl;		// Resource URI of the item used in setup
 	int m_hSock;

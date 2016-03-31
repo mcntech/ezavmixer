@@ -89,7 +89,7 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 					"PLAY %s RTSP/%s\r\n" \
 					"CSeq: %ld\r\n" \
 					"User-Agent: %s\r\n" \
-					"Session: %u\r\n" \
+					"Session: %llx\r\n" \
 					"\r\n",
 					m_pszUrl.c_str(), RTSP_VERSION,
 					++m_ulSeq,
@@ -108,7 +108,7 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 					"TEARDOWN %s RTSP/%s\r\n" \
 					"CSeq: %ld\r\n" \
 					"User-Agent: %s\r\n" \
-					"Session: %u\r\n" \
+					"Session: %llx\r\n" \
 					"\r\n",
 					m_pszUrl.c_str(), RTSP_VERSION,
 					++m_ulSeq,
@@ -533,7 +533,7 @@ void CJdRtspClntSession::HandleAnswerSetup(char *szStrmType, char *headerBuf)
 	char *charIndex = strstr(headerBuf, "Session: ");
 	CRtspRequestTransport Transport;
 	if(charIndex != NULL) {
-		sscanf(charIndex + strlen("Session: "), "%d", &m_ulSessionId);
+		sscanf(charIndex + strlen("Session: "), "%llx", &m_ulSessionId);
 	}
 	Transport.ParseTransport(headerBuf);
 

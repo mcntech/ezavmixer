@@ -57,7 +57,7 @@ int CJdRtspSrvSession::CreateSetupRepy(char *pBuff, int nMaxLen, CRtspRequest *c
 				"RTSP/%s 200 OK\r\n" \
 				"CSeq: %ld\r\n" \
 				"%s\r\n"
-				"Session: %lu\r\n" \
+				"Session: %llx\r\n" \
 				"Transport: RTP/AVP;multicast;destination=%s;port=%hu-%hu;ttl=16\r\n" \
 				"\r\n",
 				RTSP_VERSION, 
@@ -71,7 +71,7 @@ int CJdRtspSrvSession::CreateSetupRepy(char *pBuff, int nMaxLen, CRtspRequest *c
 				"RTSP/%s 200 OK\r\n" \
 				"CSeq: %ld\r\n" \
 				"%s\r\n"
-				"Session: %lu\r\n" \
+				"Session: %llx\r\n" \
 				"Transport: RTP/AVP;unicast;client_port=%u-%u;server_port=%hu-%hu\r\n" \
 				"\r\n",
 				RTSP_VERSION, 
@@ -89,7 +89,7 @@ int CJdRtspSrvSession::CreatePlayReply(char *pBuff, int nMaxLen, CRtspRequest *c
 	snprintf(pBuff, nMaxLen, 
 			"RTSP/%s 200 OK\r\n" \
 			"CSeq: %lu\r\n" \
-			"Session: %lu\r\n" \
+			"Session: %llx\r\n" \
 			"\r\n",
 			RTSP_VERSION, 
 			clntReq->mCSeq,

@@ -15,6 +15,7 @@
 #include "RtspClntBridge.h"
 #include "JdRfc5391.h"
 #include "JdOsal.h"
+#include <time.h>
 
 static int modDbgLevel = CJdDbg::LVL_TRACE;
 #define TRACE_ENTER 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
@@ -130,6 +131,12 @@ CRtspClntBridge::CRtspClntBridge(const char *lpszRspServer, int fEnableAud, int 
 	m_usSeqNum = 0;
 	m_fDisCont = 1;
 
+	mDbgPrevTime = 0;
+	mDbgTotalAudPrev = 0;
+	mDbgTotalVidPrev = 0;
+	mTotalAud = 0;
+	mTotalVid = 0;
+
 	*pResult = StartClient(lpszRspServer);
 
 	TRACE_LEAVE
@@ -185,6 +192,7 @@ long CRtspClntBridge::ProcessVideoFrame()
 			JDBG_LOG(CJdDbg::LVL_ERR, ("ProcessVideoFrame:Failed to GetData"));
 			goto Exit;
 		}
+		mTotalVid += lBytesRead;
 		RTP_PKT_T *pRtpHdr = m_pRfcRtp->GetRtnHdr();
 		m_lUsedLen += lBytesRead;
 		fDone = pRtpHdr->m;
@@ -199,7 +207,7 @@ long CRtspClntBridge::ProcessVideoFrame()
 			}
 			m_usSeqNum = pRtpHdr->usSeqNum;
 		}
-		
+		DumpStat();
 	}
 	if(m_fDisCont) {
 		m_fDisCont = 0;
@@ -237,6 +245,7 @@ long CRtspClntBridge::ProcessAudioFrame()
 	}
 	pRtpHdr = m_pRfcRtp->GetRtnHdr();
 	fDone = pRtpHdr->m;
+	mTotalAud += lBytesRead;
 	//ChkPktLoss(pRtpHdr);
 
 	pConnSink->Write(pConnSink, m_pAudData, lBytesRead,  ulFlags, m_lPts * 1000 / 90);
@@ -340,3 +349,16 @@ int CRtspClntBridge::StopStreaming()
     return 0;
 }
 
+void CRtspClntBridge::DumpStat()
+{
+	struct timeval   tv;
+	gettimeofday(&tv,NULL);
+	int now =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
+	if( now > mDbgPrevTime + 1000) {
+		JDBG_LOG(CJdDbg::LVL_TRACE, ("%s: Bitrate aud=%d vid=%d", 	m_szRemoteHost, (mTotalAud - mDbgTotalAudPrev) * 8, (mTotalVid - mDbgTotalVidPrev) * 8));
+
+		mDbgTotalAudPrev = mTotalAud;
+		mDbgTotalVidPrev = mTotalVid;
+		mDbgPrevTime = now;
+	}
+}

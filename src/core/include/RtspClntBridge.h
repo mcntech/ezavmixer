@@ -23,6 +23,7 @@ public:
 	long ProcessAudioFrame();
 	int InitAudioStreaming();
 	int InitVideoStreaming();
+	void DumpStat();
 
 public:
 	CJdRtspClntSession	*m_pRtspClnt;
@@ -65,5 +66,12 @@ public:
 	unsigned short   m_usLocalRtpPort;
 	unsigned short   m_usRemoteRtpPort;
 	CAvcCfgRecord    mAvcCfgRecord;
+
+	int              mDbgPrevTime;
+	int              mDbgTotalAudPrev;
+	int              mDbgTotalVidPrev;
+
+	int              mTotalAud;
+	int              mTotalVid;
 };
 #endif //__RTSP_CLNT_BRIDGE_H__

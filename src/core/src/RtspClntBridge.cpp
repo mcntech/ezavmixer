@@ -66,6 +66,9 @@ int CRtspClntBridge::StartClient(const char *lpszRspServer)
 	if(res < 0){
 		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to open rtsp connection for %s",lpszRspServer));
 		nResult = -1;
+		if(m_pCallback) {
+			m_pCallback->NotifyStateChange(RTSP_SERVER_ERROR);
+		}
 		goto EXIT;
 	}
 	JDBG_LOG(CJdDbg::LVL_ERR, ("Open successful codecs aud=%d vid=%d", m_nAudCodec, m_nVidCodec));
@@ -97,6 +100,10 @@ int CRtspClntBridge::StartClient(const char *lpszRspServer)
 			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
 			CreatePCMUOutputPin();
 		}
+		if(m_pCallback) {
+			RTSP_SERVER_DESCRIPTION Descript = {0};
+			m_pCallback->NotifyStateChange(RTSP_SERVER_SETUP);
+		}
 	}
 
 EXIT:
@@ -104,7 +111,7 @@ EXIT:
 	return nResult;
 }
 
-CRtspClntBridge::CRtspClntBridge(const char *lpszRspServer, int fEnableAud, int fEnableVid, int *pResult) : CStrmInBridgeBase(fEnableAud, fEnableVid)
+CRtspClntBridge::CRtspClntBridge(const char *lpszRspServer, int fEnableAud, int fEnableVid, int *pResult, CRtspServerCallback *pCallback=NULL) : CStrmInBridgeBase(fEnableAud, fEnableVid)
 {
 	TRACE_ENTER
 
@@ -127,8 +134,7 @@ CRtspClntBridge::CRtspClntBridge(const char *lpszRspServer, int fEnableAud, int 
 
 	m_thrdHandleAudio = 0;
 	m_thrdHandleVideo = 0;
-	m_lPktLoss = 0;
-	m_usSeqNum = 0;
+	m_usVidSeqNum = 0;
 	m_fDisCont = 1;
 
 	mDbgPrevTime = 0;
@@ -136,6 +142,10 @@ CRtspClntBridge::CRtspClntBridge(const char *lpszRspServer, int fEnableAud, int 
 	mDbgTotalVidPrev = 0;
 	mTotalAud = 0;
 	mTotalVid = 0;
+	memset(&m_RtspServerStats, sizeof(m_RtspServerStats));
+
+	m_pCallback = pCallback;
+	mPrevJitterUpdateTime = 0;
 
 	*pResult = StartClient(lpszRspServer);
 
@@ -198,16 +208,17 @@ long CRtspClntBridge::ProcessVideoFrame()
 		fDone = pRtpHdr->m;
 		m_lPts = pRtpHdr->ulTimeStamp;
 
+		UpdateJitter(m_lPts);
 		//ChkPktLoss(pRtpHdr);
-		m_usSeqNum++;
-		if (m_usSeqNum  != pRtpHdr->usSeqNum) {
+		m_usVidSeqNum++;
+		if (m_usVidSeqNum  != pRtpHdr->usSeqNum) {
 			// skip starting pkt
-			if(m_usSeqNum != 1)	 {
-				m_lPktLoss++;
+			if(m_usVidSeqNum != 1)	 {
+				m_RtspServerStats.nVidPktLoss++;
 			}
-			m_usSeqNum = pRtpHdr->usSeqNum;
+			m_usVidSeqNum = pRtpHdr->usSeqNum;
 		}
-		DumpStat();
+		UpdateStat();
 	}
 	if(m_fDisCont) {
 		m_fDisCont = 0;
@@ -247,6 +258,14 @@ long CRtspClntBridge::ProcessAudioFrame()
 	fDone = pRtpHdr->m;
 	mTotalAud += lBytesRead;
 	//ChkPktLoss(pRtpHdr);
+	m_usAudSeqNum++;
+	if (m_usAudSeqNum  != pRtpHdr->usSeqNum) {
+		// skip starting pkt
+		if(m_usAudSeqNum != 1)	 {
+			m_RtspServerStats.nAudPktLoss++;
+		}
+		m_usAudSeqNum = pRtpHdr->usSeqNum;
+	}
 
 	pConnSink->Write(pConnSink, m_pAudData, lBytesRead,  ulFlags, m_lPts * 1000 / 90);
 	JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Write %d PTS=%lld", m_lUsedLen, m_lPts));
@@ -349,14 +368,38 @@ int CRtspClntBridge::StopStreaming()
     return 0;
 }
 
-void CRtspClntBridge::DumpStat()
+void CRtspClntBridge::UpdateJitter(int nPktTime)
 {
 	struct timeval   tv;
 	gettimeofday(&tv,NULL);
 	int now =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
-	if( now > mDbgPrevTime + 1000) {
-		JDBG_LOG(CJdDbg::LVL_TRACE, ("%s: Bitrate aud=%d vid=%d", 	m_szRemoteHost, (mTotalAud - mDbgTotalAudPrev) * 8, (mTotalVid - mDbgTotalVidPrev) * 8));
+	int nJitter = now - mJitterUpdateTime;
+	m_RtspServerStats.nClockJitter = nJitter;
+	if(nJitter > m_RtspServerStats.nClockJitterMax)
+		m_RtspServerStats.nClockJitterMax = nJitter;
+	else if(nJitter < m_RtspServerStats.nClockJitterMin)
+		m_RtspServerStats.nClockJitterMin = nJitter;
+	mJitterUpdateTime=now;
+}
+void CRtspClntBridge::UpdateStat()
+{
+	struct timeval   tv;
+	gettimeofday(&tv,NULL);
+	int now =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
+	if( now > mDbgPrevTime + 1000) {
+		m_RtspServerStats.nAudBitrate = (mTotalAud - mDbgTotalAudPrev) * 8);
+		m_RtspServerStats.nVidBitrate = (mTotalVid - mDbgTotalVidPrev) * 8);
+		JDBG_LOG(CJdDbg::LVL_TRACE, ("%s: Bitrate aud=%d vid=%d APktLoss= %d VPktLoss=%d jitter=%d", 	m_szRemoteHost,
+				m_RtspServerStats.nAudBitrate,
+				m_RtspServerStats.nVidBitrate,
+				m_RtspServerStats.nAudPktLoss,
+				m_RtspServerStats.nVidPktLoss,
+				m_RtspServerStats.nClockJitter));
+
+		if(m_pCallback){
+			m_pCallback->UpdateStats(&m_RtspServerStats);
+		}
 		mDbgTotalAudPrev = mTotalAud;
 		mDbgTotalVidPrev = mTotalVid;
 		mDbgPrevTime = now;

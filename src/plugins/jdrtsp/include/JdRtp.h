@@ -71,7 +71,9 @@ public:
 	virtual int Pause() {NOT_IMPLEMENTED; return -1;}
 	virtual int Stop(){NOT_IMPLEMENTED; return -1;}
 	virtual int Read(char *pData, int nMaxLen);
+	virtual int ReadRtcp(char *pData, int nMaxLen, int nTimeOutSec)
 	virtual int Write(char *pData, int nMaxLen);
+	virtual int WriteRtcp(char *pData, int nMaxLen);
 	static void CreateHeader(char *pData, RTP_PKT_T *pHdr);
 	static void ParseHeader(char *pData, RTP_PKT_T *pHdr);
 

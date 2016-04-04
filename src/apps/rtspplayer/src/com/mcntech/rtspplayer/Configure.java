@@ -36,7 +36,7 @@ public class Configure {
 		mEnableStats = sharedPreferences.getBoolean(KEY_ENABLE_STATS, false);		
 		mUseAudioTrack = sharedPreferences.getBoolean(KEY_USE_AUTIO_TRACK, false);
 		mAudioDelay = sharedPreferences.getInt(KEY_AUDIO_DELAY, 0);
-		mRtspUrl1 = sharedPreferences.getString(KEY_RTSP_URL_1, "rtsp://192.168.0.103:554/v01");		
+		mRtspUrl1 = sharedPreferences.getString(KEY_RTSP_URL_1, "rtsp://192.168.0.101:8554/v01");		
 		mSystemApp = isSytemApp;
 	}
 

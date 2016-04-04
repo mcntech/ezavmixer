@@ -320,7 +320,7 @@ int CJdRtspClntSession::GetAudioCodec()
 			if(ucPl >= RTP_PT_DYNAMIC_START && ucPl <= RTP_PT_DYNAMIC_END) {
 				const char *pszRtmap = m_sdp.m_listMediaDescription[i]->GetAttributeValue("rtpmap", 0);
 				CAttribRtpmap Rtpmap(pszRtmap);
-				if(stricmp(Rtpmap.EncodingName.c_str(), "MP4A") == 0) {
+/*				if(stricmp(Rtpmap.EncodingName.c_str(), "MP4A") == 0) {
 					codec = RTP_CODEC_AAC;
 					break;
 				} else if(stricmp(Rtpmap.EncodingName.c_str(), "MPA") == 0) {
@@ -329,17 +329,19 @@ int CJdRtspClntSession::GetAudioCodec()
 				} else if(stricmp(Rtpmap.EncodingName.c_str(), "PCMU") == 0) {
 					codec = RTP_CODEC_PCMU;
 					break;
-				}
+				}*/
+/*
 			} else if (ucPl == RTP_PT_MPA) {
 				codec =  RTP_CODEC_AAC; // TODO
 				break;
+*/
 			} else if (ucPl == RTP_PT_PCMU) {
 				codec =  RTP_CODEC_PCMU;
 				break;
-			} else if (ucPl == RTP_PT_PCMA) {
+			} /*else if (ucPl == RTP_PT_PCMA) {
 				codec = RTP_CODEC_PCMA;
 				break;
-			}
+			}*/
 		}
 	}
 

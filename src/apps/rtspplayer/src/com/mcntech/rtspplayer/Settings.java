@@ -4,6 +4,7 @@ import com.mcntech.rtspplyer.R;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.text.Editable;
@@ -116,9 +117,14 @@ public class Settings extends Activity implements OnItemSelectedListener {
 				return false;
 			}
      }    
-     
+
+	   public void startSinglePlayer(){
+	       Intent intent = new Intent(this, DecodeActivity.class);	       
+	       startActivity(intent);
+	   }
 	public void selfRestart(View v) {
-		System.exit(2);
+		/*System.exit(2);*/
+		startSinglePlayer();
 	}
 
 	@Override

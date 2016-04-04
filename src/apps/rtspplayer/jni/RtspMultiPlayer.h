@@ -32,7 +32,7 @@
 #include "PlayerBase.h"
 #include "PlayerEventBase.h"
 
-class CRtspMultiPlayer : public CPlayerBase
+class CRtspMultiPlayer : public CPlayerBase, public CRtspServerCallback
 {
 public:
 	static CPlayerBase *openInstance(CPlayerEventBase *pEventBase);
@@ -55,6 +55,8 @@ public:
 	int startServer(std::string url);
 	int stopServer(std::string url);
 
+	void NotifyStateChange(const char *url, int nState);
+	void UpdateStats(const char *url, RTSP_SERVER_STATS *);
 public:
 	CRtspMultiPlayer(CPlayerEventBase *pEventBase);
 	ServerNodeMap      m_ServerList;

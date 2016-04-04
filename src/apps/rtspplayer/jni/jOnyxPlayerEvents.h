@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <PlayerEventBase.h>
 #include <jni.h>
+#include "RtspCallback.h"
 
 class COnyxPlayerEvents : public CPlayerEventBase
 {
@@ -24,6 +25,7 @@ public:
   	bool onDisconnectRemoteNode(char *url);
   	bool onStatusRemoteNode(char *url, char *szMsg);
   	bool onRtspServerStatus(const char *szPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime);
+  	bool onRtspServerStatistics(const char *szPublishId, RTSP_SERVER_STATS *pStat);
 
   	jclass m_deviceClass;
 

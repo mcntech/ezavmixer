@@ -21,10 +21,15 @@
 
 CStrmInBridgeBase::CStrmInBridgeBase(int fEnableAud, int fEnableVid)
 {
+	mDataLocatorAudio.pAddress = NULL;
+	mDataLocatorVideo.pAddress = NULL;
+
 	mDataSrcAudio.pLocator = NULL;
 	mDataSrcAudio.pFormat = NULL;
 	mDataSrcVideo.pLocator = NULL;
 	mDataSrcVideo.pFormat = NULL;
+
+
 	m_fEnableAud = fEnableAud;
 	m_fEnableVid = fEnableVid;
 	m_fAllocVBuff = 0;

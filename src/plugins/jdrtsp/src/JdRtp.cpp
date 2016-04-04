@@ -149,6 +149,37 @@ int CRtp::Read(char *pData, int nMaxLen)
 	return ret;
 }
 
+int CRtp::ReadRtcp(char *pData, int nMaxLen, int nTimeOutSec)
+{
+	fd_set rfds;
+	struct timeval tv;
+	int ret = -1;
+	int	selectRet;
+	/* Begin reading the body of the file */
+
+	FD_ZERO(&rfds);
+	FD_SET(m_hRtcpSock, &rfds);
+
+	tv.tv_sec = nTimeOutSec;
+	tv.tv_usec = 0;
+
+	if(timeout >= 0)
+		selectRet = select(m_hRtcpSock+1, &rfds, NULL, NULL, &tv);
+	else		/* No timeout, can block indefinately */
+		selectRet = select(m_hRtcpSock+1, &rfds, NULL, NULL, NULL);
+
+	if(selectRet == 0) {
+		return -1;
+	} else if(selectRet == -1)	{
+		JDBG_LOG(CJdDbg::LVL_ERR,("select failed"));
+		return -1;
+	}
+
+	ret = recv(m_hRtcpSock, pData, nMaxLen, 0);
+
+	return ret;
+}
+
 int CRtp::Write(char *pData, int lLen)
 {
 	fd_set rfds;
@@ -167,6 +198,29 @@ int CRtp::Write(char *pData, int lLen)
 	ret = sendto(m_hRtpSock, pData, lLen, 0, (struct sockaddr *)&peerAddr, sizeof(struct sockaddr));
 	if(ret == -1)	{
 		JDBG_LOG(CJdDbg::LVL_ERR,("sendto failed"));
+		return -1;
+	}
+	return lLen;
+}
+
+int CRtp::WriteRtcp(char *pData, int lLen)
+{
+	fd_set rfds;
+	struct timeval tv;
+	int ret = -1;
+	int	selectRet;
+	int bytesWritten= 0;
+	/* Begin reading the body of the file */
+
+	struct sockaddr_in peerAddr;
+	peerAddr.sin_addr = m_SockAddr;
+	peerAddr.sin_port = htons(mRemoteRtcpPort);
+	peerAddr.sin_family = PF_INET;
+
+	JDBG_LOG(CJdDbg::LVL_TRACE,("rtcp sendto addr=0x%x port=%d", *((unsigned long *)&m_SockAddr), mRemoteRtcpPort));
+	ret = sendto(m_hRtcpSock, pData, lLen, 0, (struct sockaddr *)&peerAddr, sizeof(struct sockaddr));
+	if(ret == -1)	{
+		JDBG_LOG(CJdDbg::LVL_ERR,("rtcp sendto failed"));
 		return -1;
 	}
 	return lLen;

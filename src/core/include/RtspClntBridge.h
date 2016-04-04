@@ -4,45 +4,10 @@
 #include "StrmInBridgeBase.h"
 #include "JdRfc3640.h"
 #include "JdRfc3984.h"
+#include "RtspCallback.h"
+#include "JdRtcp.h"
 
 #define MAX_NAME_SIZE	256
-
-typedef enum RTSP_SERVER_STATE
-{
-	RTSP_SERVER_UNINIT,
-	RTSP_SERVER_SETUP,
-	RTSP_SERVER_PLAY,
-	RTSP_SERVER_ERROR,
-};
-
-typedef struct _RTSP_SERVER_DESCRIPTION
-{
-	int nAudCodecType;
-	int nVidCodecType;
-} RTSP_SERVER_DESCRIPTION;
-
-typedef struct _RTSP_SERVER_STATS
-{
-	int nAudBitrate;
-	int nVidBitrate;
-	int nAudPktLoss;
-	int nVidPktLoss;
-	int nClockJitter;
-	int nClockJitterMax;
-	int nClockJitterMin;
-} RTSP_SERVER_STATS;
-
-typedef struct _RTSP_SERVER_STATUS
-{
-	int nState;
-} RTSP_SERVER_STATUS;
-
-class CRtspServerCallback
-{
-public:
-	virtual void NotifyStateChange(int nState) = 0;
-	void UpdateStats(RTSP_SERVER_STATS *) = 0;
-};
 
 class CRtspClntBridge : public CStrmInBridgeBase
 {
@@ -72,6 +37,7 @@ public:
 	int					m_nSrcType;
 	CJdRfc3984Rx        *m_pRfcRtp;
 	CJdRfcBase			*m_pAudRfcRtp;
+
 	char				*m_pData;
 	long				m_lUsedLen;
 	long				m_lMaxLen;
@@ -108,7 +74,7 @@ public:
 	unsigned short   m_usRemoteRtpPort;
 	CAvcCfgRecord    mAvcCfgRecord;
 
-	int              mDbgPrevTime;
+	long long        mDbgPrevTime;
 	int              mDbgTotalAudPrev;
 	int              mDbgTotalVidPrev;
 	int              mJitterUpdateTime;

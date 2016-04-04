@@ -81,6 +81,11 @@ bool COnyxPlayerEvents::onRtspServerStatus(const char *szUrl, int nState, int nS
 	return true;
 }
 
+bool COnyxPlayerEvents::onRtspServerStatistics(const char *szPublishId, RTSP_SERVER_STATS *pStat)
+{
+	return true;
+}
+
 bool COnyxPlayerEvents::onDiscoverRemoteNode(char *url)
 {
 	JNIEnv* env;

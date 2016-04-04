@@ -1,4 +1,5 @@
 #include "RtspMultiPlayer.h"
+#include "jOnyxPlayerEvents.h"
 
 static int modDbgLevel = CJdDbg::LVL_TRACE;
 #define TRACE_ENTER 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
@@ -35,7 +36,7 @@ int CRtspMultiPlayer::addServer(std::string url)
 {
 	int nResult = 0;
 	TRACE_ENTER
-	CRtspClntBridge *pRtspClntBridge = new  CRtspClntBridge(url.c_str(), 1/*pInputStream->fEnableAud*/, 1/*pInputStream->fEnableVid*/, &nResult);
+	CRtspClntBridge *pRtspClntBridge = new  CRtspClntBridge(url.c_str(), 1/*pInputStream->fEnableAud*/, 1/*pInputStream->fEnableVid*/, &nResult, this);
 
 	CRtspServerNode *pServerNode = new CRtspServerNode(pRtspClntBridge);
 	m_ServerList[url] = pServerNode;
@@ -164,6 +165,24 @@ int  CRtspMultiPlayer::getNumAvailAudioFrames(std::string url)
 		res = pNode->getNumAvailAudioFrames();
 	}
 	return res;
+}
+
+void CRtspMultiPlayer::UpdateStats(const char *url, RTSP_SERVER_STATS *pStats)
+{
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s: Bitrate aud=%d vid=%d APktLoss= %d VPktLoss=%d jitter=%d",
+			url,
+			pStats->nAudBitrate,
+			pStats->nVidBitrate,
+			pStats->nAudPktLoss,
+			pStats->nVidPktLoss,
+			pStats->nClockJitter));
+	if(m_EventCallback)
+		((COnyxPlayerEvents *)m_EventCallback)->onRtspServerStatistics(url, pStats);
+}
+
+void CRtspMultiPlayer::NotifyStateChange(const char *url, int nState)
+{
+
 }
 
 CPlayerBase *CRtspMultiPlayer::openInstance(CPlayerEventBase *pEventBase)

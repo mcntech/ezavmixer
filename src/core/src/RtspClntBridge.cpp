@@ -61,16 +61,18 @@ int CRtspClntBridge::StartClient(const char *lpszRspServer)
 	InitRtpPort(rtp_port);
 
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("Open rtsp connection for %s",lpszRspServer));
+	strncpy(m_szRemoteHost, lpszRspServer, MAX_NAME_SIZE - 1);
 
 	int res = m_pRtspClnt->Open(lpszRspServer, &m_nVidCodec, &m_nAudCodec);
 	if(res < 0){
 		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to open rtsp connection for %s",lpszRspServer));
 		nResult = -1;
 		if(m_pCallback) {
-			m_pCallback->NotifyStateChange(RTSP_SERVER_ERROR);
+			m_pCallback->NotifyStateChange(m_szRemoteHost, RTSP_SERVER_ERROR);
 		}
 		goto EXIT;
 	}
+
 	JDBG_LOG(CJdDbg::LVL_ERR, ("Open successful codecs aud=%d vid=%d", m_nAudCodec, m_nVidCodec));
 	if (m_nVidCodec ==  RTP_CODEC_MP2T) {
 		JDBG_LOG(CJdDbg::LVL_ERR, ("Setup:RTP_CODEC_MP2T"));
@@ -91,6 +93,7 @@ int CRtspClntBridge::StartClient(const char *lpszRspServer)
 			m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
 			CreateH264OutputPin();
 		}
+
 		if(m_nAudCodec == RTP_CODEC_AAC) {
 			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_AAC"));
 			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
@@ -100,9 +103,10 @@ int CRtspClntBridge::StartClient(const char *lpszRspServer)
 			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
 			CreatePCMUOutputPin();
 		}
+
 		if(m_pCallback) {
 			RTSP_SERVER_DESCRIPTION Descript = {0};
-			m_pCallback->NotifyStateChange(RTSP_SERVER_SETUP);
+			m_pCallback->NotifyStateChange(m_szRemoteHost, RTSP_SERVER_SETUP);
 		}
 	}
 
@@ -111,7 +115,13 @@ EXIT:
 	return nResult;
 }
 
-CRtspClntBridge::CRtspClntBridge(const char *lpszRspServer, int fEnableAud, int fEnableVid, int *pResult, CRtspServerCallback *pCallback=NULL) : CStrmInBridgeBase(fEnableAud, fEnableVid)
+CRtspClntBridge::CRtspClntBridge(
+		const char *lpszRspServer,
+		int fEnableAud,
+		int fEnableVid,
+		int *pResult,
+		CRtspServerCallback *pCallback)
+		: CStrmInBridgeBase(fEnableAud, fEnableVid)
 {
 	TRACE_ENTER
 
@@ -142,10 +152,10 @@ CRtspClntBridge::CRtspClntBridge(const char *lpszRspServer, int fEnableAud, int 
 	mDbgTotalVidPrev = 0;
 	mTotalAud = 0;
 	mTotalVid = 0;
-	memset(&m_RtspServerStats, sizeof(m_RtspServerStats));
+	memset(&m_RtspServerStats, 0x00, sizeof(RTSP_SERVER_STATS));
 
 	m_pCallback = pCallback;
-	mPrevJitterUpdateTime = 0;
+	mJitterUpdateTime = 0;
 
 	*pResult = StartClient(lpszRspServer);
 
@@ -165,7 +175,19 @@ CRtspClntBridge::~CRtspClntBridge()
 		delete m_pAudRfcRtp;
 }
 
-
+long CRtspClntBridge::ProcessVideoRtcp()
+{
+	char *pData = (char *)malloc(2048);
+	while(!fDone && m_fRun) {
+		long lBytesRead = m_pRtspClnt->m_pVRtp->ReadRtcp(pData, 2048, 0);
+		if(lBytesRead > 0){
+			m_pVRtcp
+		}
+		JD_OAL_SLEEP(100)
+	}
+	if(pData)
+		free(pData);
+}
 
 long CRtspClntBridge::ProcessVideoFrame()
 {
@@ -385,20 +407,14 @@ void CRtspClntBridge::UpdateStat()
 {
 	struct timeval   tv;
 	gettimeofday(&tv,NULL);
-	int now =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
+	long long now =  (long long)tv.tv_sec * 1000 + tv.tv_usec;
 
 	if( now > mDbgPrevTime + 1000) {
-		m_RtspServerStats.nAudBitrate = (mTotalAud - mDbgTotalAudPrev) * 8);
-		m_RtspServerStats.nVidBitrate = (mTotalVid - mDbgTotalVidPrev) * 8);
-		JDBG_LOG(CJdDbg::LVL_TRACE, ("%s: Bitrate aud=%d vid=%d APktLoss= %d VPktLoss=%d jitter=%d", 	m_szRemoteHost,
-				m_RtspServerStats.nAudBitrate,
-				m_RtspServerStats.nVidBitrate,
-				m_RtspServerStats.nAudPktLoss,
-				m_RtspServerStats.nVidPktLoss,
-				m_RtspServerStats.nClockJitter));
+		m_RtspServerStats.nAudBitrate = (mTotalAud - mDbgTotalAudPrev) * 8;
+		m_RtspServerStats.nVidBitrate = (mTotalVid - mDbgTotalVidPrev) * 8;
 
 		if(m_pCallback){
-			m_pCallback->UpdateStats(&m_RtspServerStats);
+			m_pCallback->UpdateStats(m_szRemoteHost, &m_RtspServerStats);
 		}
 		mDbgTotalAudPrev = mTotalAud;
 		mDbgTotalVidPrev = mTotalVid;

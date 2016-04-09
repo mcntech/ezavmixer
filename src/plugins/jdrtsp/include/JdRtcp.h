@@ -399,9 +399,7 @@ public:
 	void RemoveSender(void *packet);
 	double drand30(void);
 
-	void removeSSRC(unsigned long oldSSRC, bool fremove){
-		// TODO
-	}
+	void removeSSRC(unsigned long oldSSRC, bool fremove);
 private:
 	void onReceive(int typeOfPacket, int totPacketSize, unsigned long ssrc);
 	void processIncomingReport(unsigned packetSize, struct sockaddr_in const& fromAddressAndPort,

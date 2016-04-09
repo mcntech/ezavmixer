@@ -771,8 +771,8 @@ double CJdRtcp::rtcp_interval(int members,
                *members += 1;
            }
        }
-   }
 }
+
 
 void CJdRtcp::removeSSRC(unsigned long ssrc, bool alsoRemoveStats) {
 	mKnownMembers->remove(ssrc);

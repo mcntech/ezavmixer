@@ -178,10 +178,26 @@ CRtspClntBridge::~CRtspClntBridge()
 long CRtspClntBridge::ProcessVideoRtcp()
 {
 	char *pData = (char *)malloc(2048);
+	bool fDone = false;
 	while(!fDone && m_fRun) {
 		long lBytesRead = m_pRtspClnt->m_pVRtp->ReadRtcp(pData, 2048, 0);
 		if(lBytesRead > 0){
-			m_pVRtcp
+			//m_pVRtcp
+		}
+		JD_OAL_SLEEP(100)
+	}
+	if(pData)
+		free(pData);
+}
+
+long CRtspClntBridge::ProcessAudioRtcp()
+{
+	char *pData = (char *)malloc(2048);
+	bool fDone = false;
+	while(!fDone && m_fRun) {
+		long lBytesRead = m_pRtspClnt->m_pARtp->ReadRtcp(pData, 2048, 0);
+		if(lBytesRead > 0){
+			//m_pVRtcp
 		}
 		JD_OAL_SLEEP(100)
 	}

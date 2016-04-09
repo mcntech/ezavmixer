@@ -22,6 +22,8 @@ public:
 	static void *DoVideoBufferProcessing(void *pObj);
 	static void *DoAudioBufferProcessing(void *pObj);
 
+	long ProcessVideoRtcp();
+	long ProcessAudioRtcp();
 	long ProcessVideoFrame();
 	long ProcessAudioFrame();
 	int InitAudioStreaming();

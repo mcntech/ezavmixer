@@ -2,6 +2,8 @@
 #define __JD_RTCP_FROM_SPEC_H__
 
 #include <stdlib.h>
+#include <time.h>
+#include <map>
 
 class RTCPMemberDatabase; // forward
 
@@ -63,23 +65,23 @@ public:
 	}
 
 	unsigned char* curPtr() const {
-		return &fBuf[fPacketStart + fCurOffset];
+		return &mBuf[mPacketStart + mCurOffset];
 	}
 	unsigned totalBytesAvailable() const {
-		return fLimit - (fPacketStart + fCurOffset);
+		return mLimit - (mPacketStart + mCurOffset);
 	}
 	unsigned totalBufferSize() const {
-		return fLimit;
+		return mLimit;
 	}
 	unsigned char* packet() const {
-		return &fBuf[fPacketStart];
+		return &mBuf[mPacketStart];
 	}
 	unsigned curPacketSize() const {
-		return fCurOffset;
+		return mCurOffset;
 	}
 
 	void increment(unsigned numBytes) {
-		fCurOffset += numBytes;
+		mCurOffset += numBytes;
 	}
 
 	void enqueue(unsigned char const* from, unsigned numBytes);
@@ -93,149 +95,144 @@ public:
 	void skipBytes(unsigned numBytes);
 
 	bool isPreferredSize() const {
-		return fCurOffset >= fPreferred;
+		return mCurOffset >= mPreferred;
 	}
 	bool wouldOverflow(unsigned numBytes) const {
-		return (fCurOffset + numBytes) > fMax;
+		return (mCurOffset + numBytes) > mMax;
 	}
 	unsigned numOverflowBytes(unsigned numBytes) const {
-		return (fCurOffset + numBytes) - fMax;
+		return (mCurOffset + numBytes) - mMax;
 	}
 	bool isTooBigForAPacket(unsigned numBytes) const {
-		return numBytes > fMax;
+		return numBytes > mMax;
 	}
 
 	void setOverflowData(unsigned overflowDataOffset, unsigned overflowDataSize,
 			struct timeval const& presentationTime,
 			unsigned durationInMicroseconds);
 	unsigned overflowDataSize() const {
-		return fOverflowDataSize;
+		return mOverflowDataSize;
 	}
 	struct timeval overflowPresentationTime() const {
-		return fOverflowPresentationTime;
+		return mOverflowPresentationTime;
 	}
 	unsigned overflowDurationInMicroseconds() const {
-		return fOverflowDurationInMicroseconds;
+		return mOverflowDurationInMicroseconds;
 	}
 	bool haveOverflowData() const {
-		return fOverflowDataSize > 0;
+		return mOverflowDataSize > 0;
 	}
 	void useOverflowData();
 
 	void adjustPacketStart(unsigned numBytes);
 	void resetPacketStart();
 	void resetOffset() {
-		fCurOffset = 0;
+		mCurOffset = 0;
 	}
 	void resetOverflowData() {
-		fOverflowDataOffset = fOverflowDataSize = 0;
+		mOverflowDataOffset = mOverflowDataSize = 0;
 	}
 
 private:
-	unsigned fPacketStart, fCurOffset, fPreferred, fMax, fLimit;
-	unsigned char* fBuf;
+	unsigned mPacketStart, mCurOffset, mPreferred, mMax, mLimit;
+	unsigned char* mBuf;
 
-	unsigned fOverflowDataOffset, fOverflowDataSize;
-	struct timeval fOverflowPresentationTime;
-	unsigned fOverflowDurationInMicroseconds;
+	unsigned mOverflowDataOffset, mOverflowDataSize;
+	struct timeval mOverflowPresentationTime;
+	unsigned mOverflowDurationInMicroseconds;
 };
-
-
 
 class RTPReceptionStatsDB; // forward
 
-class RTPSource/*: public FramedSource*/ {
+class RTPSource
+{
 public:
- /* static bool lookupByName(UsageEnvironment& env, char const* sourceName,
-			      RTPSource*& resultSource);
-*/
-  bool curPacketMarkerBit() const { return fCurPacketMarkerBit; }
+	bool curPacketMarkerBit() const {
+		return mCurPacketMarkerBit;
+	}
 
-  unsigned char rtpPayloadFormat() const { return fRTPPayloadFormat; }
+	unsigned char rtpPayloadFormat() const {
+		return mRTPPayloadFormat;
+	}
 
-  virtual bool hasBeenSynchronizedUsingRTCP();
+	virtual bool hasBeenSynchronizedUsingRTCP();
 
-  Groupsock* RTPgs() const { return fRTPInterface.gs(); }
+	virtual void setPacketReorderingThresholdTime(unsigned uSeconds) = 0;
 
-  virtual void setPacketReorderingThresholdTime(unsigned uSeconds) = 0;
+	// used by RTCP:
+	unsigned long SSRC() const {
+		return mSSRC;
+	}
 
-  // used by RTCP:
-  unsigned long SSRC() const { return mSSRC; }
-      // Note: This is *our* SSRC, not the SSRC in incoming RTP packets.
-     // later need a means of changing the SSRC if there's a collision #####
-  void registerForMultiplexedRTCPPackets(class RTCPInstance* rtcpInstance) {
-    fRTCPInstanceForMultiplexedRTCPPackets = rtcpInstance;
-  }
-  void deregisterForMultiplexedRTCPPackets() { registerForMultiplexedRTCPPackets(NULL); }
+	unsigned timestampFrequency() const {
+		return mTimestampFrequency;
+	}
 
-  unsigned timestampFrequency() const {return fTimestampFrequency;}
+	RTPReceptionStatsDB& receptionStatsDB() const {
+		return *mReceptionStatsDB;
+	}
 
-  RTPReceptionStatsDB& receptionStatsDB() const {
-    return *fReceptionStatsDB;
-  }
+	unsigned long lastReceivedSSRC() const {
+		return mLastReceivedSSRC;
+	}
+	// Note: This is the SSRC in the most recently received RTP packet; not *our* SSRC
 
-  unsigned long lastReceivedSSRC() const { return fLastReceivedSSRC; }
-  // Note: This is the SSRC in the most recently received RTP packet; not *our* SSRC
+	bool& enableRTCPReports() {
+		return mEnableRTCPReports;
+	}
+	bool const& enableRTCPReports() const {
+		return mEnableRTCPReports;
+	}
 
-  bool& enableRTCPReports() { return fEnableRTCPReports; }
-  bool const& enableRTCPReports() const { return fEnableRTCPReports; }
-
-  void setStreamSocket(int sockNum, unsigned char streamChannelId) {
-    // hack to allow sending RTP over TCP (RFC 2236, section 10.12)
-    fRTPInterface.setStreamSocket(sockNum, streamChannelId);
-  }
-
-  void setAuxilliaryReadHandler(AuxHandlerFunc* handlerFunc,
-                                void* handlerClientData) {
-    fRTPInterface.setAuxilliaryReadHandler(handlerFunc,
-					   handlerClientData);
-  }
-
-  // Note that RTP receivers will usually not need to call either of the following two functions, because
-  // RTP sequence numbers and timestamps are usually not useful to receivers.
-  // (Our implementation of RTP reception already does all needed handling of RTP sequence numbers and timestamps.)
-  unsigned short curPacketRTPSeqNum() const { return fCurPacketRTPSeqNum; }
-private: friend class MediaSubsession; // "MediaSubsession" is the only outside class that ever needs to see RTP timestamps!
-  unsigned long curPacketRTPTimestamp() const { return fCurPacketRTPTimestamp; }
+	// Note that RTP receivers will usually not need to call either of the following two functions, because
+	// RTP sequence numbers and timestamps are usually not useful to receivers.
+	// (Our implementation of RTP reception already does all needed handling of RTP sequence numbers and timestamps.)
+	unsigned short curPacketRTPSeqNum() const {
+		return mCurPacketRTPSeqNum;
+	}
+	unsigned long curPacketRTPTimestamp() const {
+		return mCurPacketRTPTimestamp;
+	}
 
 protected:
-  RTPSource(UsageEnvironment& env, Groupsock* RTPgs,
-	    unsigned char rtpPayloadFormat, unsigned long rtpTimestampFrequency);
-      // abstract base class
-  virtual ~RTPSource();
+	RTPSource(unsigned char rtpPayloadFormat,
+			unsigned long rtpTimestampFrequency);
+	virtual ~RTPSource();
 
 protected:
-  RTPInterface fRTPInterface;
-  unsigned short fCurPacketRTPSeqNum;
-  unsigned long fCurPacketRTPTimestamp;
-  bool fCurPacketMarkerBit;
-  bool fCurPacketHasBeenSynchronizedUsingRTCP;
-  unsigned long fLastReceivedSSRC;
-  class RTCPInstance* fRTCPInstanceForMultiplexedRTCPPackets;
+	unsigned short mCurPacketRTPSeqNum;
+	unsigned long mCurPacketRTPTimestamp;
+	bool mCurPacketMarkerBit;
+	bool mCurPacketHasBeenSynchronizedUsingRTCP;
+	unsigned long mLastReceivedSSRC;
 
 private:
-  // redefined virtual functions:
-  virtual bool isRTPSource() const;
-  virtual void getAttributes() const;
+	// redefined virtual functions:
+	virtual bool isRTPSource() const;
+	virtual void getAttributes() const;
 
 private:
-  unsigned char fRTPPayloadFormat;
-  unsigned fTimestampFrequency;
-  unsigned long mSSRC;
-  bool fEnableRTCPReports; // whether RTCP "RR" reports should be sent for this source (default: True)
+	unsigned char mRTPPayloadFormat;
+	unsigned mTimestampFrequency;
+	unsigned long mSSRC;
+	bool mEnableRTCPReports; // whether RTCP "RR" reports should be sent for this source (default: True)
 
-  RTPReceptionStatsDB* fReceptionStatsDB;
+	RTPReceptionStatsDB* mReceptionStatsDB;
 };
 
 
 class RTPReceptionStats; // forward
 
+typedef std::map<unsigned long, RTPReceptionStats*>::iterator rec_tbl_iter;
+
 class RTPReceptionStatsDB {
 public:
-  unsigned totNumPacketsReceived() const { return fTotNumPacketsReceived; }
-  unsigned numActiveSourcesSinceLastReset() const {
-    return fNumActiveSourcesSinceLastReset;
- }
+	unsigned totNumPacketsReceived() const {
+		return mTotNumPacketsReceived;
+	}
+	unsigned numActiveSourcesSinceLastReset() const {
+		return mNumActiveSourcesSinceLastReset;
+	}
 
   void reset();
       // resets periodic stats (called each time they're used to
@@ -246,34 +243,34 @@ public:
     Iterator(RTPReceptionStatsDB& receptionStatsDB);
     virtual ~Iterator();
 
-    RTPReceptionStats* next(bool includeInactiveSources = False);
+    RTPReceptionStats* next(bool includeInactiveSources = false);
         // NULL if none
 
   private:
-    HashTable::Iterator* fIter;
+    //HashTable::Iterator* mIter;
   };
 
-  // The following is called whenever a RTP packet is received:
-  void noteIncomingPacket(unsigned long SSRC, unsigned short seqNum,
-			  unsigned long rtpTimestamp,
-			  unsigned timestampFrequency,
-			  bool useForJitterCalculation,
-			  struct timeval& resultPresentationTime,
-			  bool& resultHasBeenSyncedUsingRTCP,
-			  unsigned packetSize /* payload only */);
+	// The following is called whenever a RTP packet is received:
+	void noteIncomingPacket(unsigned long SSRC,
+			unsigned short seqNum,
+			unsigned long rtpTimestamp,
+			unsigned timestampFrequency,
+			bool useForJitterCalculation,
+			struct timeval& resultPresentationTime,
+			bool& resultHasBeenSyncedUsingRTCP,
+			unsigned packetSize /* payload only */);
 
   // The following is called whenever a RTCP SR packet is received:
-  void noteIncomingSR(unsigned long SSRC,
-		      unsigned long ntpTimestampMSW, unsigned long ntpTimestampLSW,
-		      unsigned long rtpTimestamp);
+	void noteIncomingSR(unsigned long SSRC, unsigned long ntpTimestampMSW,
+			unsigned long ntpTimestampLSW, unsigned long rtpTimestamp);
 
   // The following is called when a RTCP BYE packet is received:
   void removeRecord(unsigned long SSRC);
 
-  RTPReceptionStats* lookup(unsigned long SSRC) const;
+  RTPReceptionStats* lookup(unsigned long SSRC);
 
-protected: // constructor and destructor, called only by RTPSource:
-  friend class RTPSource;
+public: // constructor and destructor, called only by RTPSource:
+  //friend class RTPSource;
   RTPReceptionStatsDB();
   virtual ~RTPReceptionStatsDB();
 
@@ -281,47 +278,49 @@ protected:
   void add(unsigned long SSRC, RTPReceptionStats* stats);
 
 protected:
-  friend class Iterator;
-  unsigned fNumActiveSourcesSinceLastReset;
+  //friend class Iterator;
+  unsigned mNumActiveSourcesSinceLastReset;
 
 private:
-  HashTable* fTable;
-  unsigned fTotNumPacketsReceived; // for all SSRCs
+  //HashTable* fTable;
+  std::map<unsigned long, RTPReceptionStats*> mTable;
+  unsigned  mTotNumPacketsReceived; // for all SSRCs
 };
+
 
 class RTPReceptionStats {
 public:
   unsigned long SSRC() const { return mSSRC; }
   unsigned numPacketsReceivedSinceLastReset() const {
-    return fNumPacketsReceivedSinceLastReset;
+    return mNumPacketsReceivedSinceLastReset;
   }
-  unsigned totNumPacketsReceived() const { return fTotNumPacketsReceived; }
+  unsigned totNumPacketsReceived() const { return mTotNumPacketsReceived; }
   double totNumKBytesReceived() const;
 
   unsigned totNumPacketsExpected() const {
-    return (fHighestExtSeqNumReceived - fBaseExtSeqNumReceived) + 1;
+    return (mHighestExtSeqNumReceived - mBaseExtSeqNumReceived) + 1;
   }
 
-  unsigned baseExtSeqNumReceived() const { return fBaseExtSeqNumReceived; }
+  unsigned baseExtSeqNumReceived() const { return mBaseExtSeqNumReceived; }
   unsigned lastResetExtSeqNumReceived() const {
-    return fLastResetExtSeqNumReceived;
+    return mLastResetExtSeqNumReceived;
   }
   unsigned highestExtSeqNumReceived() const {
-    return fHighestExtSeqNumReceived;
+    return mHighestExtSeqNumReceived;
   }
 
   unsigned jitter() const;
 
-  unsigned lastReceivedSR_NTPmsw() const { return fLastReceivedSR_NTPmsw; }
-  unsigned lastReceivedSR_NTPlsw() const { return fLastReceivedSR_NTPlsw; }
+  unsigned lastReceivedSR_NTPmsw() const { return mLastReceivedSR_NTPmsw; }
+  unsigned lastReceivedSR_NTPlsw() const { return mLastReceivedSR_NTPlsw; }
   struct timeval const& lastReceivedSR_time() const {
-    return fLastReceivedSR_time;
+    return mLastReceivedSR_time;
   }
 
-  unsigned minInterPacketGapUS() const { return fMinInterPacketGapUS; }
-  unsigned maxInterPacketGapUS() const { return fMaxInterPacketGapUS; }
+  unsigned minInterPacketGapUS() const { return mMinInterPacketGapUS; }
+  unsigned maxInterPacketGapUS() const { return mMaxInterPacketGapUS; }
   struct timeval const& totalInterPacketGaps() const {
-    return fTotalInterPacketGaps;
+    return mTotalInterPacketGaps;
   }
 
 protected:
@@ -347,41 +346,41 @@ private:
       // generate a reception report)
 
 protected:
-  unsigned long mSSRC;
-  unsigned fNumPacketsReceivedSinceLastReset;
-  unsigned fTotNumPacketsReceived;
-  unsigned long fTotBytesReceived_hi, fTotBytesReceived_lo;
-  bool fHaveSeenInitialSequenceNumber;
-  unsigned fBaseExtSeqNumReceived;
-  unsigned fLastResetExtSeqNumReceived;
-  unsigned fHighestExtSeqNumReceived;
-  int fLastTransit; // used in the jitter calculation
-  unsigned long fPreviousPacketRTPTimestamp;
-  double fJitter;
-  // The following are recorded whenever we receive a RTCP SR for this SSRC:
-  unsigned fLastReceivedSR_NTPmsw; // NTP timestamp (from SR), most-signif
-  unsigned fLastReceivedSR_NTPlsw; // NTP timestamp (from SR), least-signif
-  struct timeval fLastReceivedSR_time;
-  struct timeval fLastPacketReceptionTime;
-  unsigned fMinInterPacketGapUS, fMaxInterPacketGapUS;
-  struct timeval fTotalInterPacketGaps;
+	unsigned long mSSRC;
+	unsigned mNumPacketsReceivedSinceLastReset;
+	unsigned mTotNumPacketsReceived;
+	unsigned long mTotBytesReceived_hi, mTotBytesReceived_lo;
+	bool mHaveSeenInitialSequenceNumber;
+	unsigned mBaseExtSeqNumReceived;
+	unsigned mLastResetExtSeqNumReceived;
+	unsigned mHighestExtSeqNumReceived;
+	int mLastTransit; // used in the jitter calculatmion
+	unsigned long mPreviousPacketRTPTimestamp;
+	double mJitter;
+	// The following are recorded whenever we receive a RTCP SR for this SSRC:
+	unsigned mLastReceivedSR_NTPmsw; // NTP timestamp (from SR), most-signif
+	unsigned mLastReceivedSR_NTPlsw; // NTP timestamp (from SR), least-signif
+	struct timeval mLastReceivedSR_time;
+	struct timeval mLastPacketReceptionTime;
+	unsigned mMinInterPacketGapUS, mMaxInterPacketGapUS;
+	struct timeval mTotalInterPacketGaps;
 
 private:
-  // Used to convert from RTP timestamp to 'wall clock' time:
-  bool fHasBeenSynchronized;
-  unsigned long fSyncTimestamp;
-  struct timeval fSyncTime;
+	// Used to convert from RTP timestamp to 'wall clock' time:
+	bool mHasBeenSynchronized;
+	unsigned long mSyncTimestamp;
+	struct timeval mSyncTime;
 };
 
 class CJdRtcp
 {
 public:
-	CJdRtcp::CJdRtcp();
+	CJdRtcp();
 	void OnExpire(void *event, int, int, double, int, double*, int*, double , double *, int*);
 
 	void OnReceive(void *packet, void *event, int*, int*, int*, double*, double*, double, double);
 
-	void Process(JdRtp *pRtp);
+	void Process(void *pRtp);
 	/* IMPORTS: */
 
 	void Schedule (double,void *event);
@@ -400,6 +399,9 @@ public:
 	void RemoveSender(void *packet);
 	double drand30(void);
 
+	void removeSSRC(unsigned long oldSSRC, bool fremove){
+		// TODO
+	}
 private:
 	void onReceive(int typeOfPacket, int totPacketSize, unsigned long ssrc);
 	void processIncomingReport(unsigned packetSize, struct sockaddr_in const& fromAddressAndPort,
@@ -412,6 +414,7 @@ private:
 					     unsigned numExtraWords = 0);
 	void enqueueCommonReportSuffix();
 	void enqueueReportBlock(RTPReceptionStats* stats);
+
 
 private:
 	char *m_pBuffer;
@@ -429,8 +432,6 @@ private:
 	int mPrevNumMembers;
 	double mAveRTCPSize;
 	int mIsInitial;
-	double mPrevReportTime;
-	double mNextReportTime;
 
 	  int mLastSentSize;
 	  int mLastReceivedSize;
@@ -440,7 +441,6 @@ private:
 
 	  OutPacketBuffer* mOutBuf;
 
-	  void *mSource;
+	  RTPSource *mSource;
 };
-
 #endif

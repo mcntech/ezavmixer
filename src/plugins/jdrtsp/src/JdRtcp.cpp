@@ -1,9 +1,7 @@
 #include "JdRtcp.h"
-#include <map>
 #include "JdRtp.h"
+#include <map>
 #include <sys/endian.h>
-
-typedef std::map<unsigned long, unsigned long> MemberMap;
 
 
 ////////// OutPacketBuffer //////////
@@ -16,21 +14,21 @@ unsigned OutPacketBuffer::maxSize = 60000; // by default
 
 OutPacketBuffer::OutPacketBuffer(unsigned preferredPacketSize,
 		unsigned maxPacketSize, unsigned maxBufferSize) :
-		fPreferred(preferredPacketSize), fMax(maxPacketSize), fOverflowDataSize(
+		mPreferred(preferredPacketSize), mMax(maxPacketSize), mOverflowDataSize(
 				0) {
 	if (maxBufferSize == 0)
 		maxBufferSize = maxSize;
 	unsigned maxNumPackets = (maxBufferSize + (maxPacketSize - 1))
 			/ maxPacketSize;
-	fLimit = maxNumPackets * maxPacketSize;
-	fBuf = new unsigned char[fLimit];
+	mLimit = maxNumPackets * maxPacketSize;
+	mBuf = new unsigned char[mLimit];
 	resetPacketStart();
 	resetOffset();
 	resetOverflowData();
 }
 
 OutPacketBuffer::~OutPacketBuffer() {
-	delete[] fBuf;
+	delete[] mBuf;
 }
 
 void OutPacketBuffer::enqueue(unsigned char const* from, unsigned numBytes) {
@@ -53,16 +51,16 @@ void OutPacketBuffer::enqueueWord(unsigned long word) {
 
 void OutPacketBuffer::insert(unsigned char const* from, unsigned numBytes,
 		unsigned toPosition) {
-	unsigned realToPosition = fPacketStart + toPosition;
-	if (realToPosition + numBytes > fLimit) {
-		if (realToPosition > fLimit)
+	unsigned realToPosition = mPacketStart + toPosition;
+	if (realToPosition + numBytes > mLimit) {
+		if (realToPosition > mLimit)
 			return; // we can't do this
-		numBytes = fLimit - realToPosition;
+		numBytes = mLimit - realToPosition;
 	}
 
-	memmove(&fBuf[realToPosition], from, numBytes);
-	if (toPosition + numBytes > fCurOffset) {
-		fCurOffset = toPosition + numBytes;
+	memmove(&mBuf[realToPosition], from, numBytes);
+	if (toPosition + numBytes > mCurOffset) {
+		mCurOffset = toPosition + numBytes;
 	}
 }
 
@@ -73,14 +71,14 @@ void OutPacketBuffer::insertWord(unsigned long word, unsigned toPosition) {
 
 void OutPacketBuffer::extract(unsigned char* to, unsigned numBytes,
 		unsigned fromPosition) {
-	unsigned realFromPosition = fPacketStart + fromPosition;
-	if (realFromPosition + numBytes > fLimit) { // sanity check
-		if (realFromPosition > fLimit)
+	unsigned realFromPosition = mPacketStart + fromPosition;
+	if (realFromPosition + numBytes > mLimit) { // sanity check
+		if (realFromPosition > mLimit)
 			return; // we can't do this
-		numBytes = fLimit - realFromPosition;
+		numBytes = mLimit - realFromPosition;
 	}
 
-	memmove(to, &fBuf[realFromPosition], numBytes);
+	memmove(to, &mBuf[realFromPosition], numBytes);
 }
 
 unsigned long OutPacketBuffer::extractWord(unsigned fromPosition) {
@@ -100,78 +98,61 @@ void OutPacketBuffer::skipBytes(unsigned numBytes) {
 void OutPacketBuffer::setOverflowData(unsigned overflowDataOffset,
 		unsigned overflowDataSize, struct timeval const& presentationTime,
 		unsigned durationInMicroseconds) {
-	fOverflowDataOffset = overflowDataOffset;
-	fOverflowDataSize = overflowDataSize;
-	fOverflowPresentationTime = presentationTime;
-	fOverflowDurationInMicroseconds = durationInMicroseconds;
+	mOverflowDataOffset = overflowDataOffset;
+	mOverflowDataSize = overflowDataSize;
+	mOverflowPresentationTime = presentationTime;
+	mOverflowDurationInMicroseconds = durationInMicroseconds;
 }
 
 void OutPacketBuffer::useOverflowData() {
-	enqueue(&fBuf[fPacketStart + fOverflowDataOffset], fOverflowDataSize);
-	fCurOffset -= fOverflowDataSize; // undoes increment performed by "enqueue"
+	enqueue(&mBuf[mPacketStart + mOverflowDataOffset], mOverflowDataSize);
+	mCurOffset -= mOverflowDataSize; // undoes increment performed by "enqueue"
 	resetOverflowData();
 }
 
 void OutPacketBuffer::adjustPacketStart(unsigned numBytes) {
-	fPacketStart += numBytes;
-	if (fOverflowDataOffset >= numBytes) {
-		fOverflowDataOffset -= numBytes;
+	mPacketStart += numBytes;
+	if (mOverflowDataOffset >= numBytes) {
+		mOverflowDataOffset -= numBytes;
 	} else {
-		fOverflowDataOffset = 0;
-		fOverflowDataSize = 0; // an error otherwise
+		mOverflowDataOffset = 0;
+		mOverflowDataSize = 0; // an error otherwise
 	}
 }
 
 void OutPacketBuffer::resetPacketStart() {
-	if (fOverflowDataSize > 0) {
-		fOverflowDataOffset += fPacketStart;
+	if (mOverflowDataSize > 0) {
+		mOverflowDataOffset += mPacketStart;
 	}
-	fPacketStart = 0;
+	mPacketStart = 0;
 }
 
-
-
-/*
-Boolean RTPSource::lookupByName(UsageEnvironment& env,
-				char const* sourceName,
-				RTPSource*& resultSource) {
-  resultSource = NULL; // unless we succeed
-
-  MediaSource* source;
-  if (!MediaSource::lookupByName(env, sourceName, source)) return False;
-
-  if (!source->isRTPSource()) {
-    env.setResultMsg(sourceName, " is not a RTP source");
-    return False;
-  }
-
-  resultSource = (RTPSource*)source;
-  return True;
-}*/
-
-Boolean RTPSource::hasBeenSynchronizedUsingRTCP() {
-  return fCurPacketHasBeenSynchronizedUsingRTCP;
+//==============================
+unsigned long our_random32()
+{
+	return 12345678;
 }
 
-Boolean RTPSource::isRTPSource() const {
-  return True;
+bool RTPSource::hasBeenSynchronizedUsingRTCP() {
+  return mCurPacketHasBeenSynchronizedUsingRTCP;
 }
 
-RTPSource::RTPSource(/*UsageEnvironment& env, Groupsock* RTPgs,*/
-		     unsigned char rtpPayloadFormat,
-		     u_int32_t rtpTimestampFrequency)
-  /*: FramedSource(env),*/
+bool RTPSource::isRTPSource() const {
+  return true;
+}
 
-    //fRTPInterface(this, RTPgs),
-    :fCurPacketHasBeenSynchronizedUsingRTCP(False), fLastReceivedSSRC(0),
-    fRTCPInstanceForMultiplexedRTCPPackets(NULL),
-    fRTPPayloadFormat(rtpPayloadFormat), fTimestampFrequency(rtpTimestampFrequency),
-    fSSRC(our_random32()), fEnableRTCPReports(True) {
-  fReceptionStatsDB = new RTPReceptionStatsDB();
+RTPSource::RTPSource(
+		unsigned char rtpPayloadFormat,
+		unsigned long rtpTimestampFrequency)
+		:mCurPacketHasBeenSynchronizedUsingRTCP(false), mLastReceivedSSRC(0),
+		mRTPPayloadFormat(rtpPayloadFormat), mTimestampFrequency(rtpTimestampFrequency),
+		mSSRC(our_random32()), mEnableRTCPReports(true)
+{
+		mReceptionStatsDB = new RTPReceptionStatsDB();
 }
 
 RTPSource::~RTPSource() {
-  delete fReceptionStatsDB;
+  delete mReceptionStatsDB;
 }
 
 void RTPSource::getAttributes() const {
@@ -183,228 +164,215 @@ void RTPSource::getAttributes() const {
 ////////// RTPReceptionStatsDB //////////
 
 RTPReceptionStatsDB::RTPReceptionStatsDB()
-  : fTable(HashTable::create(ONE_WORD_HASH_KEYS)), fTotNumPacketsReceived(0) {
+  : /*fTable(HashTable::create(ONE_WORD_HASH_KEYS)),*/ mTotNumPacketsReceived(0) {
   reset();
 }
 
 void RTPReceptionStatsDB::reset() {
-  fNumActiveSourcesSinceLastReset = 0;
+  mNumActiveSourcesSinceLastReset = 0;
 
-  Iterator iter(*this);
-  RTPReceptionStats* stats;
-  while ((stats = iter.next()) != NULL) {
-    stats->reset();
+  rec_tbl_iter it;
+  for (it = mTable.begin(); it != mTable.end(); it++) {
+	  RTPReceptionStats* stats = it->second;
+	  stats->reset();
   }
 }
 
 RTPReceptionStatsDB::~RTPReceptionStatsDB() {
   // First, remove and delete all stats records from the table:
   RTPReceptionStats* stats;
-  while ((stats = (RTPReceptionStats*)fTable->RemoveNext()) != NULL) {
-    delete stats;
+  rec_tbl_iter it;
+  for (it = mTable.begin(); it != mTable.end(); it++) {
+	  RTPReceptionStats* stats = it->second;
+	  if(stats) delete stats;
   }
 
   // Then, delete the table itself:
-  delete fTable;
+  //delete mTable;
 }
 
-void RTPReceptionStatsDB
-::noteIncomingPacket(u_int32_t SSRC, u_int16_t seqNum,
-		     u_int32_t rtpTimestamp, unsigned timestampFrequency,
-		     Boolean useForJitterCalculation,
-		     struct timeval& resultPresentationTime,
-		     Boolean& resultHasBeenSyncedUsingRTCP,
-		     unsigned packetSize) {
-  ++fTotNumPacketsReceived;
-  RTPReceptionStats* stats = lookup(SSRC);
-  if (stats == NULL) {
-    // This is the first time we've heard from this SSRC.
-    // Create a new record for it:
-    stats = new RTPReceptionStats(SSRC, seqNum);
-    if (stats == NULL) return;
-    add(SSRC, stats);
-  }
+void RTPReceptionStatsDB::noteIncomingPacket(
+		unsigned long   SSRC,
+		unsigned short  seqNum,
+		unsigned long   rtpTimestamp,
+		unsigned        timestampFrequency,
+		bool            useForJitterCalculation,
+		struct timeval& resultPresentationTime,
+		bool&           resultHasBeenSyncedUsingRTCP,
+		unsigned        packetSize)
+{
+	++mTotNumPacketsReceived;
+	RTPReceptionStats* stats = lookup(SSRC);
+	if (stats == NULL) {
+		// This is the first time we've heard from this SSRC.
+		// Create a new record for it:
+		stats = new RTPReceptionStats(SSRC, seqNum);
+		if (stats == NULL)
+			return;
+		add(SSRC, stats);
+	}
 
-  if (stats->numPacketsReceivedSinceLastReset() == 0) {
-    ++fNumActiveSourcesSinceLastReset;
-  }
+	if (stats->numPacketsReceivedSinceLastReset() == 0) {
+		++mNumActiveSourcesSinceLastReset;
+	}
 
-  stats->noteIncomingPacket(seqNum, rtpTimestamp, timestampFrequency,
-			    useForJitterCalculation,
-			    resultPresentationTime,
-			    resultHasBeenSyncedUsingRTCP, packetSize);
+	stats->noteIncomingPacket(
+			seqNum,
+			rtpTimestamp,
+			timestampFrequency,
+			useForJitterCalculation,
+			resultPresentationTime,
+			resultHasBeenSyncedUsingRTCP, packetSize);
 }
 
-void RTPReceptionStatsDB
-::noteIncomingSR(u_int32_t SSRC,
-		 u_int32_t ntpTimestampMSW, u_int32_t ntpTimestampLSW,
-		 u_int32_t rtpTimestamp) {
-  RTPReceptionStats* stats = lookup(SSRC);
-  if (stats == NULL) {
-    // This is the first time we've heard of this SSRC.
-    // Create a new record for it:
-    stats = new RTPReceptionStats(SSRC);
-    if (stats == NULL) return;
-    add(SSRC, stats);
-  }
-
-  stats->noteIncomingSR(ntpTimestampMSW, ntpTimestampLSW, rtpTimestamp);
+void RTPReceptionStatsDB::noteIncomingSR(
+		unsigned long SSRC,
+		unsigned long ntpTimestampMSW,
+		unsigned long ntpTimestampLSW,
+		unsigned long rtpTimestamp) {
+	RTPReceptionStats* stats = lookup(SSRC);
+	if (stats == NULL) {
+		// This is the first time we've heard of this SSRC.
+		// Create a new record for it:
+		stats = new RTPReceptionStats(SSRC);
+		if (stats == NULL) return;
+		add(SSRC, stats);
+	}
+	stats->noteIncomingSR(ntpTimestampMSW, ntpTimestampLSW, rtpTimestamp);
 }
 
-void RTPReceptionStatsDB::removeRecord(u_int32_t SSRC) {
-  RTPReceptionStats* stats = lookup(SSRC);
-  if (stats != NULL) {
-    long SSRC_long = (long)SSRC;
-    fTable->Remove((char const*)SSRC_long);
-    delete stats;
-  }
+void RTPReceptionStatsDB::removeRecord(unsigned long SSRC) {
+	rec_tbl_iter it = mTable.find(SSRC);
+	if (it != mTable.end()) {
+		RTPReceptionStats* stats = it->second;
+		if (stats != NULL) {
+			delete stats;
+		}
+		mTable.erase(it);
+	}
 }
 
-RTPReceptionStatsDB::Iterator
-::Iterator(RTPReceptionStatsDB& receptionStatsDB)
-  : fIter(HashTable::Iterator::create(*(receptionStatsDB.fTable))) {
+RTPReceptionStats* RTPReceptionStatsDB::lookup(unsigned long SSRC) {
+	RTPReceptionStats* stats = NULL;
+	rec_tbl_iter it = mTable.find(SSRC);
+	if (it != mTable.end()) {
+		stats = it->second;
+	}
+	return stats;
 }
 
-RTPReceptionStatsDB::Iterator::~Iterator() {
-  delete fIter;
-}
-
-RTPReceptionStats*
-RTPReceptionStatsDB::Iterator::next(Boolean includeInactiveSources) {
-  char const* key; // dummy
-
-  // If asked, skip over any sources that haven't been active
-  // since the last reset:
-  RTPReceptionStats* stats;
-  do {
-    stats = (RTPReceptionStats*)(fIter->next(key));
-  } while (stats != NULL && !includeInactiveSources
-	   && stats->numPacketsReceivedSinceLastReset() == 0);
-
-  return stats;
-}
-
-RTPReceptionStats* RTPReceptionStatsDB::lookup(u_int32_t SSRC) const {
+void RTPReceptionStatsDB::add(unsigned long SSRC, RTPReceptionStats* stats) {
   long SSRC_long = (long)SSRC;
-  return (RTPReceptionStats*)(fTable->Lookup((char const*)SSRC_long));
-}
-
-void RTPReceptionStatsDB::add(u_int32_t SSRC, RTPReceptionStats* stats) {
-  long SSRC_long = (long)SSRC;
-  fTable->Add((char const*)SSRC_long, stats);
+  mTable[SSRC] = stats;
 }
 
 ////////// RTPReceptionStats //////////
 
-RTPReceptionStats::RTPReceptionStats(u_int32_t SSRC, u_int16_t initialSeqNum) {
+RTPReceptionStats::RTPReceptionStats(unsigned long SSRC, unsigned short initialSeqNum) {
   initSeqNum(initialSeqNum);
   init(SSRC);
 }
 
-RTPReceptionStats::RTPReceptionStats(u_int32_t SSRC) {
+RTPReceptionStats::RTPReceptionStats(unsigned long SSRC) {
   init(SSRC);
 }
 
 RTPReceptionStats::~RTPReceptionStats() {
 }
 
-void RTPReceptionStats::init(u_int32_t SSRC) {
-  fSSRC = SSRC;
-  fTotNumPacketsReceived = 0;
-  fTotBytesReceived_hi = fTotBytesReceived_lo = 0;
-  fBaseExtSeqNumReceived = 0;
-  fHighestExtSeqNumReceived = 0;
-  fHaveSeenInitialSequenceNumber = False;
-  fLastTransit = ~0;
-  fPreviousPacketRTPTimestamp = 0;
-  fJitter = 0.0;
-  fLastReceivedSR_NTPmsw = fLastReceivedSR_NTPlsw = 0;
-  fLastReceivedSR_time.tv_sec = fLastReceivedSR_time.tv_usec = 0;
-  fLastPacketReceptionTime.tv_sec = fLastPacketReceptionTime.tv_usec = 0;
-  fMinInterPacketGapUS = 0x7FFFFFFF;
-  fMaxInterPacketGapUS = 0;
-  fTotalInterPacketGaps.tv_sec = fTotalInterPacketGaps.tv_usec = 0;
-  fHasBeenSynchronized = False;
-  fSyncTime.tv_sec = fSyncTime.tv_usec = 0;
-  reset();
+void RTPReceptionStats::init(unsigned long SSRC) {
+	mSSRC = SSRC;
+	mTotNumPacketsReceived = 0;
+	mTotBytesReceived_hi = mTotBytesReceived_lo = 0;
+	mBaseExtSeqNumReceived = 0;
+	mHighestExtSeqNumReceived = 0;
+	mHaveSeenInitialSequenceNumber = false;
+	mLastTransit = ~0;
+	mPreviousPacketRTPTimestamp = 0;
+	mJitter = 0.0;
+	mLastReceivedSR_NTPmsw = mLastReceivedSR_NTPlsw = 0;
+	mLastReceivedSR_time.tv_sec = mLastReceivedSR_time.tv_usec = 0;
+	mLastPacketReceptionTime.tv_sec = mLastPacketReceptionTime.tv_usec = 0;
+	mMinInterPacketGapUS = 0x7FFFFFFF;
+	mMaxInterPacketGapUS = 0;
+	mTotalInterPacketGaps.tv_sec = mTotalInterPacketGaps.tv_usec = 0;
+	mHasBeenSynchronized = false;
+	mSyncTime.tv_sec = mSyncTime.tv_usec = 0;
+	reset();
 }
 
-void RTPReceptionStats::initSeqNum(u_int16_t initialSeqNum) {
-    fBaseExtSeqNumReceived = 0x10000 | initialSeqNum;
-    fHighestExtSeqNumReceived = 0x10000 | initialSeqNum;
-    fHaveSeenInitialSequenceNumber = True;
+void RTPReceptionStats::initSeqNum(unsigned short initialSeqNum) {
+    mBaseExtSeqNumReceived = 0x10000 | initialSeqNum;
+    mHighestExtSeqNumReceived = 0x10000 | initialSeqNum;
+    mHaveSeenInitialSequenceNumber = true;
 }
 
 #ifndef MILLION
 #define MILLION 1000000
 #endif
 
-void RTPReceptionStats::noteIncomingPacket(u_int16_t seqNum,
-		u_int32_t rtpTimestamp, unsigned timestampFrequency,
-		Boolean useForJitterCalculation, struct timeval& resultPresentationTime,
-		Boolean& resultHasBeenSyncedUsingRTCP, unsigned packetSize) {
-	if (!fHaveSeenInitialSequenceNumber)
+void RTPReceptionStats::noteIncomingPacket(unsigned short seqNum,
+		unsigned long rtpTimestamp, unsigned timestampFrequency,
+		bool useForJitterCalculation, struct timeval& resultPresentationTime,
+		bool& resultHasBeenSyncedUsingRTCP, unsigned packetSize) {
+	if (!mHaveSeenInitialSequenceNumber)
 		initSeqNum(seqNum);
 
-	++fNumPacketsReceivedSinceLastReset;
-	++fTotNumPacketsReceived;
-	u_int32_t prevTotBytesReceived_lo = fTotBytesReceived_lo;
-	fTotBytesReceived_lo += packetSize;
-	if (fTotBytesReceived_lo < prevTotBytesReceived_lo) { // wrap-around
-		++fTotBytesReceived_hi;
+	++mNumPacketsReceivedSinceLastReset;
+	++mTotNumPacketsReceived;
+	unsigned long prevTotBytesReceived_lo = mTotBytesReceived_lo;
+	mTotBytesReceived_lo += packetSize;
+	if (mTotBytesReceived_lo < prevTotBytesReceived_lo) { // wrap-around
+		++mTotBytesReceived_hi;
 	}
 
 	// Check whether the new sequence number is the highest yet seen:
-	unsigned oldSeqNum = (fHighestExtSeqNumReceived & 0xFFFF);
-	unsigned seqNumCycle = (fHighestExtSeqNumReceived & 0xFFFF0000);
+	unsigned oldSeqNum = (mHighestExtSeqNumReceived & 0xFFFF);
+	unsigned seqNumCycle = (mHighestExtSeqNumReceived & 0xFFFF0000);
 	unsigned seqNumDifference = (unsigned) ((int) seqNum - (int) oldSeqNum);
 	unsigned newSeqNum = 0;
-	if (seqNumLT((u_int16_t) oldSeqNum, seqNum)) {
+	if (seqNumLT((unsigned short) oldSeqNum, seqNum)) {
 		// This packet was not an old packet received out of order, so check it:
-
 		if (seqNumDifference >= 0x8000) {
 			// The sequence number wrapped around, so start a new cycle:
 			seqNumCycle += 0x10000;
 		}
-
 		newSeqNum = seqNumCycle | seqNum;
-		if (newSeqNum > fHighestExtSeqNumReceived) {
-			fHighestExtSeqNumReceived = newSeqNum;
+		if (newSeqNum > mHighestExtSeqNumReceived) {
+			mHighestExtSeqNumReceived = newSeqNum;
 		}
-	} else if (fTotNumPacketsReceived > 1) {
+	} else if (mTotNumPacketsReceived > 1) {
 		// This packet was an old packet received out of order
-
 		if ((int) seqNumDifference >= 0x8000) {
 			// The sequence number wrapped around, so switch to an old cycle:
 			seqNumCycle -= 0x10000;
 		}
-
 		newSeqNum = seqNumCycle | seqNum;
-		if (newSeqNum < fBaseExtSeqNumReceived) {
-			fBaseExtSeqNumReceived = newSeqNum;
+		if (newSeqNum < mBaseExtSeqNumReceived) {
+			mBaseExtSeqNumReceived = newSeqNum;
 		}
 	}
 
 	// Record the inter-packet delay
 	struct timeval timeNow;
 	gettimeofday(&timeNow, NULL);
-	if (fLastPacketReceptionTime.tv_sec != 0
-			|| fLastPacketReceptionTime.tv_usec != 0) {
-		unsigned gap = (timeNow.tv_sec - fLastPacketReceptionTime.tv_sec)
-				* MILLION + timeNow.tv_usec - fLastPacketReceptionTime.tv_usec;
-		if (gap > fMaxInterPacketGapUS) {
-			fMaxInterPacketGapUS = gap;
+	if (mLastPacketReceptionTime.tv_sec != 0
+			|| mLastPacketReceptionTime.tv_usec != 0) {
+		unsigned gap = (timeNow.tv_sec - mLastPacketReceptionTime.tv_sec)
+				* MILLION + timeNow.tv_usec - mLastPacketReceptionTime.tv_usec;
+		if (gap > mMaxInterPacketGapUS) {
+			mMaxInterPacketGapUS = gap;
 		}
-		if (gap < fMinInterPacketGapUS) {
-			fMinInterPacketGapUS = gap;
+		if (gap < mMinInterPacketGapUS) {
+			mMinInterPacketGapUS = gap;
 		}
-		fTotalInterPacketGaps.tv_usec += gap;
-		if (fTotalInterPacketGaps.tv_usec >= MILLION) {
-			++fTotalInterPacketGaps.tv_sec;
-			fTotalInterPacketGaps.tv_usec -= MILLION;
+		mTotalInterPacketGaps.tv_usec += gap;
+		if (mTotalInterPacketGaps.tv_usec >= MILLION) {
+			++mTotalInterPacketGaps.tv_sec;
+			mTotalInterPacketGaps.tv_usec -= MILLION;
 		}
 	}
-	fLastPacketReceptionTime = timeNow;
+	mLastPacketReceptionTime = timeNow;
 
 	// Compute the current 'jitter' using the received packet's RTP timestamp,
 	// and the RTP timestamp that would correspond to the current time.
@@ -413,31 +381,31 @@ void RTPReceptionStats::noteIncomingPacket(u_int16_t seqNum,
 	// the same as that of the previous packet (this indicates a multi-packet
 	// fragment), or if we've been explicitly told not to use this packet.
 	if (useForJitterCalculation
-			&& rtpTimestamp != fPreviousPacketRTPTimestamp) {
+			&& rtpTimestamp != mPreviousPacketRTPTimestamp) {
 		unsigned arrival = (timestampFrequency * timeNow.tv_sec);
 		arrival += (unsigned) ((2.0 * timestampFrequency * timeNow.tv_usec
 				+ 1000000.0) / 2000000);
 		// note: rounding
 		int transit = arrival - rtpTimestamp;
-		if (fLastTransit == (~0))
-			fLastTransit = transit; // hack for first time
-		int d = transit - fLastTransit;
-		fLastTransit = transit;
+		if (mLastTransit == (~0))
+			mLastTransit = transit; // hack for first time
+		int d = transit - mLastTransit;
+		mLastTransit = transit;
 		if (d < 0)
 			d = -d;
-		fJitter += (1.0 / 16.0) * ((double) d - fJitter);
+		mJitter += (1.0 / 16.0) * ((double) d - mJitter);
 	}
 
 	// Return the 'presentation time' that corresponds to "rtpTimestamp":
-	if (fSyncTime.tv_sec == 0 && fSyncTime.tv_usec == 0) {
+	if (mSyncTime.tv_sec == 0 && mSyncTime.tv_usec == 0) {
 		// This is the first timestamp that we've seen, so use the current
 		// 'wall clock' time as the synchronization time.  (This will be
 		// corrected later when we receive RTCP SRs.)
-		fSyncTimestamp = rtpTimestamp;
-		fSyncTime = timeNow;
+		mSyncTimestamp = rtpTimestamp;
+		mSyncTime = timeNow;
 	}
 
-	int timestampDiff = rtpTimestamp - fSyncTimestamp;
+	int timestampDiff = rtpTimestamp - mSyncTimestamp;
 	// Note: This works even if the timestamp wraps around
 	// (as long as "int" is 32 bits)
 
@@ -448,8 +416,8 @@ void RTPReceptionStats::noteIncomingPacket(u_int16_t seqNum,
 	unsigned const million = 1000000;
 	unsigned seconds, uSeconds;
 	if (timeDiff >= 0.0) {
-		seconds = fSyncTime.tv_sec + (unsigned) (timeDiff);
-		uSeconds = fSyncTime.tv_usec
+		seconds = mSyncTime.tv_sec + (unsigned) (timeDiff);
+		uSeconds = mSyncTime.tv_usec
 				+ (unsigned) ((timeDiff - (unsigned) timeDiff) * million);
 		if (uSeconds >= million) {
 			uSeconds -= million;
@@ -457,8 +425,8 @@ void RTPReceptionStats::noteIncomingPacket(u_int16_t seqNum,
 		}
 	} else {
 		timeDiff = -timeDiff;
-		seconds = fSyncTime.tv_sec - (unsigned) (timeDiff);
-		uSeconds = fSyncTime.tv_usec
+		seconds = mSyncTime.tv_sec - (unsigned) (timeDiff);
+		uSeconds = mSyncTime.tv_usec
 				- (unsigned) ((timeDiff - (unsigned) timeDiff) * million);
 		if ((int) uSeconds < 0) {
 			uSeconds += million;
@@ -467,49 +435,51 @@ void RTPReceptionStats::noteIncomingPacket(u_int16_t seqNum,
 	}
 	resultPresentationTime.tv_sec = seconds;
 	resultPresentationTime.tv_usec = uSeconds;
-	resultHasBeenSyncedUsingRTCP = fHasBeenSynchronized;
+	resultHasBeenSyncedUsingRTCP = mHasBeenSynchronized;
 
 	// Save these as the new synchronization timestamp & time:
-	fSyncTimestamp = rtpTimestamp;
-	fSyncTime = resultPresentationTime;
+	mSyncTimestamp = rtpTimestamp;
+	mSyncTime = resultPresentationTime;
 
-	fPreviousPacketRTPTimestamp = rtpTimestamp;
+	mPreviousPacketRTPTimestamp = rtpTimestamp;
 }
 
-void RTPReceptionStats::noteIncomingSR(u_int32_t ntpTimestampMSW,
-		u_int32_t ntpTimestampLSW, u_int32_t rtpTimestamp) {
-	fLastReceivedSR_NTPmsw = ntpTimestampMSW;
-	fLastReceivedSR_NTPlsw = ntpTimestampLSW;
+void RTPReceptionStats::noteIncomingSR(unsigned long ntpTimestampMSW,
+		unsigned long ntpTimestampLSW, unsigned long rtpTimestamp) {
+	mLastReceivedSR_NTPmsw = ntpTimestampMSW;
+	mLastReceivedSR_NTPlsw = ntpTimestampLSW;
 
-	gettimeofday(&fLastReceivedSR_time, NULL);
+	gettimeofday(&mLastReceivedSR_time, NULL);
 
 	// Use this SR to update time synchronization information:
-	fSyncTimestamp = rtpTimestamp;
-	fSyncTime.tv_sec = ntpTimestampMSW - 0x83AA7E80; // 1/1/1900 -> 1/1/1970
+	mSyncTimestamp = rtpTimestamp;
+	mSyncTime.tv_sec = ntpTimestampMSW - 0x83AA7E80; // 1/1/1900 -> 1/1/1970
 	double microseconds = (ntpTimestampLSW * 15625.0) / 0x04000000; // 10^6/2^32
-	fSyncTime.tv_usec = (unsigned) (microseconds + 0.5);
-	fHasBeenSynchronized = True;
+	mSyncTime.tv_usec = (unsigned) (microseconds + 0.5);
+	mHasBeenSynchronized = true;
 }
 
 double RTPReceptionStats::totNumKBytesReceived() const {
-  double const hiMultiplier = 0x20000000/125.0; // == (2^32)/(10^3)
-  return fTotBytesReceived_hi*hiMultiplier + fTotBytesReceived_lo/1000.0;
+	double const hiMultiplier = 0x20000000 / 125.0; // == (2^32)/(10^3)
+	return mTotBytesReceived_hi * hiMultiplier + mTotBytesReceived_lo / 1000.0;
 }
 
 unsigned RTPReceptionStats::jitter() const {
-  return (unsigned)fJitter;
+  return (unsigned)mJitter;
 }
 
 void RTPReceptionStats::reset() {
-  fNumPacketsReceivedSinceLastReset = 0;
-  fLastResetExtSeqNumReceived = fHighestExtSeqNumReceived;
+	mNumPacketsReceivedSinceLastReset = 0;
+	mLastResetExtSeqNumReceived = mHighestExtSeqNumReceived;
 }
 
+typedef std::map<unsigned long, unsigned long> MemberMap;
+typedef std::map<unsigned long, unsigned long>::iterator MemberMap_Iter;
 
 class RTCPMemberDatabase {
 public:
 	RTCPMemberDatabase(CJdRtcp& ourRTCPInstance) :
-			mOurRTCPInstance(ourRTCPInstance), mNumMembers(1 /*ourself*/) {
+			mOurRTCPInstance(ourRTCPInstance) {
 	}
 
 	virtual ~RTCPMemberDatabase() {
@@ -517,7 +487,7 @@ public:
 	}
 
 	bool isMember(unsigned long ssrc) const {
-		return mTable.find((ssrc) != NULL;
+		return mTable.find(ssrc) != mTable.end();
 	}
 
 	bool noteMembership(unsigned long ssrc, unsigned curTimeCount) {
@@ -530,8 +500,8 @@ public:
 	}
 
 	bool remove(unsigned long ssrc) {
-		bool wasPresent = Remove(ssrc);
-		return wasPresent;
+		Remove(ssrc);
+		return true;
 	}
 
 	unsigned numMembers() const {
@@ -542,7 +512,7 @@ public:
 
 private:
 	void Remove(unsigned long Ssrc) {
-		MemberMap::iterator it = mTable.find(Ssrc);
+		MemberMap_Iter it = mTable.find(Ssrc);
 		if(it != mTable.end())
 			mTable.erase(it);
 	}
@@ -556,32 +526,26 @@ void RTCPMemberDatabase::reapOldMembers(unsigned threshold) {
 
 	do {
 		foundOldMember = 0;
+		MemberMap_Iter it;
 
-		MemberMap::Iterator it;
-
-		for(it=mTable.begin(), it!= mTable.end(), ++it){
+		for(it = mTable.begin(); it!= mTable.end(); ++it){
 			if (it->second <  threshold) {
 				// this SSRC is old
 				oldSSRC = it->first;
 				foundOldMember = true;
 			}
 		}
-		mTable.erase(it);
-
-		if (foundOldMember) {
-			mOurRTCPInstance.removeSSRC(oldSSRC, true);
+		if(it != mTable.end()) {
+			mTable.erase(it);
+			if (foundOldMember) {
+				mOurRTCPInstance.removeSSRC(oldSSRC, true);
+			}
 		}
 	} while (foundOldMember);
 }
 
 
-
-
-
-
-
-
-CJdRtcp::CJdRtcp
+CJdRtcp::CJdRtcp()
 {
 	m_maxBufferLen = 2048;
 	m_pBuffer = (char *)malloc(m_maxBufferLen);
@@ -783,12 +747,12 @@ double CJdRtcp::rtcp_interval(int members,
                (15./16.)*(*avg_rtcp_size);
 
            if (TypeOfEvent(e) == EVENT_REPORT) {
-               if (NewSender(p) == FALSE) {
+               if (NewSender(p) == false) {
                    RemoveSender(p);
                    *senders -= 1;
                }
 
-               if (NewMember(p) == FALSE) {
+               if (NewMember(p) == false) {
                    RemoveMember(p);
                    *members -= 1;
                }
@@ -1086,8 +1050,9 @@ void CJdRtcp::onReceive(int typeOfPacket, int totPacketSize, unsigned long ssrc)
 	    dTimeNow(), // tc
 	    mNextReportTime);
 }
-void CJdRtcp::Process(JdRtp *pRtp)
+void CJdRtcp::Process(void *_pRtp)
 {
+	JdRtp *pRtp = (JdRtp *)pRtp;
 	int bytesRead = pRtp->ReadRtcp(m_pBuffer, m_maxBufferLen);
 	if(bytesRead > 0){
 		unsigned packetSize = bytesRead;
@@ -1150,20 +1115,13 @@ void CJdRtcp::enqueueCommonReportPrefix(unsigned char packetType,
 
 void CJdRtcp::enqueueCommonReportSuffix()
 {
-  // Output the report blocks for each source:
-  if (mSource != NULL) {
-/*    RTPReceptionStatsDB& allReceptionStats = mSource->receptionStatsDB();
-
-    RTPReceptionStatsDB::Iterator iterator(allReceptionStats);*/
-    while (1) {
-      RTPReceptionStats* receptionStats = iterator.next();
-      if (receptionStats == NULL) break;
-
-      enqueueReportBlock(receptionStats);
-    }
-
-    allReceptionStats.reset(); // because we have just generated a report
-  }
+	// Output the report blocks for each source:
+	if (mSource != NULL) {
+		RTPReceptionStatsDB *stats = mSource->receptionStatsDB();
+		if (stats){
+			enqueueReportBlock(stats);
+		}
+	}
 }
 
 void

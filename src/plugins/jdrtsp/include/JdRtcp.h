@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <map>
+#include "JdRtp.h"
 
 class RTCPMemberDatabase; // forward
 
@@ -44,9 +45,6 @@ const unsigned char RTCP_SDES_PRIV = 8;
 #define PACKET_RTCP_REPORT 2
 #define PACKET_BYE 3
 #define PACKET_RTCP_APP 4
-
-/* The code from the spec calls drand48(), but we have drand30() instead */
-#define drand48 drand30
 
 /* The code calls "exit()", but we don't want to exit, so make it a noop: */
 #define exit(n) do {} while (0)
@@ -157,7 +155,7 @@ public:
 
 	virtual bool hasBeenSynchronizedUsingRTCP();
 
-	virtual void setPacketReorderingThresholdTime(unsigned uSeconds) = 0;
+	virtual void setPacketReorderingThresholdTime(unsigned uSeconds){};
 
 	// used by RTCP:
 	unsigned long SSRC() const {
@@ -168,8 +166,8 @@ public:
 		return mTimestampFrequency;
 	}
 
-	RTPReceptionStatsDB& receptionStatsDB() const {
-		return *mReceptionStatsDB;
+	RTPReceptionStatsDB *receptionStatsDB() const {
+		return mReceptionStatsDB;
 	}
 
 	unsigned long lastReceivedSSRC() const {
@@ -194,7 +192,6 @@ public:
 		return mCurPacketRTPTimestamp;
 	}
 
-protected:
 	RTPSource(unsigned char rtpPayloadFormat,
 			unsigned long rtpTimestampFrequency);
 	virtual ~RTPSource();
@@ -220,7 +217,6 @@ private:
 	RTPReceptionStatsDB* mReceptionStatsDB;
 };
 
-
 class RTPReceptionStats; // forward
 
 typedef std::map<unsigned long, RTPReceptionStats*>::iterator rec_tbl_iter;
@@ -234,57 +230,44 @@ public:
 		return mNumActiveSourcesSinceLastReset;
 	}
 
-  void reset();
-      // resets periodic stats (called each time they're used to
-      // generate a reception report)
+	void reset();
 
-  class Iterator {
-  public:
-    Iterator(RTPReceptionStatsDB& receptionStatsDB);
-    virtual ~Iterator();
-
-    RTPReceptionStats* next(bool includeInactiveSources = false);
-        // NULL if none
-
-  private:
-    //HashTable::Iterator* mIter;
-  };
+	RTPReceptionStats* getStats(unsigned long SSRC);
 
 	// The following is called whenever a RTP packet is received:
-	void noteIncomingPacket(unsigned long SSRC,
-			unsigned short seqNum,
-			unsigned long rtpTimestamp,
-			unsigned timestampFrequency,
+	void noteIncomingPacket(unsigned long SSRC, unsigned short seqNum,
+			unsigned long rtpTimestamp, unsigned timestampFrequency,
 			bool useForJitterCalculation,
 			struct timeval& resultPresentationTime,
 			bool& resultHasBeenSyncedUsingRTCP,
 			unsigned packetSize /* payload only */);
 
-  // The following is called whenever a RTCP SR packet is received:
+	// The following is called whenever a RTCP SR packet is received:
 	void noteIncomingSR(unsigned long SSRC, unsigned long ntpTimestampMSW,
 			unsigned long ntpTimestampLSW, unsigned long rtpTimestamp);
 
-  // The following is called when a RTCP BYE packet is received:
-  void removeRecord(unsigned long SSRC);
+	// The following is called when a RTCP BYE packet is received:
+	void removeRecord(unsigned long SSRC);
 
-  RTPReceptionStats* lookup(unsigned long SSRC);
+	RTPReceptionStats* lookup(unsigned long SSRC);
 
-public: // constructor and destructor, called only by RTPSource:
-  //friend class RTPSource;
-  RTPReceptionStatsDB();
-  virtual ~RTPReceptionStatsDB();
-
-protected:
-  void add(unsigned long SSRC, RTPReceptionStats* stats);
+public:
+	// constructor and destructor, called only by RTPSource:
+	//friend class RTPSource;
+	RTPReceptionStatsDB();
+	virtual ~RTPReceptionStatsDB();
 
 protected:
-  //friend class Iterator;
-  unsigned mNumActiveSourcesSinceLastReset;
+	void add(unsigned long SSRC, RTPReceptionStats* stats);
 
-private:
-  //HashTable* fTable;
-  std::map<unsigned long, RTPReceptionStats*> mTable;
-  unsigned  mTotNumPacketsReceived; // for all SSRCs
+protected:
+	//friend class Iterator;
+	unsigned mNumActiveSourcesSinceLastReset;
+
+public:
+	//HashTable* fTable;
+	std::map<unsigned long, RTPReceptionStats*> mTable;
+	unsigned mTotNumPacketsReceived; // for all SSRCs
 };
 
 
@@ -372,17 +355,20 @@ private:
 	struct timeval mSyncTime;
 };
 
+
+// TODO: Extend to support server
 class CJdRtcp
 {
 public:
-	CJdRtcp();
+	CJdRtcp(bool fServer, int nClock, unsigned char ucPlType);
+	~CJdRtcp();
 	void OnExpire(void *event, int, int, double, int, double*, int*, double , double *, int*);
-
 	void OnReceive(void *packet, void *event, int*, int*, int*, double*, double*, double, double);
 
-	void Process(void *pRtp);
-	/* IMPORTS: */
-
+	int ProcessIncomingRtcpPkt(char *pRtcpPkt, int nSize);
+	int GetOutgoingRtcpPkt(char *pRtcpPkt, int nMaxSize, double TimerTickSec);
+	void UpdateStatForRtpPkt(RTP_PKT_T *pRtpHdr, int nSize);
+/*
 	void Schedule (double,void *event);
 	void Reschedule(double,void *event);
 	void SendRTCPReport (void *event);
@@ -397,13 +383,13 @@ public:
 	void AddSender(void *packet);
 	void RemoveMember(void *packet);
 	void RemoveSender(void *packet);
-	double drand30(void);
+*/
+	double drand48(void);
 
 	void removeSSRC(unsigned long oldSSRC, bool fremove);
 private:
 	void onReceive(int typeOfPacket, int totPacketSize, unsigned long ssrc);
-	void processIncomingReport(unsigned packetSize, struct sockaddr_in const& fromAddressAndPort,
-				int tcpSocketNum, unsigned char tcpStreamChannelId);
+	void processIncomingReport(char* pInPkt, unsigned packetSize);
 
 	bool addReport(bool alwaysAdd);
 
@@ -415,9 +401,6 @@ private:
 
 
 private:
-	char *m_pBuffer;
-	int  m_maxBufferLen;
-
 	double rtcp_interval(int members,
 	                        int senders,
 	                        double rtcp_bw,
@@ -431,14 +414,14 @@ private:
 	double mAveRTCPSize;
 	int mIsInitial;
 
-	  int mLastSentSize;
-	  int mLastReceivedSize;
-	  unsigned long mLastReceivedSSRC;
-	  int mTypeOfEvent;
-	  int mTypeOfPacket;
+	int mLastSentSize;
+	int mLastReceivedSize;
+	unsigned long mLastReceivedSSRC;
+	int mTypeOfEvent;
+	int mTypeOfPacket;
 
-	  OutPacketBuffer* mOutBuf;
-
-	  RTPSource *mSource;
+	OutPacketBuffer* mOutBuf;
+	void *mSink;
+	RTPSource *mSource;
 };
 #endif

@@ -189,16 +189,17 @@ public:
 			free(m_pszTransport);
 	}
 
-	virtual int Open(const char *pszUrl, int *pnVidCodec, int *pnAudCodec);
+	virtual int Open(const char *pszUrl);
 	virtual int SendSetup(  char *szStrmType,					// audio or video
 					unsigned short rtpport, 
 					unsigned short rtcpport);
 
 	virtual void SendPlay(char *szStrmType);
+	virtual void SendKeepALive(char *szStrmType /*audio or video*/);
 	virtual void Close();
-	int GetVideoCodec();
+	int GetVideoCodec(int *pnClock, unsigned char *plType);
 	bool GetVideoCodecConfig(unsigned char *pCfg, int *pnSize);
-	int GetAudioCodec();
+	int GetAudioCodec(int *pnClock, unsigned char *plType);
 	int GetVData(char *pData, int nMaxLen)
 	{
 		if(m_pVRtp)

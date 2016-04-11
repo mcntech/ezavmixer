@@ -52,69 +52,6 @@ int InitRtpPort(rtp_port_alloc_t &rtp_port_alloc)
 	return 0;
 }
 
-int CRtspClntBridge::StartClient(const char *lpszRspServer)
-{
-	TRACE_ENTER
-
-	int nResult = 0;
-	rtp_port_alloc_t rtp_port;
-	InitRtpPort(rtp_port);
-
-	JDBG_LOG(CJdDbg::LVL_TRACE, ("Open rtsp connection for %s",lpszRspServer));
-	strncpy(m_szRemoteHost, lpszRspServer, MAX_NAME_SIZE - 1);
-
-	int res = m_pRtspClnt->Open(lpszRspServer, &m_nVidCodec, &m_nAudCodec);
-	if(res < 0){
-		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to open rtsp connection for %s",lpszRspServer));
-		nResult = -1;
-		if(m_pCallback) {
-			m_pCallback->NotifyStateChange(m_szRemoteHost, RTSP_SERVER_ERROR);
-		}
-		goto EXIT;
-	}
-
-	JDBG_LOG(CJdDbg::LVL_ERR, ("Open successful codecs aud=%d vid=%d", m_nAudCodec, m_nVidCodec));
-	if (m_nVidCodec ==  RTP_CODEC_MP2T) {
-		JDBG_LOG(CJdDbg::LVL_ERR, ("Setup:RTP_CODEC_MP2T"));
-		m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
-		//CreateTsOutputPin();
-	} else {
-		if(m_nVidCodec == RTP_CODEC_H264) {
-			int nSpsSize = 256;
-			unsigned char Sps[256];
-			if(m_pRtspClnt->GetVideoCodecConfig(Sps, &nSpsSize)) {
-				H264::cParser Parser;
-				if(Parser.ParseSequenceParameterSetMin(Sps,nSpsSize, &m_lWidth, &m_lHeight) != 0){
-					JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to parse stream nSpsSize=%d",nSpsSize));
-				}
-			}
-
-			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_H264"));
-			m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
-			CreateH264OutputPin();
-		}
-
-		if(m_nAudCodec == RTP_CODEC_AAC) {
-			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_AAC"));
-			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
-			CreateMP4AOutputPin();
-		} else if(m_nAudCodec == RTP_CODEC_PCMU) {
-			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_PCMU"));
-			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
-			CreatePCMUOutputPin();
-		}
-
-		if(m_pCallback) {
-			RTSP_SERVER_DESCRIPTION Descript = {0};
-			m_pCallback->NotifyStateChange(m_szRemoteHost, RTSP_SERVER_SETUP);
-		}
-	}
-
-EXIT:
-	TRACE_LEAVE
-	return nResult;
-}
-
 CRtspClntBridge::CRtspClntBridge(
 		const char *lpszRspServer,
 		int fEnableAud,
@@ -128,6 +65,9 @@ CRtspClntBridge::CRtspClntBridge(
 	m_pRtspClnt = new CJdRtspClntSession;
 	m_pRfcRtp = new CJdRfc3984Rx(2048);
 	m_pAudRfcRtp = new CJdRfc5391;
+
+	m_pVRtcp = NULL;
+	m_pARtcp = NULL;
 
 	m_pData = (char *)malloc(MAX_VID_FRAME_SIZE);
 	m_lMaxLen = MAX_VID_FRAME_SIZE;
@@ -156,12 +96,13 @@ CRtspClntBridge::CRtspClntBridge(
 
 	m_pCallback = pCallback;
 	mJitterUpdateTime = 0;
-
+	m_thrdHandleVideoRtcp = NULL;
+	m_thrdHandleAudioRtcp = NULL;
+	m_fEnableRtcp = true;
 	*pResult = StartClient(lpszRspServer);
 
 	TRACE_LEAVE
 }
-
 
 CRtspClntBridge::~CRtspClntBridge()
 {
@@ -175,34 +116,124 @@ CRtspClntBridge::~CRtspClntBridge()
 		delete m_pAudRfcRtp;
 }
 
+int CRtspClntBridge::StartClient(const char *lpszRspServer)
+{
+	TRACE_ENTER
+
+	int nClock;
+	unsigned char ucPlType;
+	int nResult = 0;
+	rtp_port_alloc_t rtp_port;
+	InitRtpPort(rtp_port);
+
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("Open rtsp connection for %s",lpszRspServer));
+	strncpy(m_szRemoteHost, lpszRspServer, MAX_NAME_SIZE - 1);
+
+	int res = m_pRtspClnt->Open(lpszRspServer);
+	if(res < 0){
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to open rtsp connection for %s",lpszRspServer));
+		nResult = -1;
+		if(m_pCallback) {
+			m_pCallback->NotifyStateChange(m_szRemoteHost, RTSP_SERVER_ERROR);
+		}
+		goto EXIT;
+	}
+
+	m_nVidCodec = m_pRtspClnt->GetVideoCodec(&nClock, &ucPlType);
+	JDBG_LOG(CJdDbg::LVL_ERR, ("Open successful codecs aud=%d vid=%d", m_nAudCodec, m_nVidCodec));
+	if (m_nVidCodec ==  RTP_CODEC_MP2T) {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Setup:RTP_CODEC_MP2T"));
+		m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
+		//CreateTsOutputPin();
+	} else {
+		if(m_nVidCodec == RTP_CODEC_H264) {
+			int nSpsSize = 256;
+			unsigned char Sps[256];
+			if(m_pRtspClnt->GetVideoCodecConfig(Sps, &nSpsSize)) {
+				H264::cParser Parser;
+				if(Parser.ParseSequenceParameterSetMin(Sps,nSpsSize, &m_lWidth, &m_lHeight) != 0){
+					JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to parse stream nSpsSize=%d",nSpsSize));
+				}
+			}
+
+			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_H264"));
+			m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
+			CreateH264OutputPin();
+			m_pVRtcp = new CJdRtcp(false, nClock, ucPlType);
+		}
+
+		m_nAudCodec = m_pRtspClnt->GetAudioCodec(&nClock, &ucPlType);;
+		if(m_nAudCodec == RTP_CODEC_AAC) {
+			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_AAC"));
+			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
+			CreateMP4AOutputPin();
+			m_pARtcp = new CJdRtcp(false, nClock, ucPlType);
+		} else if(m_nAudCodec == RTP_CODEC_PCMU) {
+			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_PCMU"));
+			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
+			CreatePCMUOutputPin();
+			m_pARtcp = new CJdRtcp(false, nClock, ucPlType);
+		}
+
+		if(m_pCallback) {
+			RTSP_SERVER_DESCRIPTION Descript = {0};
+			m_pCallback->NotifyStateChange(m_szRemoteHost, RTSP_SERVER_SETUP);
+		}
+	}
+
+EXIT:
+	TRACE_LEAVE
+	return nResult;
+}
+
+
 long CRtspClntBridge::ProcessVideoRtcp()
 {
+	TRACE_ENTER
 	char *pData = (char *)malloc(2048);
 	bool fDone = false;
+	double TimerTickSec = 0;
 	while(!fDone && m_fRun) {
-		long lBytesRead = m_pRtspClnt->m_pVRtp->ReadRtcp(pData, 2048, 0);
+		long lBytesRead = m_pRtspClnt->m_pVRtp->ReadRtcp(pData, 2048, 1);
+		TimerTickSec += 1.0;
 		if(lBytesRead > 0){
-			//m_pVRtcp
+			m_pVRtcp->ProcessIncomingRtcpPkt(pData, lBytesRead);
 		}
-		JD_OAL_SLEEP(100)
+		long lBytesToSend = m_pVRtcp->GetOutgoingRtcpPkt(pData, 2048, TimerTickSec);
+		if(lBytesToSend > 0){
+			m_pRtspClnt->m_pVRtp->WriteRtcp(pData, lBytesToSend);
+			m_pRtspClnt->SendKeepALive("video");
+		}
 	}
 	if(pData)
 		free(pData);
+
+	TRACE_LEAVE
+	return 0;
 }
 
 long CRtspClntBridge::ProcessAudioRtcp()
 {
+	TRACE_ENTER
 	char *pData = (char *)malloc(2048);
 	bool fDone = false;
+	double TimerTickSec = 0;
 	while(!fDone && m_fRun) {
-		long lBytesRead = m_pRtspClnt->m_pARtp->ReadRtcp(pData, 2048, 0);
+		long lBytesRead = m_pRtspClnt->m_pARtp->ReadRtcp(pData, 2048, 1);
+		TimerTickSec += 1.0;
 		if(lBytesRead > 0){
-			//m_pVRtcp
+			m_pARtcp->ProcessIncomingRtcpPkt(pData, lBytesRead);
 		}
-		JD_OAL_SLEEP(100)
+		long lBytesToSend = m_pARtcp->GetOutgoingRtcpPkt(pData, 2048, TimerTickSec);
+		if(lBytesToSend > 0){
+			m_pRtspClnt->m_pARtp->WriteRtcp(pData, lBytesToSend);
+		}
 	}
 	if(pData)
 		free(pData);
+
+	TRACE_LEAVE
+	return 0;
 }
 
 long CRtspClntBridge::ProcessVideoFrame()
@@ -242,6 +273,9 @@ long CRtspClntBridge::ProcessVideoFrame()
 		}
 		mTotalVid += lBytesRead;
 		RTP_PKT_T *pRtpHdr = m_pRfcRtp->GetRtnHdr();
+		if(m_pVRtcp) {
+			m_pVRtcp->UpdateStatForRtpPkt(pRtpHdr, lBytesRead);
+		}
 		m_lUsedLen += lBytesRead;
 		fDone = pRtpHdr->m;
 		m_lPts = pRtpHdr->ulTimeStamp;
@@ -366,6 +400,25 @@ void *CRtspClntBridge::DoAudioBufferProcessing(void *pArg)
     return NULL;
 }
 
+void *CRtspClntBridge::DoAudioRtcpProcessing(void *pArg)
+{
+	TRACE_ENTER
+
+	CRtspClntBridge *pCtx = (CRtspClntBridge *)pArg;
+	pCtx->ProcessAudioRtcp();
+	TRACE_LEAVE
+    return NULL;
+}
+
+void *CRtspClntBridge::DoVideoRtcpProcessing(void *pArg)
+{
+	TRACE_ENTER
+
+	CRtspClntBridge *pCtx = (CRtspClntBridge *)pArg;
+	pCtx->ProcessVideoRtcp();
+	TRACE_LEAVE
+    return NULL;
+}
 
 int CRtspClntBridge::StartStreaming()
 {
@@ -375,12 +428,16 @@ int CRtspClntBridge::StartStreaming()
 	if(m_fEnableVid && GetVideoConn() != NULL) {
 		InitVideoStreaming();
 		jdoalThreadCreate((void **)&m_thrdHandleVideo, DoVideoBufferProcessing, this);
+		if(m_fEnableRtcp)
+			jdoalThreadCreate((void **)&m_thrdHandleVideoRtcp, DoVideoRtcpProcessing, this);
 	} else {
 		JDBG_LOG(CJdDbg::LVL_ERR, ("Video not started"));
 	}
 	if(m_fEnableAud && GetAudioConn() != NULL) {
 		InitAudioStreaming();
 		jdoalThreadCreate((void **)&m_thrdHandleAudio, DoAudioBufferProcessing, this);
+		if(m_fEnableRtcp)
+			jdoalThreadCreate((void **)&m_thrdHandleAudioRtcp, DoAudioRtcpProcessing, this);
 	} else {
 		JDBG_LOG(CJdDbg::LVL_ERR, ("Audio not started m_fEnableAud=%d", m_fEnableAud));
 	}
@@ -400,6 +457,12 @@ int CRtspClntBridge::StopStreaming()
 	}
 	if(m_thrdHandleAudio){
 		jdoalThreadJoin((void *)m_thrdHandleAudio, 3000);
+	}
+	if(m_thrdHandleVideoRtcp){
+		jdoalThreadJoin((void *)m_thrdHandleVideoRtcp, 3000);
+	}
+	if(m_thrdHandleAudioRtcp){
+		jdoalThreadJoin((void *)m_thrdHandleAudioRtcp, 3000);
 	}
 
 	TRACE_LEAVE

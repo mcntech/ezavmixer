@@ -217,7 +217,7 @@ int CRtp::WriteRtcp(char *pData, int lLen)
 	peerAddr.sin_port = htons(mRemoteRtcpPort);
 	peerAddr.sin_family = PF_INET;
 
-	JDBG_LOG(CJdDbg::LVL_TRACE,("rtcp sendto addr=0x%x port=%d", *((unsigned long *)&m_SockAddr), mRemoteRtcpPort));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("rtcp sendto addr=0x%x port=%d len=%d", *((unsigned long *)&m_SockAddr), mRemoteRtcpPort, lLen));
 	ret = sendto(m_hRtcpSock, pData, lLen, 0, (struct sockaddr *)&peerAddr, sizeof(struct sockaddr));
 	if(ret == -1)	{
 		JDBG_LOG(CJdDbg::LVL_ERR,("rtcp sendto failed"));

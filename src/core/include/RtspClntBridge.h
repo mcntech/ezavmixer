@@ -22,8 +22,12 @@ public:
 	static void *DoVideoBufferProcessing(void *pObj);
 	static void *DoAudioBufferProcessing(void *pObj);
 
-	long ProcessVideoRtcp();
+	static void *DoAudioRtcpProcessing(void *pArg);
+	static void *DoVideoRtcpProcessing(void *pArg);
+
 	long ProcessAudioRtcp();
+	long ProcessVideoRtcp();
+
 	long ProcessVideoFrame();
 	long ProcessAudioFrame();
 	int InitAudioStreaming();
@@ -39,6 +43,9 @@ public:
 	int					m_nSrcType;
 	CJdRfc3984Rx        *m_pRfcRtp;
 	CJdRfcBase			*m_pAudRfcRtp;
+
+	CJdRtcp				*m_pVRtcp;
+	CJdRtcp				*m_pARtcp;
 
 	char				*m_pData;
 	long				m_lUsedLen;
@@ -66,10 +73,20 @@ public:
 	pthread_t			m_thrdHandleAudio;
 #endif
 
+#ifdef WIN32
+	HANDLE              m_thrdHandleVideoRtcp;
+#else
+	pthread_t			m_thrdHandleVideoRtcp;
+#endif
+#ifdef WIN32
+	HANDLE              m_thrdHandleAudioRtcp;
+#else
+	pthread_t			m_thrdHandleAudioRtcp;
+#endif
 public:
-
-	int        fEoS;
-	int        frameCounter;
+	bool             m_fEnableRtcp;
+	int              fEoS;
+	int              frameCounter;
 	unsigned short   mRtspPort;
 	char             m_szRemoteHost[MAX_NAME_SIZE];
 	unsigned short   m_usLocalRtpPort;

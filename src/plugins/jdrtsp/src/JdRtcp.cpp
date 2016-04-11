@@ -1,12 +1,9 @@
 #include "JdRtcp.h"
-#include "JdRtp.h"
 #include <map>
 #include <sys/endian.h>
+#include "JdDbg.h"
 
-
-////////// OutPacketBuffer //////////
-
-// A data structure that a sink may use for an output packet:
+static int modDbgLevel = CJdDbg::LVL_TRACE;
 
 static unsigned const IP_UDP_HDR_SIZE = 28;
 
@@ -33,9 +30,6 @@ OutPacketBuffer::~OutPacketBuffer() {
 
 void OutPacketBuffer::enqueue(unsigned char const* from, unsigned numBytes) {
 	if (numBytes > totalBytesAvailable()) {
-#ifdef DEBUG
-		fprintf(stderr, "OutPacketBuffer::enqueue() warning: %d > %d\n", numBytes, totalBytesAvailable());
-#endif
 		numBytes = totalBytesAvailable();
 	}
 
@@ -212,17 +206,19 @@ void RTPReceptionStatsDB::noteIncomingPacket(
 		add(SSRC, stats);
 	}
 
-	if (stats->numPacketsReceivedSinceLastReset() == 0) {
-		++mNumActiveSourcesSinceLastReset;
-	}
+	if(stats) {
+		if (stats->numPacketsReceivedSinceLastReset() == 0) {
+			++mNumActiveSourcesSinceLastReset;
+		}
 
-	stats->noteIncomingPacket(
-			seqNum,
-			rtpTimestamp,
-			timestampFrequency,
-			useForJitterCalculation,
-			resultPresentationTime,
-			resultHasBeenSyncedUsingRTCP, packetSize);
+		stats->noteIncomingPacket(
+				seqNum,
+				rtpTimestamp,
+				timestampFrequency,
+				useForJitterCalculation,
+				resultPresentationTime,
+				resultHasBeenSyncedUsingRTCP, packetSize);
+	}
 }
 
 void RTPReceptionStatsDB::noteIncomingSR(
@@ -311,10 +307,27 @@ void RTPReceptionStats::initSeqNum(unsigned short initialSeqNum) {
 #define MILLION 1000000
 #endif
 
-void RTPReceptionStats::noteIncomingPacket(unsigned short seqNum,
-		unsigned long rtpTimestamp, unsigned timestampFrequency,
-		bool useForJitterCalculation, struct timeval& resultPresentationTime,
-		bool& resultHasBeenSyncedUsingRTCP, unsigned packetSize) {
+bool seqNumLT(unsigned short s1, unsigned short s2) {
+	// a 'less-than' on 16-bit sequence numbers
+	int diff = s2 - s1;
+	if (diff > 0) {
+		return (diff < 0x8000);
+	} else if (diff < 0) {
+		return (diff < -0x8000);
+	} else { // diff == 0
+		return false;
+	}
+}
+
+void RTPReceptionStats::noteIncomingPacket(
+		unsigned short seqNum,
+		unsigned long rtpTimestamp,
+		unsigned timestampFrequency,
+		bool useForJitterCalculation,
+		struct timeval& resultPresentationTime,
+		bool& resultHasBeenSyncedUsingRTCP,
+		unsigned packetSize)
+{
 	if (!mHaveSeenInitialSequenceNumber)
 		initSeqNum(seqNum);
 
@@ -545,10 +558,42 @@ void RTCPMemberDatabase::reapOldMembers(unsigned threshold) {
 }
 
 
-CJdRtcp::CJdRtcp()
+CJdRtcp::CJdRtcp(bool fServer, int nClock, unsigned char ucPlType)
 {
-	m_maxBufferLen = 2048;
-	m_pBuffer = (char *)malloc(m_maxBufferLen);
+	mPrevReportTime = 0;
+	mNextReportTime = 0;
+	mLastReceivedSize = 0;
+	mLastReceivedSSRC = 0;
+	mTypeOfPacket = 0;
+	mLastSentSize = 0;
+	mAveRTCPSize = 0;
+	mTypeOfEvent = 0;
+	mIsInitial = 0;
+
+	if(fServer) {
+		// TODO
+		mSource = NULL;
+		mSink = NULL;
+	} else {
+		mSource = new RTPSource(ucPlType, nClock);
+		mSink = NULL;
+	}
+	mKnownMembers = new RTCPMemberDatabase(*this);
+	mOutBuf = new OutPacketBuffer(1500, 1500);
+	mPrevNumMembers = 0;
+}
+
+CJdRtcp::~CJdRtcp()
+{
+	if(mSource) delete mSource;
+	if(mSink) delete mSink;
+	if(mKnownMembers) delete mKnownMembers;
+	if(mOutBuf) delete mOutBuf;
+}
+
+double CJdRtcp::drand48() {
+  unsigned tmp = our_random32()&0x3FFFFFFF; // a random 30-bit integer
+  return tmp/(double)(1024*1024*1024);
 }
 
 double CJdRtcp::rtcp_interval(int members,
@@ -558,6 +603,8 @@ double CJdRtcp::rtcp_interval(int members,
                         double avg_rtcp_size,
                         int initial)
    {
+    double t;                   /* interval */
+
        /*
         * Minimum average time between RTCP packets from this site (in
         * seconds).  This time prevents the reports from `clumping' when
@@ -567,6 +614,9 @@ double CJdRtcp::rtcp_interval(int members,
         * a network partition.
         */
        double const RTCP_MIN_TIME = 5.;
+#if 1
+       t = RTCP_MIN_TIME;
+#else
        /*
         * Fraction of the RTCP bandwidth to be shared among active
         * senders.  (This fraction was chosen so that in a typical
@@ -583,7 +633,7 @@ double CJdRtcp::rtcp_interval(int members,
         */
        double const COMPENSATION = 2.71828 - 1.5;
 
-       double t;                   /* interval */
+
        double rtcp_min_time = RTCP_MIN_TIME;
        int n;                      /* no. of members for computation */
 
@@ -633,6 +683,7 @@ double CJdRtcp::rtcp_interval(int members,
         */
        t = t * (drand48() + 0.5);
        t = t / COMPENSATION;
+#endif
        return t;
    }
 
@@ -643,10 +694,11 @@ double CJdRtcp::rtcp_interval(int members,
                  int    we_sent,
                  double *avg_rtcp_size,
                  int    *initial,
-                 time_tp   tc,
-                 time_tp   *tp,
+                 double   tc,
+                 double   *tp,
                  int    *pmembers)
    {
+#if 0
        /* This function is responsible for deciding whether to send
         * an RTCP report or BYE packet now, or to reschedule transmission.
         * It is also responsible for updating the pmembers, initial, tp,
@@ -709,6 +761,7 @@ double CJdRtcp::rtcp_interval(int members,
            }
            *pmembers = members;
        }
+#endif
    }
 
 
@@ -722,6 +775,7 @@ double CJdRtcp::rtcp_interval(int members,
                   double tc,
                   double tn)
    {
+#if 0
        /* What we do depends on whether we have left the group, and
         * are waiting to send a BYE (TypeOfEvent(e) == EVENT_BYE) or
         * an RTCP report. p represents the packet that was just received. */
@@ -771,6 +825,7 @@ double CJdRtcp::rtcp_interval(int members,
                *members += 1;
            }
        }
+#endif
 }
 
 
@@ -781,8 +836,8 @@ void CJdRtcp::removeSSRC(unsigned long ssrc, bool alsoRemoveStats) {
 		// Also, remove records of this SSRC from any reception or transmission stats
 /*		if (mSource != NULL)
 			mSource->receptionStatsDB().removeRecord(ssrc);*/
-		if (mSink != NULL)
-			mSink->transmissionStatsDB().removeRecord(ssrc);
+/*		if (mSink != NULL)
+			mSink->transmissionStatsDB().removeRecord(ssrc);*/
 	}
 }
 
@@ -794,14 +849,11 @@ static double dTimeNow()
 }
 
 
-void CJdRtcp::processIncomingReport(
-			unsigned packetSize,
-		struct sockaddr_in const& fromAddressAndPort, int tcpSocketNum,
-		unsigned char tcpStreamChannelId)
+void CJdRtcp::processIncomingReport(char* pInPkt, unsigned packetSize)
 {
 	do {
 		bool callByeHandler = false;
-		unsigned char* pkt = (unsigned char*)m_pBuffer;
+		unsigned char* pkt = (unsigned char*)pInPkt;
 
 		int totPacketSize = IP_UDP_HDR_SIZE + packetSize;
 
@@ -861,18 +913,21 @@ void CJdRtcp::processIncomingReport(
 				unsigned rtpTimestamp = ntohl(*(unsigned long*) pkt);
 				pkt += 4;
 				if (mSource != NULL) {
-					RTPReceptionStatsDB& receptionStats = mSource->receptionStatsDB();
-					receptionStats.noteIncomingSR(reportSenderSSRC, NTPmsw, NTPlsw,
+					RTPReceptionStatsDB *receptionStats = mSource->receptionStatsDB();
+					receptionStats->noteIncomingSR(reportSenderSSRC, NTPmsw, NTPlsw,
 							rtpTimestamp);
 				}
 				pkt += 8; // skip over packet count, octet count
 
 				// If a 'SR handler' was set, call it now:
+/*
 				if (fSRHandlerTask != NULL)
 					(*fSRHandlerTask)(fSRHandlerClientData);
+*/
 
 				// The rest of the SR is handled like a RR (so, no "break;" here)
 			}
+			break;
 /*			case RTCP_PT_RR: {
 				unsigned reportBlocksSize = rc * (6 * 4);
 				if (length < reportBlocksSize)
@@ -921,6 +976,8 @@ void CJdRtcp::processIncomingReport(
 			case RTCP_PT_BYE: {
 				// If a 'BYE handler' was set, arrange for it to be called at the end of this routine.
 				// (Note: We don't call it immediately, in case it happens to cause "this" to be deleted.)
+/*
+
 				if (fByeHandlerTask != NULL
 						&& (!fByeHandleActiveParticipantsOnly
 								|| (mSource != NULL
@@ -931,6 +988,7 @@ void CJdRtcp::processIncomingReport(
 												reportSenderSSRC) != NULL))) {
 					callByeHandler = true;
 				}
+*/
 
 				// We should really check for & handle >1 SSRCs being present #####
 
@@ -1024,15 +1082,19 @@ void CJdRtcp::processIncomingReport(
 		onReceive(typeOfPacket, totPacketSize, reportSenderSSRC);
 
 		// Finally, if we need to call a "BYE" handler, do so now (in case it causes "this" to get deleted):
-		if (callByeHandler && fByeHandlerTask != NULL/*sanity check*/) {
+/*
+		if (callByeHandler && fByeHandlerTask != NULLsanity check) {
 			TaskFunc* byeHandler = fByeHandlerTask;
 			fByeHandlerTask = NULL; // because we call the handler only once, by default
 			(*byeHandler)(fByeHandlerClientData);
 		}
+*/
+
 	} while (0);
 }
 
 void CJdRtcp::onReceive(int typeOfPacket, int totPacketSize, unsigned long ssrc) {
+#if 0
   mTypeOfPacket = typeOfPacket;
   mLastReceivedSize = totPacketSize;
   mLastReceivedSSRC = ssrc;
@@ -1049,52 +1111,74 @@ void CJdRtcp::onReceive(int typeOfPacket, int totPacketSize, unsigned long ssrc)
 	    &mPrevReportTime, // tp
 	    dTimeNow(), // tc
 	    mNextReportTime);
+#endif
 }
-void CJdRtcp::Process(void *_pRtp)
+
+int CJdRtcp::ProcessIncomingRtcpPkt(char *pRtcpInPkt, int nSize)
 {
-	JdRtp *pRtp = (JdRtp *)pRtp;
-	int bytesRead = pRtp->ReadRtcp(m_pBuffer, m_maxBufferLen);
-	if(bytesRead > 0){
-		unsigned packetSize = bytesRead;
-		 struct sockaddr_in const fromAddressAndPort;
-		 int tcpSocketNum;
-		 unsigned char tcpStreamChannelId;
-		processIncomingReport(packetSize, fromAddressAndPort, tcpSocketNum, tcpStreamChannelId);
+	processIncomingReport(pRtcpInPkt, nSize);
+}
+
+int CJdRtcp::GetOutgoingRtcpPkt(char *pRtcpPkt, int nMaxSize, double TimerTickSec)
+{
+	int nPktSize = 0;
+	if(TimerTickSec >= mNextReportTime) {
+		addReport(true);
+
+		nPktSize = mOutBuf->curPacketSize();
+		if(nPktSize > 0) {
+			if(nPktSize > nMaxSize)
+				nPktSize = nMaxSize;
+			memcpy(pRtcpPkt, mOutBuf->packet(), nPktSize);
+			mOutBuf->resetOffset();
+		}
+		mPrevReportTime = mNextReportTime;
+		mNextReportTime += rtcp_interval(1, 1, 0, 0, 1500, 0);
+	}
+	return nPktSize;
+}
+
+void CJdRtcp::UpdateStatForRtpPkt(RTP_PKT_T *pRtpHdr, int nSize)
+{
+	if(mSource) {
+		bool resultHasBeenSyncedUsingRTCP = false;
+		struct timeval resultPresentationTime = {0};
+		RTPReceptionStatsDB *statsDB = mSource->receptionStatsDB();
+		if(statsDB) {
+			statsDB->noteIncomingPacket(
+					pRtpHdr->ulSsrc,
+					pRtpHdr->usSeqNum,
+					pRtpHdr->ulTimeStamp,
+					mSource->timestampFrequency(),
+					true,/*useForJitterCalculation*/
+					resultPresentationTime,
+					resultHasBeenSyncedUsingRTCP,
+					nSize);
+		} else {
+			JDBG_LOG(CJdDbg::LVL_TRACE,("UpdateStatForRtpPkt: statsDB not found"));
+		}
 	}
 }
 
-void CJdRtcp::removeSSRC(unsigned long ssrc, bool alsoRemoveStats) {
-  mKnownMembers->remove(ssrc);
-
-  if (alsoRemoveStats) {
-    // Also, remove records of this SSRC from any reception or transmission stats
-
-	  //if (mSource != NULL) mSource->receptionStatsDB().removeRecord(ssrc);
-    if (mSink != NULL) mSink->transmissionStatsDB().removeRecord(ssrc);
-  }
-}
-
-
 void CJdRtcp::addRR() {
-  // ASSERT: mSource != NULL
-
-  enqueueCommonReportPrefix(RTCP_PT_RR, mSource->SSRC());
-  enqueueCommonReportSuffix();
+	enqueueCommonReportPrefix(RTCP_PT_RR, mSource->SSRC());
+	enqueueCommonReportSuffix();
 }
 
-void CJdRtcp::enqueueCommonReportPrefix(unsigned char packetType,
-					     unsigned long SSRC,
-					     unsigned numExtraWords) {
+void CJdRtcp::enqueueCommonReportPrefix(
+		unsigned char packetType,
+		unsigned long SSRC,
+		unsigned numExtraWords) {
 	unsigned numReportingSources;
 	if (mSource == NULL) {
 		numReportingSources = 0; // we don't receive anything
 	} else {
-/*
+		/*
 
-		RTPReceptionStatsDB& allReceptionStats = mSource->receptionStatsDB();
-		numReportingSources =
-				allReceptionStats.numActiveSourcesSinceLastReset();
-*/
+		 RTPReceptionStatsDB& allReceptionStats = mSource->receptionStatsDB();
+		 numReportingSources =
+		 allReceptionStats.numActiveSourcesSinceLastReset();
+		 */
 		numReportingSources = 1; // TODO
 		// This must be <32, to fit in 5 bits:
 		if (numReportingSources >= 32) {
@@ -1117,9 +1201,14 @@ void CJdRtcp::enqueueCommonReportSuffix()
 {
 	// Output the report blocks for each source:
 	if (mSource != NULL) {
-		RTPReceptionStatsDB *stats = mSource->receptionStatsDB();
-		if (stats){
-			enqueueReportBlock(stats);
+		RTPReceptionStatsDB *statsDB = mSource->receptionStatsDB();
+		if(statsDB) {
+			for (rec_tbl_iter it = statsDB->mTable.begin(); it != statsDB->mTable.end(); it++) {
+				RTPReceptionStats *stats = it->second;//statsDB->lookup(SSRC);
+				if (stats){
+					enqueueReportBlock(stats);
+				}
+			}
 		}
 	}
 }

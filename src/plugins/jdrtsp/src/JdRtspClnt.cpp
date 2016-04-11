@@ -119,7 +119,26 @@ int CJdRtspClntSession::CreateHeader(int nHeaderId,  char *pszTrack,char *pBuff,
 			}
 		}
 		break;
+	// For Keep ALive
+	case RTSP_METHOD_GET_PARAMETER:
+	{
+		std::string url;
+		if(!m_pszUrl.empty()) {
+			snprintf(pBuff, nMaxLen,
+				"GET_PARAMETER %s RTSP/%s\r\n" \
+				"CSeq: %ld\r\n" \
+				"User-Agent: %s\r\n" \
+				"Session: %llx\r\n" \
+				"\r\n",
+				m_pszUrl.c_str(), RTSP_VERSION,
+				++m_ulSeq,
+				RTSP_CLIENT_NAME,
+				m_ulSessionId);
 
+			res =  strlen(pBuff);
+		}
+	}
+	break;
 	default:
 		res = -1;
 	}
@@ -256,7 +275,7 @@ Exit:
 }
 #endif
 
-int CJdRtspClntSession::GetVideoCodec()
+int CJdRtspClntSession::GetVideoCodec(int *pnClock, unsigned char *plType)
 {
 	TRACE_ENTER
 	int codec = CODEC_UNSUPPORTED;
@@ -268,6 +287,8 @@ int CJdRtspClntSession::GetVideoCodec()
 				CAttribRtpmap Rtpmap(pszRtmap);
 				if (stricmp(Rtpmap.EncodingName.c_str(), "H264") == 0){
 					codec = RTP_CODEC_H264;
+					*pnClock = Rtpmap.nClockRate;
+					*plType = Rtpmap.nPlType;
 					break;
 				}
 			} else if (ucPl == RTP_PT_MP2T) {
@@ -309,7 +330,7 @@ bool CJdRtspClntSession::GetVideoCodecConfig(unsigned char *pCfg, int *pnSize)
 	return res;
 }
 
-int CJdRtspClntSession::GetAudioCodec()
+int CJdRtspClntSession::GetAudioCodec(int *pnClock, unsigned char *plType)
 {
 	TRACE_ENTER
 
@@ -320,6 +341,8 @@ int CJdRtspClntSession::GetAudioCodec()
 			if(ucPl >= RTP_PT_DYNAMIC_START && ucPl <= RTP_PT_DYNAMIC_END) {
 				const char *pszRtmap = m_sdp.m_listMediaDescription[i]->GetAttributeValue("rtpmap", 0);
 				CAttribRtpmap Rtpmap(pszRtmap);
+				*pnClock = Rtpmap.nClockRate;
+				*plType = Rtpmap.nPlType;
 /*				if(stricmp(Rtpmap.EncodingName.c_str(), "MP4A") == 0) {
 					codec = RTP_CODEC_AAC;
 					break;
@@ -356,7 +379,7 @@ int CJdRtspClntSession::GetAudioCodec()
  * Handles redirection.
  * Obtains the host name form the pszUrl
  */
-int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCodec)
+int CJdRtspClntSession::Open(const char *pszUrl)
 {
 	TRACE_ENTER
 
@@ -509,9 +532,6 @@ int CJdRtspClntSession::Open(const char *pszUrl, int *pnVidCodec, int *pnAudCode
 
 	HandleAnswerDescribe(headerBuf);
 
-	*pnVidCodec = GetVideoCodec();
-	*pnAudCodec = GetAudioCodec();
-
 	TRACE_LEAVE
 	return 0;
 
@@ -541,6 +561,9 @@ void CJdRtspClntSession::HandleAnswerSetup(char *szStrmType, char *headerBuf)
 
 	CRtp *pRtp	= new CRtp(CRtp::MODE_CLIENT);
 	Transport.GetRtpPorts(pRtp, CRtp::MODE_CLIENT);
+	if(!Transport.mMulticast) {
+		pRtp->m_SockAddr = m_PeerAddr;
+	}
 	pRtp->CreateSession();
 	if(strcmp(szStrmType, "video") == 0) {
 		m_pVRtp	= pRtp;
@@ -632,6 +655,33 @@ Exit:
 	return;
 }
 
+void CJdRtspClntSession::SendKeepALive(char *szStrmType /*audio or video*/)
+{
+	TRACE_ENTER
+
+	int bufsize = REQUEST_BUF_SIZE;
+	int tempSize;
+	char headerBuf[HEADER_BUF_SIZE];
+	int ret = -1;
+	if(strcmp(szStrmType, "video") == 0){
+		if(m_pVRtp)
+			m_pVRtp->Start();
+	} else 	if(strcmp(szStrmType, "audio") == 0){
+		if(m_pARtp)
+			m_pARtp->Start();
+	}
+	if(m_hSock >= 0){
+		int len = CreateHeader(RTSP_METHOD_GET_PARAMETER, szStrmType, headerBuf, HEADER_BUF_SIZE);
+		if(send(m_hSock, headerBuf, strlen(headerBuf), 0) > 0) {
+			ret = ReadHeader(m_hSock, headerBuf);	/* errorSource set within */
+		} else {
+    		JDBG_LOG(CJdDbg::LVL_ERR, ("%s:%d:send failed\n", __FUNCTION__, __LINE__));
+		}
+	}
+Exit:
+	TRACE_LEAVE
+	return;
+}
 void CJdRtspClntSession::Close()
 {
 	TRACE_ENTER
@@ -719,7 +769,7 @@ int CJdRtspClntSession::makeSocket(
 	}
 
 	ret = connect(sock, (struct sockaddr *)&sa, sizeof(sa));
-
+	m_PeerAddr = sa.sin_addr;
 	if(ret == -1) {  
 		JDBG_LOG(CJdDbg::LVL_ERR,("makeSocket:connect failed"));
 		goto Exit;

@@ -454,13 +454,13 @@ public:
 
 public:
 	unsigned long long m_ulSessionId;
-	unsigned long m_ulSeq;
-	std::string	mUrl;		// Resource URI of the item used in setup
-	int m_hSock;
+	unsigned long      m_ulSeq;
+	std::string	       mUrl;		// Resource URI of the item used in setup
+	int                m_hSock;
 
 	unsigned short m_usServerRtspPort;
-	int m_Multicast;
-	int m_Status;
+	int     m_Multicast;
+	int     m_Status;
 	CRtp	*m_pVRtp;
 	CRtp	*m_pARtp;
 	in_addr m_PeerAddr;

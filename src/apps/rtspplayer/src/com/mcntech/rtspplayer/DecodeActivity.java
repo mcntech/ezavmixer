@@ -27,6 +27,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.MotionEvent;
 import android.view.View.MeasureSpec;
+import android.widget.Button;
 import android.widget.LinearLayout;
 
 import com.mcntech.rtspplyer.R;
@@ -144,6 +145,14 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 		if(Configure.mEnableAudio) {
 			mVideoDelay = (int)((float)(mAudFramesPerPeriod * mAudNumPeriods) / mAudioSampleRate * 1000000) + mAudDelayUs;
 		}
+		
+		Button next_url = (Button)findViewById(R.id.next_url);
+		next_url.setOnClickListener(new View.OnClickListener() {					
+			@Override
+			public void onClick(View v) {
+				doNextUrl();
+			}
+		});
 		
 		if(mUseStaticLayout) {
 			setContentView(R.layout.player);
@@ -460,25 +469,35 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 	private class SwitchUrl extends Thread 
 	{
 		SERVER_STATE mCrntState = SERVER_STATE.UNINIT;
+		String mNewUrl;
+		public SwitchUrl(String newUrl)
+		{
+			mNewUrl = newUrl;
+		}
 		@Override
 		public void run() {
-			OnyxPlayerApi.addServer(NewUrl);
+			OnyxPlayerApi.addServer(mNewUrl);
 			mCrntState = SERVER_STATE.SETUP;
-			int nWaitLeft = 3000;
-			int nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(NewUrl);
-			while(nFramesInBuff == 0 && nWiatLeft > 0) {
-				nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(NewUrl);
+			int nWaitTime = 3000;
+			int nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mNewUrl);
+			while(nFramesInBuff == 0 && nWaitTime > 0) {
+				nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mNewUrl);
 				if(nFramesInBuff > 0){
 					mCrntState = SERVER_STATE.RUNNING;
 				} else {
-					nWaitLeft -= 100;
-					Thread.sleep(100);
+					nWaitTime -= 100;
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
-			if (nFramesInBuff == 0 && nWiatLeft <= 0) {
+			if (nFramesInBuff == 0 && nWaitTime <= 0) {
 				mCrntState = SERVER_STATE.ERROR;
 			} else {
-				UpdateUrl(NewUrl);
+				UpdateUrl(mNewUrl);
 			}
 		}
 	}
@@ -789,4 +808,10 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
        Intent intent = new Intent(this, Settings.class);
        startActivity(intent);
    }
-}
+   
+   void doNextUrl(){
+	   // Get Next URL
+	   String nextUrl = "";
+	   new SwitchUrl(nextUrl);
+   }
+;}

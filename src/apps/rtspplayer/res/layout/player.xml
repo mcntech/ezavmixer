@@ -56,4 +56,15 @@
 		</GridLayout>
 		
  	</LinearLayout>
+
+ 	<Button
+ 	    android:id="@+id/next_url"
+ 	    android:layout_width="wrap_content"
+ 	    android:layout_height="wrap_content"
+ 	    android:layout_above="@+id/stats_layout"
+ 	    android:layout_marginBottom="17dp"
+ 	    android:layout_marginLeft="141dp"
+ 	    android:layout_toRightOf="@+id/overlay_surface"
+ 	    android:text="Next" />
+
 </RelativeLayout>

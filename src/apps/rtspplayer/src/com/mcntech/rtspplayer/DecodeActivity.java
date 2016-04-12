@@ -41,7 +41,8 @@ import com.android.grafika.gles.WindowSurface;
 public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 	
 	public final String LOG_TAG = "rtsp";
-	String                        mUrl;                   
+	String                        mUrl;
+	String                        mNewUrl = null;
 	private PlayerThread          mVidPlayer = null;
 	RemoteNodeHandler             mNodeHandler;
 	Handler                       mHandler;
@@ -81,6 +82,8 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
     final int                        PLAYER_CMD_DEINIT = 4;    
     
     private final Object             mPlayLock = new Object();
+    private final Object             mPUrlLock = new Object();
+    
     private boolean                  mExitPlayerLoop = false;
     private int                      mCodecType = 1;
     int                              mMaxVidWidth =  3840;
@@ -113,7 +116,7 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;	
 		Configure.loadSavedPreferences(this, isSystemApp);
 		mUrl = Configure.mRtspUrl1;
-		
+		mNewUrl = mUrl;
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
 		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
 		if(mfAvcUHdSupported) {
@@ -435,6 +438,51 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 		eglCore.release();
 	}
 
+	enum SERVER_STATE {
+		UNINIT,
+		SETUP,
+		RUNNING,
+		ERROR
+	}
+
+	void UpdateUrl(String NewUrl){
+		synchronized (mPlayLock) {
+			mNewUrl = NewUrl;
+		}
+	}
+	
+	String GetUrl(String NewUrl){
+		synchronized (mPlayLock) {
+			return mNewUrl;
+		}
+	}
+
+	private class SwitchUrl extends Thread 
+	{
+		SERVER_STATE mCrntState = SERVER_STATE.UNINIT;
+		@Override
+		public void run() {
+			OnyxPlayerApi.addServer(NewUrl);
+			mCrntState = SERVER_STATE.SETUP;
+			int nWaitLeft = 3000;
+			int nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(NewUrl);
+			while(nFramesInBuff == 0 && nWiatLeft > 0) {
+				nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(NewUrl);
+				if(nFramesInBuff > 0){
+					mCrntState = SERVER_STATE.RUNNING;
+				} else {
+					nWaitLeft -= 100;
+					Thread.sleep(100);
+				}
+			}
+			if (nFramesInBuff == 0 && nWiatLeft <= 0) {
+				mCrntState = SERVER_STATE.ERROR;
+			} else {
+				UpdateUrl(NewUrl);
+			}
+		}
+	}
+	
 	private class PlayerThread extends Thread {
 		private Surface surface;
 
@@ -554,6 +602,14 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 			}
 			
 			while (!Thread.interrupted() && !mExitPlayerLoop) {
+
+				// Check if URL changed
+				String url = GetUrl();
+				if(!url.equalsIgnoreCase(mUrl))  {
+					OnyxPlayerApi.removeServer(mUrl);
+					mUrl = url;
+				}
+
 				mFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mUrl);
 				if (!isEOS && mFramesInBuff > 0) {
 
@@ -608,6 +664,8 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 						}
 					}
 					
+				} else {
+					// TODO : Detect disconnect condition
 				}
 
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:Begin isEOS=" + isEOS + " availFrame=" + DeviceController.getNumAvailVideoFrames() + " surfacevalid=" + surface.isValid());

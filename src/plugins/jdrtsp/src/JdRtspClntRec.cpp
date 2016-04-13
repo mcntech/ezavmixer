@@ -138,6 +138,21 @@ bool CJdRtspClntRecSession::PlayTrack(CMediaTrack *pTrack)
 	return res;
 }
 
+bool CJdRtspClntRecSession::StopTrack(CMediaTrack *pTrack)
+{
+	CRtpSnd *pRtp = NULL;
+	if(pTrack->mCodecType == CMediaTrack::CODEC_TYPE_STREAM){
+		pRtp = m_pVRtp;
+	} else if(pTrack->mCodecType == CMediaTrack::CODEC_TYPE_VIDEO){
+		pRtp = m_pVRtp;
+	} else 	if(pTrack->mCodecType == CMediaTrack::CODEC_TYPE_AUDIO){
+		pRtp = m_pARtp;
+	}
+	if(pRtp)
+		pRtp->CloseSession();
+	return 0;
+}
+
 int CJdRtspClntRecSession::StartPublish(const char *nameAggregate, const char *nameTrack)
 {
 	int res = 0;

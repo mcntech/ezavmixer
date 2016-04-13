@@ -39,6 +39,7 @@ public:
 	//void HandleAnswerAnnounce(char *szStrmType, char *headerBuf);
 
 	bool PlayTrack(CMediaTrack *pTrack);
+	bool StopTrack(CMediaTrack *pTrack);
 	int StartPublish(const char *nameAggregate, const char *nameTrack);
 
 	int CreateAnnounceHeader(

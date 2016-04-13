@@ -6,6 +6,7 @@ import java.net.UnknownHostException;
 
 public class RemoteNode {
 	String mUrl;
+	String mPath;
 	final static int VID_RES_4K = 1;
 	final static int VID_RES_1080P = 2;
 	final static int VID_RES_720P = 3;
@@ -17,6 +18,7 @@ public class RemoteNode {
 	public RemoteNode(String url){
 		mUrl = url;
 	}
+	
 	public RemoteNode(RemoteNode dev){
 	
 	}
@@ -39,12 +41,15 @@ public class RemoteNode {
 			case VID_RES_240P:
 				path = "v03";
 				break;
-				default:
+			default:
 					path = "v02";
 				
 		}
 		String stream = "rtsp://" + mUrl + "/" + path;
 		return stream; 
 	}
-
+	public String getRtspStream(){
+		String stream = "rtsp://" + mUrl;
+		return stream;
+	}
 }

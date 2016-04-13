@@ -119,7 +119,7 @@ public class Settings extends Activity implements OnItemSelectedListener {
      }    
 
 	   public void startSinglePlayer(){
-	       Intent intent = new Intent(this, DecodeActivity.class);	       
+	       Intent intent = new Intent(this, SinglePlayerActivity.class);	       
 	       startActivity(intent);
 	   }
 	public void selfRestart(View v) {

@@ -19,7 +19,7 @@ public class StartFcvdst extends BroadcastReceiver {
 	            android.net.ConnectivityManager.CONNECTIVITY_ACTION))	
         {
 			if(mEnableAutoStart) {
-	            Intent serviceIntent = new Intent(context, DecodeActivity.class);
+	            Intent serviceIntent = new Intent(context, SinglePlayerActivity.class);
 	            serviceIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 	            context.startActivity(serviceIntent);
 			}

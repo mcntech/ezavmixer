@@ -143,7 +143,7 @@ public class StatsOverlay  {
                public void run() {
             	   mTextViewApRssi.setText(Integer.toString(mApRssi) + "dBm");
             	   mTextViewLinkSpeed.setText(Integer.toString(mLinkSpeed) + "Mbps");
-              	   mTextViewBufferLevel.setText(Integer.toString(DecodeActivity.mFramesInBuff) + "Frames");
+              	   mTextViewBufferLevel.setText(Integer.toString(SinglePlayerActivity.mFramesInBuff) + "Frames");
                }
            });
 	   }    

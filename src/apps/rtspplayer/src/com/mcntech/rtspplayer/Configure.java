@@ -12,6 +12,7 @@ public class Configure {
 	public static boolean mEnableAutoStart;	
 	public static boolean mEnableLogo;
 	public static boolean mEnableStats;
+	public static boolean mEnableOnScreenChannel;
 	
 	public static boolean mSystemApp;
 	public static int     mAudioDelay;	
@@ -20,6 +21,7 @@ public class Configure {
 	final static String KEY_ENABLE_AUDIO = "enable_audio";
 	final static String KEY_ENABLE_VIDEO = "enable_video";
 	final static String KEY_ENABLE_AUTO_START = "enable_auto_start";
+	final static String KEY_ENABLE_ON_SCREEN_CHANNEL = "enable_on_screen_channel";	
 	final static String KEY_ENABLE_LOGO = "enable_logo";
 	final static String KEY_ENABLE_STATS = "enable_stats";	
 	final static String KEY_USE_AUTIO_TRACK = "use_audio_track";
@@ -33,6 +35,7 @@ public class Configure {
 		mEnableAudio = sharedPreferences.getBoolean(KEY_ENABLE_AUDIO, false);
 		mEnableAutoStart = sharedPreferences.getBoolean(KEY_ENABLE_AUTO_START, false);
 		mEnableLogo = sharedPreferences.getBoolean(KEY_ENABLE_LOGO, true);
+		mEnableOnScreenChannel = sharedPreferences.getBoolean(KEY_ENABLE_ON_SCREEN_CHANNEL, true);
 		mEnableStats = sharedPreferences.getBoolean(KEY_ENABLE_STATS, false);		
 		mUseAudioTrack = sharedPreferences.getBoolean(KEY_USE_AUTIO_TRACK, false);
 		mAudioDelay = sharedPreferences.getInt(KEY_AUDIO_DELAY, 0);

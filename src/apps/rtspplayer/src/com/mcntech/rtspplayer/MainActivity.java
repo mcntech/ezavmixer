@@ -148,13 +148,13 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
         mRtspUrl1.setOnEditorActionListener( new DoneOnEditorUrlListener());
         */
 	 	OnyxPlayerApi.setDeviceHandler(mNodeHandler);	
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					OnyxPlayerApi.initialize();
-					OnyxPlayerApi.onvifDiscvrStart(0);
-				}
-			}).start();
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				OnyxPlayerApi.initialize();
+				OnyxPlayerApi.onvifDiscvrStart(0);
+			}
+		}).start();
   
      }
 

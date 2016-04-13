@@ -2,6 +2,7 @@ package com.mcntech.rtspplayer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import org.json.JSONException;
 
@@ -27,8 +28,11 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.MotionEvent;
 import android.view.View.MeasureSpec;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 
 import com.mcntech.rtspplyer.R;
 import com.mcntech.rtspplayer.Configure;
@@ -39,7 +43,7 @@ import com.mcntech.rtspplayer.Settings;
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.WindowSurface;
 
-public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
+public class SinglePlayerActivity extends Activity implements SurfaceHolder.Callback {
 	
 	public final String LOG_TAG = "rtsp";
 	String                        mUrl;
@@ -106,7 +110,10 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
     int                              mRole = 9;
     LinearLayout                     mStatsLayout;
 
-    
+	public static ListView mRemoteNodeListView = null;
+	public static ArrayList<RemoteNode> mRemoteNodeList = null;
+	public static ArrayAdapter<RemoteNode> mListAdapter = null;
+ 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -116,8 +123,6 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 		boolean isSystemApp = (getApplicationInfo().flags
 				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;	
 		Configure.loadSavedPreferences(this, isSystemApp);
-		mUrl = Configure.mRtspUrl1;
-		mNewUrl = mUrl;
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
 		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
 		if(mfAvcUHdSupported) {
@@ -145,17 +150,28 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 		if(Configure.mEnableAudio) {
 			mVideoDelay = (int)((float)(mAudFramesPerPeriod * mAudNumPeriods) / mAudioSampleRate * 1000000) + mAudDelayUs;
 		}
-		
-		Button next_url = (Button)findViewById(R.id.next_url);
-		next_url.setOnClickListener(new View.OnClickListener() {					
-			@Override
-			public void onClick(View v) {
-				doNextUrl();
-			}
-		});
-		
+		if(Configure.mEnableOnScreenChannel) {	
+		    mRemoteNodeList = new ArrayList<RemoteNode>(); //CodecModel.mOnyxRemoteNodeList;
+		    UpdateRemoteNodeList();
+			mRemoteNodeListView = (ListView)findViewById(R.id.channel_list);
+			mListAdapter = new ArrayAdapter<RemoteNode>(getApplicationContext(), 
+					android.R.layout.simple_list_item_checked, mRemoteNodeList); 
+			mRemoteNodeListView.setAdapter(mListAdapter ); 
+			mRemoteNodeListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+			mRemoteNodeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			    @Override
+			    public void onItemClick(AdapterView<?> parent, View item,
+			            int position, long id) {
+			    	RemoteNode node = (RemoteNode)mListAdapter.getItem(position); 
+					doNextUrl(node.getRtspStream());
+			    }
+			});
+		} else {
+			mUrl = Configure.mRtspUrl1;
+			mNewUrl = mUrl;
+		}
 		if(mUseStaticLayout) {
-			setContentView(R.layout.player);
+			setContentView(R.layout.activity_single_player);
 			mVideoSv = (SurfaceView) findViewById(R.id.player_surface);
 			
 			if(Configure.mEnableLogo) {
@@ -469,19 +485,20 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 	private class SwitchUrl extends Thread 
 	{
 		SERVER_STATE mCrntState = SERVER_STATE.UNINIT;
-		String mNewUrl;
+		String mSwitchUrl;
 		public SwitchUrl(String newUrl)
 		{
-			mNewUrl = newUrl;
+			mCrntState = SERVER_STATE.UNINIT;
+			mSwitchUrl = newUrl;
 		}
 		@Override
 		public void run() {
-			OnyxPlayerApi.addServer(mNewUrl);
+			OnyxPlayerApi.addServer(mSwitchUrl);
 			mCrntState = SERVER_STATE.SETUP;
 			int nWaitTime = 3000;
-			int nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mNewUrl);
+			int nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mSwitchUrl);
 			while(nFramesInBuff == 0 && nWaitTime > 0) {
-				nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mNewUrl);
+				nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mSwitchUrl);
 				if(nFramesInBuff > 0){
 					mCrntState = SERVER_STATE.RUNNING;
 				} else {
@@ -497,7 +514,7 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
 			if (nFramesInBuff == 0 && nWaitTime <= 0) {
 				mCrntState = SERVER_STATE.ERROR;
 			} else {
-				UpdateUrl(mNewUrl);
+				UpdateUrl(mSwitchUrl);
 			}
 		}
 	}
@@ -808,10 +825,14 @@ public class DecodeActivity extends Activity implements SurfaceHolder.Callback {
        Intent intent = new Intent(this, Settings.class);
        startActivity(intent);
    }
-   
-   void doNextUrl(){
+   void UpdateRemoteNodeList(){
+	   RemoteNode node1 = new RemoteNode("");
+	   mRemoteNodeList.add(node1);
+	   RemoteNode node2 = new RemoteNode("");
+	   mRemoteNodeList.add(node2);	   
+   }
+   void doNextUrl(String url){
 	   // Get Next URL
-	   String nextUrl = "";
-	   new SwitchUrl(nextUrl);
+	   new SwitchUrl(url);
    }
 ;}

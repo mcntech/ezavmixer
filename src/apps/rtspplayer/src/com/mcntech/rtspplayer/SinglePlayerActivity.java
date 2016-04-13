@@ -150,26 +150,8 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 		if(Configure.mEnableAudio) {
 			mVideoDelay = (int)((float)(mAudFramesPerPeriod * mAudNumPeriods) / mAudioSampleRate * 1000000) + mAudDelayUs;
 		}
-		if(Configure.mEnableOnScreenChannel) {	
-		    mRemoteNodeList = new ArrayList<RemoteNode>(); //CodecModel.mOnyxRemoteNodeList;
-		    UpdateRemoteNodeList();
-			mRemoteNodeListView = (ListView)findViewById(R.id.channel_list);
-			mListAdapter = new ArrayAdapter<RemoteNode>(getApplicationContext(), 
-					android.R.layout.simple_list_item_checked, mRemoteNodeList); 
-			mRemoteNodeListView.setAdapter(mListAdapter ); 
-			mRemoteNodeListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-			mRemoteNodeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-			    @Override
-			    public void onItemClick(AdapterView<?> parent, View item,
-			            int position, long id) {
-			    	RemoteNode node = (RemoteNode)mListAdapter.getItem(position); 
-					doNextUrl(node.getRtspStream());
-			    }
-			});
-		} else {
-			mUrl = Configure.mRtspUrl1;
-			mNewUrl = mUrl;
-		}
+
+		
 		if(mUseStaticLayout) {
 			setContentView(R.layout.activity_single_player);
 			mVideoSv = (SurfaceView) findViewById(R.id.player_surface);
@@ -204,6 +186,29 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 			});			
 		}
 		
+		if(Configure.mEnableOnScreenChannel) {	
+		    mRemoteNodeList = new ArrayList<RemoteNode>(); //CodecModel.mOnyxRemoteNodeList;
+		    UpdateRemoteNodeList();
+		    if(mRemoteNodeList.size() > 0) {
+		    	mUrl = mRemoteNodeList.get(0).getRtspStream();
+		    }
+			mRemoteNodeListView = (ListView)findViewById(R.id.channel_list);
+			mListAdapter = new ArrayAdapter<RemoteNode>(getApplicationContext(), 
+					android.R.layout.simple_list_item_checked, mRemoteNodeList); 
+			mRemoteNodeListView.setAdapter(mListAdapter ); 
+			mRemoteNodeListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+			mRemoteNodeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			    @Override
+			    public void onItemClick(AdapterView<?> parent, View item,
+			            int position, long id) {
+			    	RemoteNode node = (RemoteNode)mListAdapter.getItem(position); 
+					doNextUrl(node.getRtspStream());
+			    }
+			});
+		} else {
+			mUrl = Configure.mRtspUrl1;
+		}
+		UpdateUrl(mUrl);
 		
 		if(Configure.mEnableStats) {
 			
@@ -471,15 +476,15 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 	}
 
 	void UpdateUrl(String NewUrl){
-		synchronized (mPlayLock) {
+		//synchronized (mPlayLock) {
 			mNewUrl = NewUrl;
-		}
+		//}
 	}
 	
-	String GetUrl(String NewUrl){
-		synchronized (mPlayLock) {
+	String GetUrl(){
+		//synchronized (mPlayLock) {
 			return mNewUrl;
-		}
+		//}
 	}
 
 	private class SwitchUrl extends Thread 
@@ -496,6 +501,8 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 			OnyxPlayerApi.addServer(mSwitchUrl);
 			mCrntState = SERVER_STATE.SETUP;
 			int nWaitTime = 3000;
+			
+			OnyxPlayerApi.startServer(mSwitchUrl);
 			int nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mSwitchUrl);
 			while(nFramesInBuff == 0 && nWaitTime > 0) {
 				nFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mSwitchUrl);
@@ -730,7 +737,7 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 					if(outIndex >= 0) {
 						//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);				
 						if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
-							Log.d(LOG_TAG, "FreeRun ");
+							//Log.d(LOG_TAG, "FreeRun ");
 						} else {
 							while ((info.presentationTimeUs + 2 * mVideoDelay > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
 								try {
@@ -826,13 +833,13 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
        startActivity(intent);
    }
    void UpdateRemoteNodeList(){
-	   RemoteNode node1 = new RemoteNode("");
+	   RemoteNode node1 = new RemoteNode("192.168.0.101:8554/v01");
 	   mRemoteNodeList.add(node1);
-	   RemoteNode node2 = new RemoteNode("");
+	   RemoteNode node2 = new RemoteNode("192.168.0.101:8554/v02");
 	   mRemoteNodeList.add(node2);	   
    }
    void doNextUrl(String url){
 	   // Get Next URL
-	   new SwitchUrl(url);
+	   new SwitchUrl(url).start();
    }
-;}
+}

@@ -71,6 +71,7 @@ public:
 	virtual int Pause() {NOT_IMPLEMENTED; return -1;}
 	virtual int Stop(){NOT_IMPLEMENTED; return -1;}
 	virtual int Read(char *pData, int nMaxLen);
+	int IsRtpDataAvail(int nTimeWaitMSec);
 	virtual int ReadRtcp(char *pData, int nMaxLen, int nTimeOutSec);
 	virtual int Write(char *pData, int nMaxLen);
 	virtual int WriteRtcp(char *pData, int nMaxLen);

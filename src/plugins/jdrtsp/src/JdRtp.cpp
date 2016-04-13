@@ -118,6 +118,29 @@ int CRtp::CreateSession()
 		m_hRtcpSock = sock;
 		return 0;
 	}
+
+int CRtp::IsRtpDataAvail(int nTimeWaitMSec)
+{
+	fd_set rfds;
+	struct timeval tv;
+	int ret = -1;
+	int	selectRet;
+	/* Begin reading the body of the file */
+
+	FD_ZERO(&rfds);
+	FD_SET(m_hRtpSock, &rfds);
+
+	tv.tv_sec = nTimeWaitMSec / 1000;
+	tv.tv_usec = (nTimeWaitMSec % 1000) * 1000;
+
+	if(nTimeWaitMSec >= 0)
+		selectRet = select(m_hRtpSock+1, &rfds, NULL, NULL, &tv);
+	else		/* No timeout, can block indefinately */
+		selectRet = select(m_hRtpSock+1, &rfds, NULL, NULL, NULL);
+
+	return selectRet;
+}
+
 int CRtp::Read(char *pData, int nMaxLen)
 {
 	fd_set rfds;
@@ -163,7 +186,7 @@ int CRtp::ReadRtcp(char *pData, int nMaxLen, int nTimeOutSec)
 	tv.tv_sec = nTimeOutSec;
 	tv.tv_usec = 0;
 
-	if(timeout >= 0)
+	if(nTimeOutSec >= 0)
 		selectRet = select(m_hRtcpSock+1, &rfds, NULL, NULL, &tv);
 	else		/* No timeout, can block indefinately */
 		selectRet = select(m_hRtcpSock+1, &rfds, NULL, NULL, NULL);

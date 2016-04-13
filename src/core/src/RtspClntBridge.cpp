@@ -265,6 +265,10 @@ long CRtspClntBridge::ProcessVideoFrame()
 			goto Exit;
 		}
 		char *pWrite = m_pData + m_lUsedLen;
+
+		int res = m_pRtspClnt->m_pVRtp->IsRtpDataAvail(100);
+
+
 		long lBytesRead = m_pRfcRtp->GetData(m_pRtspClnt->m_pVRtp, pWrite, lAvailEmpty);
 		if(lBytesRead <= 0){
 			lResult = -1;
@@ -459,9 +463,11 @@ int CRtspClntBridge::StopStreaming()
 		jdoalThreadJoin((void *)m_thrdHandleAudio, 3000);
 	}
 	if(m_thrdHandleVideoRtcp){
+		//pthread_cancel((void *)m_thrdHandleVideoRtcp);
 		jdoalThreadJoin((void *)m_thrdHandleVideoRtcp, 3000);
 	}
 	if(m_thrdHandleAudioRtcp){
+		//pthread_cancel((void *)m_thrdHandleAudioRtcp);
 		jdoalThreadJoin((void *)m_thrdHandleAudioRtcp, 3000);
 	}
 

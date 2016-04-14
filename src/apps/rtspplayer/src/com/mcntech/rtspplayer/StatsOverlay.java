@@ -93,7 +93,7 @@ public class StatsOverlay  {
 	                long duration = System.nanoTime() - startWhen;
 	                double framesPerSec = 1000000000.0 / (duration / (UPDATE_STEPS * 2.0));
 	                Log.d("Overlay", "Update at " + framesPerSec + " fps");
-	                updateSignals(mActivity);
+	                updateStats(mActivity);
 	            }
 	        }
 	    };
@@ -128,7 +128,8 @@ public class StatsOverlay  {
 		currentTime+=1;
 	}
     
-    public void updateSignals(Context context) {
+    public void updateStats(Context context) {
+/*    	
         if(mWifiMgr != null) {
         	WifiInfo wifiInfo = mWifiMgr.getConnectionInfo(); 
 		   mApRssi = 0;
@@ -148,7 +149,7 @@ public class StatsOverlay  {
                }
            });
 	   }    
-    }
+*/    }
     /**
      * Signals the bounce-thread to stop, and waits for it to do so.
      */

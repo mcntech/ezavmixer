@@ -51,11 +51,11 @@ public class Settings extends Activity implements OnItemSelectedListener {
         mEnAudCheckBox.setChecked(Configure.mEnableAudio);
 
         /* Audio Enable */
-        mEnChannelList = (CheckBox) findViewById(R.id..enable_channel_list);
+        mEnChannelList = (CheckBox) findViewById(R.id.enable_channel_list);
         mEnChannelList.setOnClickListener(new OnClickListener() {
 		        public void onClick(View v) {
 		        	Configure.mEnableOnScreenChannel = mEnChannelList.isChecked();
-		        	Configure.savePreferences(getApplicationContext(), Configure.KEY_ENABLE_AUDIO, Configure.mEnableAudio);
+		        	Configure.savePreferences(getApplicationContext(), Configure.KEY_ENABLE_ON_SCREEN_CHANNEL, Configure.mEnableOnScreenChannel);
 		        }
         	});
         mEnChannelList.setChecked(Configure.mEnableOnScreenChannel);

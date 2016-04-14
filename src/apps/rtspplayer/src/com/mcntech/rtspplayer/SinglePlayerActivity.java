@@ -18,6 +18,7 @@ import android.media.MediaCodecInfo;
 
 import android.media.MediaFormat;
 import android.opengl.GLES20;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -651,8 +652,8 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 
 				// Check if URL changed
 				String url = GetUrl();
-				if(!url.equalsIgnoreCase(mUrl))  {
-					OnyxPlayerApi.removeServer(mUrl);
+				if(!url.equalsIgnoreCase(mUrl)) {
+					new closeUrlTask().execute(mUrl);
 					mUrl = url;
 				}
 
@@ -845,4 +846,40 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 	   // Get Next URL
 	   new SwitchUrl(url).start();
    }
+   void closeCurrentUrl(String url){
+	   // Get Next URL
+		OnyxPlayerApi.stopServer(url);
+		try {
+			Thread.sleep(300);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		OnyxPlayerApi.removeServer(url);
+   }
+   
+   private class closeUrlTask extends AsyncTask<String, Integer, Long> {
+
+	     protected void onProgressUpdate(Integer... progress) {
+	         //setProgressPercent(progress[0]);
+	     }
+
+	     protected void onPostExecute(Long result) {
+	         //showDialog("Downloaded " + result + " bytes");
+	     }
+
+		@Override
+		protected Long doInBackground(String... params) {
+			String url = params[0];
+			OnyxPlayerApi.stopServer(url);
+			try {
+				Thread.sleep(300);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			OnyxPlayerApi.removeServer(url);
+			return null;
+		}
+	 }
 }

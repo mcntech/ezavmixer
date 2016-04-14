@@ -109,7 +109,8 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
     private boolean                  mEnableRuiTouch = true;
     int                              mRole = 9;
     LinearLayout                     mStatsLayout;
-
+    LinearLayout                     mChannelsLayout;
+    
 	public static ListView mRemoteNodeListView = null;
 	public static ArrayList<RemoteNode> mRemoteNodeList = null;
 	public static ArrayAdapter<RemoteNode> mListAdapter = null;
@@ -176,6 +177,7 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 				});
 			}
 			mStatsLayout = (LinearLayout)findViewById(R.id.stats_layout);
+			mChannelsLayout = (LinearLayout)findViewById(R.id.channel_list_container);
 		} else {
 			mVideoSv = new SurfaceView(this);
 			mVideoSv.setOnClickListener(new View.OnClickListener() {					
@@ -206,6 +208,7 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 			    }
 			});
 		} else {
+			mChannelsLayout.setVisibility(4);
 			mUrl = Configure.mRtspUrl1;
 		}
 		UpdateUrl(mUrl);

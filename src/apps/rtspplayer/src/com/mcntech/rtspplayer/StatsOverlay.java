@@ -20,33 +20,35 @@ public class StatsOverlay  {
     private Thread              mOverlayThread = null;
     private boolean             mRunning = false;
     private static final int    UPDATE_STEPS = 30;
-    WifiManager                 mWifiMgr = null;
-    TextView                    mTextViewApRssi = null;
-    TextView                    mTextViewDevRssi = null;
-    TextView                    mTextViewBufferLevel = null;
-    TextView                    mTextViewLinkSpeed = null;
-    int                         mApRssi = 0;
-    int                         mDevRssi = 0;    
-    int                         mBufferLevel = 0;
-    int                         mLinkSpeed = 0;
+    TextView                    mAudCodec = null;
+    TextView                    mAudBitrate = null;
+    TextView                    mAudJitter = null;    
+    TextView                    mVidCodec = null;
+    TextView                    mVidBitrate = null;
+    TextView                    mVidJitter = null;    
     
 	private SamplesBuffer       mSamplesBuffer[];
 	private static final int    SAMPLES_IN_SCREEN = 1000;
+	private static final int    NUM_GRAPH_ELEMENTS = 4;
     Activity                    mActivity = null;
     StatsGraphView              mGraphView;
     
     public StatsOverlay(Activity context) {
         
-        mWifiMgr = (WifiManager) context.getSystemService(Context.WIFI_SERVICE); 
  
-        mTextViewApRssi = (TextView) context.findViewById(R.id.ap_signal);
-        mTextViewLinkSpeed = (TextView) context.findViewById(R.id.link_speed); 
-        mTextViewBufferLevel =(TextView) context.findViewById(R.id.buffer_level); 
+    	mAudCodec = (TextView) context.findViewById(R.id.aud_codec);
+    	mAudBitrate = (TextView) context.findViewById(R.id.aud_bitrate); 
+    	mAudJitter =(TextView) context.findViewById(R.id.aud_jitter); 
+    	
+    	mVidCodec = (TextView) context.findViewById(R.id.vid_codec);
+    	mVidBitrate = (TextView) context.findViewById(R.id.vid_bitrate); 
+    	mVidJitter =(TextView) context.findViewById(R.id.vid_jitter); 
+    	
         mActivity = context;
 
 		// Test Graph
-        mSamplesBuffer=new SamplesBuffer[5];
-		for(int i=0;i<5;i++) {
+        mSamplesBuffer=new SamplesBuffer[NUM_GRAPH_ELEMENTS];
+		for(int i=0; i < NUM_GRAPH_ELEMENTS;i++) {
 			mSamplesBuffer[i] = new SamplesBuffer(SAMPLES_IN_SCREEN, true);
 		}
         LinearLayout StatsLayout = (LinearLayout)mActivity.findViewById(R.id.stats_layout);
@@ -55,7 +57,6 @@ public class StatsOverlay  {
         mGraphView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         mGraphView.setEGLConfigChooser(false);
         StatsLayout.addView(mGraphView);
-        mSamplesBuffer=new SamplesBuffer[5];
         mGraphView.EnableRenderer();
 
 		

@@ -46,35 +46,64 @@
  	        android:layout_width="wrap_content"
  	        android:layout_height="match_parent"
  	        android:columnCount="2"
- 	        android:rowCount="4"
+ 	        android:rowCount="6"
  	        android:useDefaultMargins="true" >
 
 		 	<TextView
-		 	    android:id="@+id/ap_signal_label"
+		 	    android:id="@+id/aud_codec_label"
 		 	    android:layout_width="wrap_content"
-		 	    android:text="AP RSSI" />
+		 	    android:text="Aud Codec" />
 		 	<TextView
-		 	    android:id="@+id/ap_signal"
+		 	    android:id="@+id/aud_codec"
 		 	    android:layout_width="wrap_content"
-		 	    android:text="Unknown" />
+		 	    android:text="Aud Codec" />
 		 	
 		 	<TextView
-		 	    android:id="@+id/link_speed_label"
+		 	    android:id="@+id/aud_bitrate_label"
 		 	    android:layout_width="wrap_content"
-		 	    android:text="Link Speed" />
+		 	    android:text="Aud Bitrate" />
 		 	<TextView
-		 	    android:id="@+id/link_speed"
+		 	    android:id="@+id/aud_bitrate"
 		 	    android:layout_width="wrap_content"
-		 	    android:text="Unknown" />		 	
-		 	    
+		 	    android:text="Aud Bitrate" />
+		 			 	
 		 	<TextView
-		 	    android:id="@+id/buffer_label"
+		 	    android:id="@+id/aud_jitter_label"
 		 	    android:layout_width="wrap_content"
-		 	    android:text="Buffer" />
+		 	    android:text="Aud Jitter" />
 		 	<TextView
-		 	    android:id="@+id/buffer_level"
+		 	    android:id="@+id/aud_jitter"
 		 	    android:layout_width="wrap_content"
-		 	    android:text="Unknown" />
+		 	    android:text="Aud Jitter" />
+		 			 	
+		 	
+		 	<TextView
+		 	    android:id="@+id/vid_codec_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Codec" />		 	
+		 	<TextView
+		 	    android:id="@+id/vid_codec"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Codec" />
+		 			 	    
+		 	<TextView
+		 	    android:id="@+id/vid_bitrate_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Bitrate" />
+		 	<TextView
+		 	    android:id="@+id/vid_bitrate"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Bitrate" />		 	
+		 	
+		 	<TextView
+		 	    android:id="@+id/vid_jitter_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Jitter" />
+		 	<TextView
+		 	    android:id="@+id/vid_jitter"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Jitter" />
+		 			 	
 		</GridLayout>
 		
  	</LinearLayout>

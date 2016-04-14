@@ -28,6 +28,7 @@ public class Settings extends Activity implements OnItemSelectedListener {
 	CheckBox mEnAutoStartCheckBox;
 	CheckBox mEnLogoCheckBox;
 	CheckBox mEnStatsCheckBox;
+	CheckBox mEnChannelList;
 	EditText mRtspUrl1;
 	/*EditText mAudDealy;*/
     @Override
@@ -48,6 +49,16 @@ public class Settings extends Activity implements OnItemSelectedListener {
 		        }
         	});
         mEnAudCheckBox.setChecked(Configure.mEnableAudio);
+
+        /* Audio Enable */
+        mEnChannelList = (CheckBox) findViewById(R.id..enable_channel_list);
+        mEnChannelList.setOnClickListener(new OnClickListener() {
+		        public void onClick(View v) {
+		        	Configure.mEnableOnScreenChannel = mEnChannelList.isChecked();
+		        	Configure.savePreferences(getApplicationContext(), Configure.KEY_ENABLE_AUDIO, Configure.mEnableAudio);
+		        }
+        	});
+        mEnChannelList.setChecked(Configure.mEnableOnScreenChannel);
         
         /* Video Enable */
 /*

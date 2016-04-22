@@ -35,13 +35,6 @@ public:
 	int SendVideo(unsigned char *pData, int size, unsigned long lPts);
 	int SendAudio(unsigned char *pData, int size, unsigned long lPts);
 	int SetVideoDiscont();
-
-	int SetServerConfig(CRtpServerConfig *pRtpSvrCfg)
-	{ 
-		sprintf(m_szResourceFolder, "/%s", pRtpSvrCfg->m_szApplicationName);
-		m_pRtpServerConfig = pRtpSvrCfg;
-		return 0;
-	}
 	
 	int GetPublishStatistics(int *pnState, int *pnStreamInTime, int *pnLostBufferTime,  int *pnStreamOutTime, int *pnSegmentTime)
 	{
@@ -57,8 +50,6 @@ public:
 	char            *m_pTsBuffer;
 	char            m_szFilePrefix[256];
 	char            m_szResourceFolder[256];
-
-	CRtpServerConfig *m_pRtpServerConfig;
 
 	COsalMutex      m_Mutex;
 	int             m_fDiscont;

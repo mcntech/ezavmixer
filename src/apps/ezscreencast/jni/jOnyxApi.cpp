@@ -19,7 +19,7 @@ pthread_mutex_t   g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern "C" {
 
-static int  modDbgLevel = CJdDbg::LVL_ERR;
+static int  modDbgLevel = CJdDbg::LVL_TRACE;
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("OnyxAPI"));

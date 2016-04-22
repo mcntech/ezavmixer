@@ -160,7 +160,8 @@ public class RtspPublishActivity extends Activity implements BaseSession, View.O
 		OnyxApi.CreateSwitch(mHandle, jswitchId);
 		OnyxApi.ConnectSwitchInput(mHandle, jswitchId, jinputId);
 		
-		OnyxApi.CreateRtspServer(mHandle, jPublishId, jswitchId);
+		OnyxApi.CreateRtspPublishBridge(mHandle, jPublishId);
+		OnyxApi.AddRtspPublishBridgeToMediaSwitch(mHandle, jPublishId, jswitchId);
 		
 		boolean fIsLive = CodecModel.mIsLiveStream;
 		int nBitrate = CodecModel.mVideoBitrate;
@@ -172,7 +173,9 @@ public class RtspPublishActivity extends Activity implements BaseSession, View.O
 		String strCodecType = CodecModel.mVidCodecType;
 		
 		result = OnyxApi.StartSwitch(mHandle, jswitchId);
-		result= OnyxApi.StartRtspServer(mHandle, jPublishId);
+		result= OnyxApi.StartRtspPublishBridge(mHandle, jPublishId);
+		//TODO: Add api to start server
+		//result= OnyxApi.StartRtspPublishNode(mHandle, jId);
 		if(!result) {
 			mError = "Failed to StartPublishStream";
 			return result;

@@ -179,11 +179,11 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 	        final int width = CodecModel.getVideoWidth();
 	        final int height = CodecModel.getVideoHeight();
 	        final int framerate = CodecModel.getVideoFramerate();
-/*	        MpdModel mMpdSession = new MpdModel();
-	        int mpdSessionId = 0;
+	        mRtsp = new RtspModel();
+	        int sessionId = 0;
 	        OnyxRemoteNode node = new PublishSrversModel(this).read(DEF_SERVER1);
-	        mMpdSession.setNodeParams(node, mpdSessionId);
-*/	        
+	        mRtsp.setNodeParams(node, sessionId);
+	        
 	        File file = new File(Environment.getExternalStorageDirectory(),
 	                "record-" + width + "x" + height + "-" + System.currentTimeMillis() + ".mp4");
 	        final int bitrate = CodecModel.mVideoBitrate;

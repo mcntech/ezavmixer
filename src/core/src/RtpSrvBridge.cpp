@@ -105,8 +105,5 @@ int CRtpSrvBridge::Run(COutputStream *pOutputStream)
 	strcpy(m_szFilePrefix, pOutputStream->m_szStreamName);
 
 	m_pRtpSrv = new CRtp(CRtp::MODE_SERVER);
-	if(m_pRtpSrv) {
-		DBG_PRINT("Creating UDP Server port=%d \n", m_pRtpServerConfig->m_usServerPort);
-	}
 	return 0;
 }

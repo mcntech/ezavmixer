@@ -68,11 +68,11 @@ public class ScreenRecorder extends Thread {
     private long mStartExtVClkUs = 0;
     private Context mContext = null;
     private boolean mfSlaveToExtClock = false;
-    BaseSession mMpdSession = null;
-    public ScreenRecorder(Context context, BaseSession mpdSession, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
+    BaseSession mStreamSession = null;
+    public ScreenRecorder(Context context, BaseSession streamSession, int width, int height, int framerate, int bitrate, int dpi, MediaProjection mp, String dstPath) {
         super(TAG);
         mContext = context;
-        mMpdSession = mpdSession; 
+        mStreamSession = streamSession; 
         mWidth = width;
         mHeight = height;
         mBitRate = bitrate;
@@ -109,7 +109,7 @@ public class ScreenRecorder extends Thread {
                 	mMuxer = new MediaMuxer(mDstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
                 }
                 if(CodecModel.mEnableVideo || CodecModel.mEnableAudio) {
-                	boolean result = mMpdSession.startSession(CodecModel.mEnableAudio, CodecModel.mEnableVideo);
+                	boolean result = mStreamSession.startSession(CodecModel.mEnableAudio, CodecModel.mEnableVideo);
                 	if(!result) {
                 		Toast.makeText(mContext, OnyxApi.mError, Toast.LENGTH_SHORT).show();
                 		return;

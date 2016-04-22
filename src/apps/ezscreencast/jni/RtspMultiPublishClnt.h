@@ -55,9 +55,6 @@ public:
 	int AddPublishServer(std::string url, std::string szStreamId, int localRtpPort=0, int remoteRtpPort=0, int serverPort=554);
 	int RemovePublishServer(std::string url);
 
-	int sendAudioData(const char *szInputId, const char *pData, int numBytes, long Pts, int Flags);
-	int sendVideoData(const char *szInputId, const char *pData, int numBytes, long Pts, int Flags);
-
 	void enableRtspLocalServer(const char *szId, const char *szInterfaceName, const char *szStreamName, int nPort, bool fEnableMux);
 
 	int StartRtspPublishBridge(std::string szPublishId);

@@ -49,7 +49,7 @@ public:
 	CAvmixInputStrm *GetInputStrm(const char *szInputId);
 	ConnCtxT *GetInputStrmConn(const char *szInputId, int nCodec);
 
-	CS3PublishNode *getPublishNode(std::string szPublishNode);
+	CServerNode *getPublishNode(std::string szPublishNode);
 	CMediaSwitch * getSwitch(std::string szSwitchId);
 	int startSwitch(std::string szSwitchId);
 

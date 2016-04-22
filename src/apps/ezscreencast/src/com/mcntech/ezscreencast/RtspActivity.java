@@ -108,8 +108,8 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 		OnyxApi.CreateInputStream(mHandle, jinputId, jInputType, jUrl);
 		OnyxApi.CreateSwitch(mHandle, jswitchId);
 		OnyxApi.ConnectSwitchInput(mHandle, jswitchId, jinputId);
-		
-		OnyxApi.CreateRtspPublishStream(mHandle, jPublishId, jswitchId);
+		OnyxApi.CreateRtspPublishBridge(mHandle, jPublishId);
+		OnyxApi.AddRtspPublishBridgeToMediaSwitch(mHandle, jPublishId, jswitchId);
 		
 		boolean fIsLive = CodecModel.mIsLiveStream;
 		int nBitrate = CodecModel.mVideoBitrate;
@@ -120,9 +120,9 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 		String strMimeType = CodecModel.mMuxType;
 		String strCodecType = CodecModel.mVidCodecType;
 		
+		OnyxApi.EnableRtspLocalServer(mHandle, jswitchId, jInterface, jStreamName, nLocalServerPort, fEnableMux);		
 		result = OnyxApi.StartSwitch(mHandle, jswitchId);
-		OnyxApi.EnableRtspLocalServer(mHandle, jswitchId, jInterface, jStreamName, nLocalServerPort, fEnableMux);
-		result= OnyxApi.StartRtspPublishStream(mHandle, jPublishId);
+		result= OnyxApi.StartRtspPublishBridge(mHandle, jPublishId);
 		if(!result) {
 			mError = "Failed to StartPublishStream";
 			return result;
@@ -179,11 +179,11 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 	        final int width = CodecModel.getVideoWidth();
 	        final int height = CodecModel.getVideoHeight();
 	        final int framerate = CodecModel.getVideoFramerate();
-	        MpdModel mMpdSession = new MpdModel();
+/*	        MpdModel mMpdSession = new MpdModel();
 	        int mpdSessionId = 0;
 	        OnyxRemoteNode node = new PublishSrversModel(this).read(DEF_SERVER1);
 	        mMpdSession.setNodeParams(node, mpdSessionId);
-	        
+*/	        
 	        File file = new File(Environment.getExternalStorageDirectory(),
 	                "record-" + width + "x" + height + "-" + System.currentTimeMillis() + ".mp4");
 	        final int bitrate = CodecModel.mVideoBitrate;
@@ -194,7 +194,7 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 	        mRecorder.start();
 	
 	        Toast.makeText(this, "EzSceencast is running...", Toast.LENGTH_SHORT).show();
-	        moveTaskToBack(true);
+	        /*moveTaskToBack(true);*/
     	}
     }
 

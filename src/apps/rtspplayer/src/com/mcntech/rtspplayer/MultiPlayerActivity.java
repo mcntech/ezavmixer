@@ -104,6 +104,13 @@ public class MultiPlayerActivity extends Activity  {
 					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 640, 360);
 				}				
 				break;
+			case 6:
+				setContentView(R.layout.activity_multi_player_6_360);
+				for(int i=0; i < urls.length; i++){
+					TextureView textureView = getTexture(gridId, i);
+					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 640, 360);
+				}				
+				break;				
 		}
 		//mStatsLayout = (LinearLayout)findViewById(R.id.stats_layout);
 
@@ -223,6 +230,19 @@ public class MultiPlayerActivity extends Activity  {
 				case 15: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_16);
 				}
 			}
+			break;
+			case 6:
+			{
+				switch(windowId){
+				case 0: return (TextureView)findViewById(R.id.multi_player_surface_m_1);
+				case 1: return (TextureView)findViewById(R.id.multi_player_surface_m_2);
+				case 2: return  (TextureView)findViewById(R.id.multi_player_surface_m_3);
+				case 3: return  (TextureView)findViewById(R.id.multi_player_surface_m_4);
+				case 4: return  (TextureView)findViewById(R.id.multi_player_surface_m_5);
+				case 5: return  (TextureView)findViewById(R.id.multi_player_surface_m_6);
+				}
+			}
+			break;
 		}
 		return null;
 	}

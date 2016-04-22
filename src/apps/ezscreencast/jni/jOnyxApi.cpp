@@ -354,7 +354,21 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_ConnectSwitchInput(JNIEnv *env, j
 	return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRtspPublishStream(
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRtspPublishBridge(
+		JNIEnv *env, jobject self, jlong handle,
+		jstring jId,
+		jstring jSwitchId
+		)
+{
+	const char *szId = env->GetStringUTFChars(jId, 0);
+	CRtspMultiPublishClnt* _publisher = (CRtspMultiPublishClnt*)handle;
+
+	_publisher->CreateRtspPublishBridge(szId);
+
+	env->ReleaseStringUTFChars(jId, szId);
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_AddRtspPublishBridgeToMediaSwitch(
 		JNIEnv *env, jobject self, jlong handle,
 		jstring jId,
 		jstring jSwitchId
@@ -364,7 +378,7 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_CreateRtspPublishStream(
 	const char *szSwitchId = env->GetStringUTFChars(jSwitchId, 0);
 	CRtspMultiPublishClnt* _publisher = (CRtspMultiPublishClnt*)handle;
 
-	_publisher->CreateRtspPublishStream(szId, szSwitchId);
+	_publisher->AddPublishBridgeToMediaSwitch(szId, szSwitchId);
 
 	env->ReleaseStringUTFChars(jId, szId);
 	env->ReleaseStringUTFChars(jSwitchId, szSwitchId);
@@ -376,13 +390,13 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_EnableRtspLocalServer(JNIEnv *env
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	CRtspMultiPublishClnt* _publisher = (CRtspMultiPublishClnt*)handle;
 
-	const char * szId = env->GetStringUTFChars(jid, 0);
+	const char * szId = env->GetStringUTFChars(jId, 0);
 	const char *szInterfaceName = env->GetStringUTFChars(jInterfaceName, 0);
 	const char *szStreamName = env->GetStringUTFChars(jStreamName, 0);
 
-	result = _publisher->enableRtspLocalServer(szId, szInterfaceName, szStreamName, nPort, fEnableMux);
+	_publisher->enableRtspLocalServer(szId, szInterfaceName, szStreamName, nPort, fEnableMux);
 
-	env->ReleaseStringUTFChars(jid, szId);
+	env->ReleaseStringUTFChars(jId, szId);
 	env->ReleaseStringUTFChars(jInterfaceName, szInterfaceName);
 	env->ReleaseStringUTFChars(jStreamName, szStreamName);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
@@ -390,14 +404,56 @@ jboolean Java_com_mcntech_ezscreencast_OnyxApi_EnableRtspLocalServer(JNIEnv *env
 }
 
 
-jboolean Java_com_mcntech_ezscreencast_OnyxApi_StopRtspServer(JNIEnv *env, jobject self, jlong handle, jstring jid)
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartRtspPublishBridge(JNIEnv *env, jobject self, jlong handle, jstring jid)
 {
 	int result = 0;
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
 	CRtspMultiPublishClnt* _publisher = (CRtspMultiPublishClnt*)handle;
 	const char * szId = env->GetStringUTFChars(jid, 0);
 
-	result = _publisher->stopRtspServrer(szId);
+	result = _publisher->StartRtspPublishBridge(szId);
+
+	env->ReleaseStringUTFChars(jid, szId);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_StopRtspPublishBridge(JNIEnv *env, jobject self, jlong handle, jstring jid)
+{
+	int result = 0;
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
+	CRtspMultiPublishClnt* _publisher = (CRtspMultiPublishClnt*)handle;
+	const char * szId = env->GetStringUTFChars(jid, 0);
+
+	result = _publisher->StopRtspPublishBridge(szId);
+
+	env->ReleaseStringUTFChars(jid, szId);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_StartRtspPublishNode(JNIEnv *env, jobject self, jlong handle, jstring jid)
+{
+	int result = 0;
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
+	CRtspMultiPublishClnt* _publisher = (CRtspMultiPublishClnt*)handle;
+	const char * szId = env->GetStringUTFChars(jid, 0);
+
+	result = _publisher->StartRtspPublishNode(szId);
+
+	env->ReleaseStringUTFChars(jid, szId);
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
+	return result == 0 ? JNI_TRUE : JNI_FALSE;
+}
+
+jboolean Java_com_mcntech_ezscreencast_OnyxApi_StopRtspPublishNode(JNIEnv *env, jobject self, jlong handle, jstring jid)
+{
+	int result = 0;
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Ener", __FUNCTION__));
+	CRtspMultiPublishClnt* _publisher = (CRtspMultiPublishClnt*)handle;
+	const char * szId = env->GetStringUTFChars(jid, 0);
+
+	result = _publisher->StopRtspPublishNode(szId);
 
 	env->ReleaseStringUTFChars(jid, szId);
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));

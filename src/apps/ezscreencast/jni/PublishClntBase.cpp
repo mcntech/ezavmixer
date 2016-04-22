@@ -119,7 +119,7 @@ CMediaSwitch *CPublishClntBase::getSwitch(std::string szSwitchId)
 	return res;
 }
 
-CS3PublishNode *CPublishClntBase::getPublishNode(std::string szPublishNode)
+ CServerNode *CPublishClntBase::getPublishNode(std::string szPublishNode)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
 	CS3PublishNode *pNode = NULL;

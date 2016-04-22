@@ -205,9 +205,13 @@ public class OnyxApi {
 	native static boolean ConnectSwitchInput(long handle, String jSwitchId, String jInputId);
 	native static boolean StartSwitch(long handle, String jid);
 
-	native static boolean CreateRtspPublishStream(long handle,  String jId, String jswitchId);
+	native static boolean CreateRtspPublishBridge(long handle,  String jId);
+	native static boolean AddRtspPublishBridgeToMediaSwitch(long handle,  String jId, String jswitchId);
 	native static boolean EnableRtspLocalServer(long handle,  String jId,  String jInterfaceName, String jStreamName, int nPort , boolean fEnableMux);	
-	native static boolean StartRtspPublishStream(long handle,  String jId);
+	native static boolean StartRtspPublishBridge(long handle,  String jId);
+	native static boolean StopRtspPublishBridge(long handle,  String jId);
+	native static boolean StartRtspPublishNode(long handle,  String jId);
+	native static boolean StopRtspPublishNode(long handle,  String jId);
 	
 	native static boolean UpdateMpdPublishStatus(long mHandle, String mPublishId);
 }

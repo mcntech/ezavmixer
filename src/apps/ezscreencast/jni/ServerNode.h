@@ -40,8 +40,8 @@ class CServerNode
 {
 public:
 	CServerNode(){}
-	virtual void start(COutputStream *pOutputStream) = 0;
-	virtual void stop() = 0;
+	virtual void start(){}
+	virtual void stop(){}
 };
 
 typedef std::map<std::string, CServerNode *> ServerNodeMap;
@@ -51,15 +51,13 @@ class CRtspServerNode : public CServerNode
 public:
 	CRtspServerNode(std::string url, std::string appName, int localRtpPort, int remoteRtpPort, int serverPort)
 	:m_Config(url.c_str(), appName.c_str(), localRtpPort, remoteRtpPort, serverPort){
-		m_pRtspCommonCfg = new CRtspCommonConfig(/*TODO*/NULL, NULL,1,1,1);
 	}
-	void start(COutputStream *pOutputStream);
+	void start();
 	void stop();
 
 public:
 	CRtspPublishConfig m_Config;
 	CRtspPublishBridge *m_pRtspPublishBridge;
-	CRtspCommonConfig  *m_pRtspCommonCfg;
 };
 
 class CS3PublishNode : public CServerNode

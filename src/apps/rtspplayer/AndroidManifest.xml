@@ -20,13 +20,13 @@
         android:label="@string/app_name"
         android:theme="@android:style/Theme.NoTitleBar" >
         
-		<receiver android:enabled="true" android:exported="true" 
+<!-- 		<receiver android:enabled="true" android:exported="true" 
 		    android:name="com.mcntech.rtspplayer.StartFcvdst"
 		    android:permission="android.permission.CONNECTIVITY_ACTION">
 		    <intent-filter>
 		        	<action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
 		    </intent-filter>
-		</receiver> 
+		</receiver>  -->
             
         <activity
             android:name="com.mcntech.rtspplayer.MainActivity"
@@ -81,7 +81,12 @@
             android:screenOrientation="landscape" >
         </activity>
                 
- 
+        <activity
+            android:name="com.mcntech.rtspplayer.VrPlayerActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape" >
+        </activity>
+        
     </application>
 
 </manifest>

@@ -23,6 +23,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
+import android.widget.Toast;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -234,6 +235,34 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	       intent.putExtras(b);
 	       startActivity(intent);
 	   }
+	   
+	   public void startVrPlayer(int numWindows, int res){
+
+	       int numUrls = mRemoteNodeList.size();
+	       if(numUrls > numWindows)
+	    	   numUrls = numWindows;
+	       else if (numUrls  == 0) {
+	    	   Toast.makeText(this, "No Cameras", Toast.LENGTH_LONG).show();
+	    	   return;
+	       }
+		   Intent intent = new Intent(this, VrPlayerActivity.class);
+	       
+	       Bundle b = new Bundle();
+	       b.putInt("windows", numWindows);
+
+	       String[] urlList = new String[numUrls];
+	       for(int i=0; i < numUrls; i++) {
+		       RemoteNode node  = mRemoteNodeList.get(i);
+		       if(node != null) {
+		    	   urlList[i] = node.getRtspStream(res);
+		       }
+	       }
+	       b.putStringArray("urls", urlList);
+	       
+	       intent.putExtras(b);
+	       startActivity(intent);
+	   }
+	   
 	   public void start_1_1(View v){
 		   startMultiPlayer(1, RemoteNode.VID_RES_720P);
 	   }
@@ -247,7 +276,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		   startMultiPlayer(16, RemoteNode.VID_RES_480P);
 	   }
 	   public void start_6_360(View v){
-		   startMultiPlayer(6, RemoteNode.VID_RES_480P);
+		   startVrPlayer(1, RemoteNode.VID_RES_480P);
 	   }
 	   @Override
 	    public void onBackPressed() {

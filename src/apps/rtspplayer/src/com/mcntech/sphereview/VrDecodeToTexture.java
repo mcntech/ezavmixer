@@ -47,7 +47,6 @@ public class VrDecodeToTexture  {
 	String                        mUrl;                   
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler;
-	SurfaceTexture                mSurfaceTexture = null;
 	Surface                       mVideoSurface = null;
 	
 	ByteBuffer                    mBuff;
@@ -83,9 +82,8 @@ public class VrDecodeToTexture  {
     
     
     
-	public VrDecodeToTexture(Activity activity, SurfaceTexture surfaceTexture, String url, int maxVidWidth, int maxVidHeight) {
+	public VrDecodeToTexture(Activity activity, String url, int maxVidWidth, int maxVidHeight) {
 
-		mSurfaceTexture = surfaceTexture;
 		mHandler = new LocalHandler();
 
 		mUrl = url;

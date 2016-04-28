@@ -17,10 +17,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
-import android.media.MediaCodec.BufferInfo;
-import android.media.MediaCodecInfo;
 
-import android.media.MediaFormat;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -34,18 +31,18 @@ import android.view.TextureView;
 import android.widget.LinearLayout;
 
 
-import com.mcntech.rtspplayer.CodecInfo;
-import com.mcntech.rtspplayer.OnyxPlayerApi;
 import com.mcntech.rtspplyer.R;
+import com.mcntech.sphereview.Capture3DRenderer.Snapshot;
 
 public class VrCompositor  implements GLSurfaceView.Renderer {
 	public static final String TAG = "VrCompositor";
 	public final String LOG_TAG = "VrCompositor";
 	String                        mUrl;                   
-	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler;
 	TextureView                   mVideoTexView = null;
 	Surface                       mVideoSurface = null;
+	private List<VrDecodeToTexture> mDecodePipes;
+	private List<Snapshot>        mCameras;
 	
 	ByteBuffer                    mBuff;
 	long                          mPts;
@@ -148,7 +145,8 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	    mCameraQuat = new Quaternion();
 	    mContext = activity;
 	    mTempQuaternion = new Quaternion();
-	
+	    VrDecodeToTexture decodePipe = new VrDecodeToTexture(activity, url, maxVidWidth, maxVidHeight);
+	    mDecodePipes.add(decodePipe);
 	}
 
 	private float[] matrixFromEuler(float rx, float ry, float rz, float tx,
@@ -490,6 +488,10 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	        
 			mVideoSurface = new Surface(mCameraSurfaceTex);
 			mHandler.sendEmptyMessage(PLAYER_CMD_INIT);	
+			
+			for (Snapshot snap : mCameras) {
+				snap.draw();
+			}
 	    }
 	@Override
 	public void onDrawFrame(GL10 gl) {

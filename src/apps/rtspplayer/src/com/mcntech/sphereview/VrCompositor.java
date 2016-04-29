@@ -1,10 +1,8 @@
 package com.mcntech.sphereview;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -14,9 +12,7 @@ import javax.microedition.khronos.opengles.GL10;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
-import android.media.MediaCodec;
 
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
@@ -24,12 +20,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
-import android.view.Surface;
-import android.view.TextureView;
-import android.widget.LinearLayout;
-
 
 import com.mcntech.rtspplyer.R;
 
@@ -39,7 +30,7 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	Handler                       mHandler;
 	//Surface                       mVideoSurface = null;
 	private List<VrDecodeToTexture> mDecodePipes;
-	private List<CameraFeed>        mCameraFeeds;
+
 	
 	ByteBuffer                    mBuff;
 	long                          mPts;
@@ -105,11 +96,8 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
     private int[] mAlphaHandler = new int[2];
     private int[] mMVPMatrixHandler = new int[2];
     
+	private List<CameraFeed>        mCameraFeeds;
     
-    //private SurfaceTexture mCameraSurfaceTex;
-    //private int mCameraTextureId;
-    private CameraFeed mCameraBillboardLeft;
-    private CameraFeed mCameraBillboardRight;
     //private Snapshot mViewfinderBillboard;
     private Context mContext;
     private Quaternion mTempQuaternion;
@@ -270,7 +258,7 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
     }
 
     /**
-     * Stores the information about each snapshot displayed in the sphere
+     * Stores the information about bitmaps displayed in the sphere
      */
     private class Snapshot {
 		private float[] mModelMatrix;
@@ -490,7 +478,8 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
             mTextureHandler[i]      = GLES20.glGetUniformLocation(mProgram[i], "u_Texture");
             mAlphaHandler[i]      = GLES20.glGetUniformLocation(mProgram[i], "f_Alpha");
         }
-        initCameraFeed();
+        for (VrDecodeToTexture decodePipe : mDecodePipes)
+        		initCameraFeed(decodePipe);
 	}
 
 	@Override
@@ -516,7 +505,7 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	}
 
 	
-	   private void initCameraFeed() {
+	   private void initCameraFeed(VrDecodeToTexture decodePipe) {
 	        int texture[] = new int[1];
 
 	        GLES20.glGenTextures(1, texture, 0);
@@ -526,7 +515,7 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	            throw new RuntimeException("CAMERA TEXTURE ID == 0");
 	        }
 
-	        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mCameraTextureId);
+	        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, TextureId);
 	        // Can't do mipmapping with camera source
 	        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
 	                GLES20.GL_LINEAR);
@@ -542,60 +531,52 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	        //mCameraSurfaceTex.setDefaultBufferSize(640, 480);
 	        CameraSurfaceTex.setDefaultBufferSize(1280, 720);
 
-	        mCameraBillboardLeft = new CameraFeed(EYE_LEFT, 0.0f, 0.0f, 0.0f, TextureId);
-	        mCameraBillboardRight = new CameraFeed(EYE_RIGHT, 0.0f, 0.0f, 0.0f, TextureId);
+	        CameraFeed cameraFeedLeft = new CameraFeed(EYE_LEFT, 0, -67.5f, -DISTANCE, TextureId);
+	        mCameraFeeds.add(cameraFeedLeft);
+	        CameraFeed cameraFeedRight = new CameraFeed(EYE_RIGHT, 0, 67.5f, -DISTANCE, TextureId);
+	        mCameraFeeds.add(cameraFeedRight);
 	        
-	        Surface VideoSurface = new Surface(CameraSurfaceTex);
-			// TODO
-			mHandler.sendEmptyMessage(VrDecodeToTexture.PLAYER_CMD_INIT, VideoSurface);	
-			
-			/*for (Snapshot snap : mCameras) {
-				snap.draw();
-			}*/
+	        Handler handler = decodePipe.getHandler();
+			mHandler.sendMessage(mHandler.obtainMessage(
+					VrDecodeToTexture.PLAYER_CMD_INIT, CameraSurfaceTex));
 	    }
 	@Override
 	public void onDrawFrame(GL10 gl) {
 		// TODO Auto-generated method stub
-		mCameraSurfaceTex.updateTexImage();
+		// mCameraSurfaceTex.updateTexImage();
+		for (VrDecodeToTexture decodePipe : mDecodePipes)
+			decodePipe.getSurfaceTexture().updateTexImage();
 		
-		
-	       GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
-	        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-	        GLES20.glEnable(GLES20.GL_BLEND);
+		GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+		GLES20.glEnable(GLES20.GL_BLEND);
 
-	        // Update camera view matrix
-	        float[] orientation = mSensorFusion.getFusedOrientation();
+		// Update camera view matrix
+		float[] orientation = mSensorFusion.getFusedOrientation();
 
-	        // Convert angles to degrees
-	        float rX = (float) (orientation[1] * 180.0f/Math.PI);
-	        float rY = (float) (orientation[0] * 180.0f/Math.PI);
-	        float rZ = (float) (orientation[2] * 180.0f/Math.PI);
+		// Convert angles to degrees
+		float rX = (float) (orientation[1] * 180.0f / Math.PI);
+		float rY = (float) (orientation[0] * 180.0f / Math.PI);
+		float rZ = (float) (orientation[2] * 180.0f / Math.PI);
 
-	        // Update quaternion from euler angles out of orientation
-	        mCameraQuat.fromEuler( rX, 180.0f-rZ, rY);
-	        mCameraQuat = mCameraQuat.getConjugate();
-	        mCameraQuat.normalise();
-	        mViewMatrix = mCameraQuat.getMatrix();
+		// Update quaternion from euler angles out of orientation
+		mCameraQuat.fromEuler(rX, 180.0f - rZ, rY);
+		mCameraQuat = mCameraQuat.getConjugate();
+		mCameraQuat.normalise();
+		mViewMatrix = mCameraQuat.getMatrix();
 
-	        // Update camera billboard
-	        mCameraBillboardLeft.mModelMatrix = mCameraQuat.getMatrix();
-	        
-	        Matrix.invertM(mCameraBillboardLeft.mModelMatrix, 0, mCameraBillboardLeft.mModelMatrix, 0);
-	        Matrix.translateM(mCameraBillboardLeft.mModelMatrix, 0, -67.5f, 0.0f, -DISTANCE);
-	        //Matrix.rotateM(mCameraBillboard.mModelMatrix, 0, -90, 0, 0, 1);
-	        Matrix.rotateM(mCameraBillboardLeft.mModelMatrix, 0, 180, 0, 0, 1);
-
-	        mCameraBillboardLeft.draw();
-	        
-	        // Update camera billboard
-	        mCameraBillboardRight.mModelMatrix = mCameraQuat.getMatrix();
-	        
-	        Matrix.invertM(mCameraBillboardRight.mModelMatrix, 0, mCameraBillboardRight.mModelMatrix, 0);
-	        Matrix.translateM(mCameraBillboardRight.mModelMatrix, 0, 67.5f, 0.0f, -DISTANCE);
-	        //Matrix.rotateM(mCameraBillboard.mModelMatrix, 0, -90, 0, 0, 1);
-	        Matrix.rotateM(mCameraBillboardRight.mModelMatrix, 0, 180, 0, 0, 1);
-
-	        mCameraBillboardRight.draw();
+		for (CameraFeed cameraFeed : mCameraFeeds) {
+			// Update camera billboard
+			cameraFeed.mModelMatrix = mCameraQuat.getMatrix();
+	
+			Matrix.invertM(cameraFeed.mModelMatrix, 0,
+					cameraFeed.mModelMatrix, 0);
+			Matrix.translateM(cameraFeed.mModelMatrix, 0, cameraFeed.mPosX, cameraFeed.mPosY, cameraFeed.mPosZ);
+			// Matrix.rotateM(mCameraBillboard.mModelMatrix, 0, -90, 0, 0, 1);
+			Matrix.rotateM(cameraFeed.mModelMatrix, 0, 180, 0, 0, 1);
+	
+			cameraFeed.draw();
+		}
 	}
 }

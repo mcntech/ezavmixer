@@ -48,7 +48,7 @@ public class VrDecodeToTexture  {
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler;
 	Surface                       mVideoSurface = null;
-	
+	SurfaceTexture                mSurfaceTexture;
 	ByteBuffer                    mBuff;
 	long                          mPts;
 	public static int             mFramesInBuff = 0;
@@ -98,7 +98,15 @@ public class VrDecodeToTexture  {
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		//mVideoTexView.setSurfaceTextureListener(this);
 	}
-
+	
+	Handler getHandler(){
+		return mHandler;
+	}
+	
+	SurfaceTexture getSurfaceTexture(){
+		return mSurfaceTexture;
+	}
+	
 	private class LocalHandler extends Handler {	
         @Override
          public void handleMessage(Message msg) {
@@ -119,7 +127,9 @@ public class VrDecodeToTexture  {
 				mExitPlayerLoop = true;
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_STOP");
 		    }  else if(what == PLAYER_CMD_INIT) {
-		    	mVideoSurface = null;// todo: get it from arg
+		    	mSurfaceTexture = (SurfaceTexture) msg.obj;
+		    	mVideoSurface = new Surface(mSurfaceTexture);
+		    	
 				new Thread(new Runnable() {
 					@Override
 					public void run() {

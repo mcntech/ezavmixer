@@ -63,10 +63,10 @@ public class VrDecodeToTexture  {
 
     private boolean                  mfPlaying = false;
     
-    final int                        PLAYER_CMD_RUN = 1;
-    final int                        PLAYER_CMD_STOP = 2;
-    final int                        PLAYER_CMD_INIT = 3;
-    final int                        PLAYER_CMD_DEINIT = 4;    
+    public static final int                        PLAYER_CMD_RUN = 1;
+    public static final int                        PLAYER_CMD_STOP = 2;
+    public static final int                 PLAYER_CMD_INIT = 3;
+    public static final int                 PLAYER_CMD_DEINIT = 4;    
     
     private final Object             mPlayLock = new Object();
     private boolean                  mExitPlayerLoop = false;
@@ -119,6 +119,7 @@ public class VrDecodeToTexture  {
 				mExitPlayerLoop = true;
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_STOP");
 		    }  else if(what == PLAYER_CMD_INIT) {
+		    	mVideoSurface = null;// todo: get it from arg
 				new Thread(new Runnable() {
 					@Override
 					public void run() {

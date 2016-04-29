@@ -32,50 +32,24 @@ import android.widget.LinearLayout;
 
 
 import com.mcntech.rtspplyer.R;
-import com.mcntech.sphereview.Capture3DRenderer.Snapshot;
 
 public class VrCompositor  implements GLSurfaceView.Renderer {
 	public static final String TAG = "VrCompositor";
 	public final String LOG_TAG = "VrCompositor";
-	String                        mUrl;                   
 	Handler                       mHandler;
-	TextureView                   mVideoTexView = null;
-	Surface                       mVideoSurface = null;
+	//Surface                       mVideoSurface = null;
 	private List<VrDecodeToTexture> mDecodePipes;
-	private List<Snapshot>        mCameras;
+	private List<CameraFeed>        mCameraFeeds;
 	
 	ByteBuffer                    mBuff;
 	long                          mPts;
 	public static int             mFramesInBuff = 0;
 	public static int             mFramesRendered = 0;
 
-	//Video Parameters
-	int                              maxBuffSize = (4 * 1024 * 1024);
-	private MediaCodec               mDecoder = null;
-	final long                       MAX_VIDEO_SYNC_THRESHOLD_US = 10000000;
-	final long                       MAX_AUDIO_SYNC_THRESHOLD_US = 10000000;
-	
-
-    private boolean                  mfPlaying = false;
-    
-    final int                        PLAYER_CMD_RUN = 1;
-    final int                        PLAYER_CMD_STOP = 2;
-    final int                        PLAYER_CMD_INIT = 3;
-    final int                        PLAYER_CMD_DEINIT = 4;    
-    
-    private final Object             mPlayLock = new Object();
-    private boolean                  mExitPlayerLoop = false;
-    private int                      mCodecType = 1;
     int                              mMaxVidWidth =  1920;
     int                              mMaxVidHeight = 1080;
     int                              currentapiVersion = android.os.Build.VERSION.SDK_INT;
-
-    private boolean                  mfSendCsd0DuringInit = false;
-    private boolean                  mfAvcUHdSupported = false;
-    LinearLayout                     mStatsLayout;
-    boolean mfHevcSupported = false;
-    
-    
+        
     private FloatBuffer mVertexBuffer;
     private FloatBuffer m43VertexBuffer;
     private FloatBuffer mTexCoordBuffer;
@@ -119,6 +93,9 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
     private final static int CAMERA = 0;
     private final static int SNAPSHOT = 1;
 
+    private final static int EYE_LEFT = 0;
+    private final static int EYE_RIGHT = 1;
+
     private int[] mProgram = new int[2];
     private int[] mVertexShader = new int[2];
     private int[] mFragmentShader = new int[2];
@@ -129,10 +106,10 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
     private int[] mMVPMatrixHandler = new int[2];
     
     
-    private SurfaceTexture mCameraSurfaceTex;
-    private int mCameraTextureId;
-    private Snapshot mCameraBillboardLeft;
-    private Snapshot mCameraBillboardRight;
+    //private SurfaceTexture mCameraSurfaceTex;
+    //private int mCameraTextureId;
+    private CameraFeed mCameraBillboardLeft;
+    private CameraFeed mCameraBillboardRight;
     //private Snapshot mViewfinderBillboard;
     private Context mContext;
     private Quaternion mTempQuaternion;
@@ -197,21 +174,114 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
         return shaderHandle;
     }
     
-    
+
+    /**
+     * Stores the information about each camera displayed in the sphere
+     */
+    private class CameraFeed {
+		private float[] mModelMatrix;
+		private int mTextureId;
+		private boolean mIsFourToThree;
+		private int mMode;
+		private boolean mIsVisible = true;
+		private float mAlpha = 1.0f;
+		private float mAutoAlphaX;
+		private float mAutoAlphaY;
+		
+		private int   mEye;
+		private float mPosX;
+		private float mPosY;
+		private float mPosZ;
+		
+        public CameraFeed(int Eye, float PosX, float PosY, float PosZ, int TextureId) {
+            mIsFourToThree = true;
+            mPosX=PosX;
+            mPosY=PosY;
+            mPosZ=PosZ;
+            mEye = Eye;
+            mMode = CAMERA;
+            mIsFourToThree=false;
+            mTextureId = TextureId;
+        }
+
+
+        public void setAlpha(float alpha) {
+            mAlpha = alpha;
+        }
+
+        public void setAutoAlphaAngle(float x, float y) {
+            mAutoAlphaX = x;
+            mAutoAlphaY = y;
+        }
+
+        public float getAutoAlphaX() {
+            return mAutoAlphaX;
+        }
+
+        public float getAutoAlphaY() {
+            return mAutoAlphaY;
+        }
+
+
+        public void draw() {
+            if (!mIsVisible) return;
+
+            GLES20.glUseProgram(mProgram[mMode]);
+            if (mIsFourToThree) {
+                m43VertexBuffer.position(0);
+            } else {
+                mVertexBuffer.position(0);
+            }
+            mTexCoordBuffer.position(0);
+
+            GLES20.glEnableVertexAttribArray(mTexCoordHandler[mMode]);
+            GLES20.glEnableVertexAttribArray(mPositionHandler[mMode]);
+
+            if (mIsFourToThree) {
+                GLES20.glVertexAttribPointer(mPositionHandler[mMode],
+                        2, GLES20.GL_FLOAT, false, 8, m43VertexBuffer);
+            } else {
+                GLES20.glVertexAttribPointer(mPositionHandler[mMode],
+                        2, GLES20.GL_FLOAT, false, 8, mVertexBuffer);
+            }
+            GLES20.glVertexAttribPointer(mTexCoordHandler[mMode], 2,
+                    GLES20.GL_FLOAT, false, 8, mTexCoordBuffer);
+
+            // This multiplies the view matrix by the model matrix, and stores the
+            // result in the MVP matrix (which currently contains model * view).
+            Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
+
+            // This multiplies the modelview matrix by the projection matrix, and stores
+            // the result in the MVP matrix (which now contains model * view * projection).
+            Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
+
+            // Pass in the combined matrix.
+            GLES20.glUniformMatrix4fv(mMVPMatrixHandler[mMode], 1, false, mMVPMatrix, 0);
+
+            GLES20.glUniform1f(mAlphaHandler[mMode], mAlpha);
+
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureId);
+
+            GLES20.glUniform1i(mTextureHandler[mMode], 0);
+
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 4);
+        }
+    }
 
     /**
      * Stores the information about each snapshot displayed in the sphere
      */
     private class Snapshot {
-        private float[]mModelMatrix;
-        private int mTextureData;
-        private Bitmap mBitmapToLoad;
-        private boolean mIsFourToThree;
-        private int mMode;
-        private boolean mIsVisible = true;
-        private float mAlpha = 1.0f;
-        private float mAutoAlphaX;
-        private float mAutoAlphaY;
+		private float[] mModelMatrix;
+		private int mTextureData;
+		private Bitmap mBitmapToLoad;
+		private boolean mIsFourToThree;
+		private int mMode;
+		private boolean mIsVisible = true;
+		private float mAlpha = 1.0f;
+		private float mAutoAlphaX;
+		private float mAutoAlphaY;
 
         public Snapshot() {
             mIsFourToThree = true;
@@ -420,8 +490,7 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
             mTextureHandler[i]      = GLES20.glGetUniformLocation(mProgram[i], "u_Texture");
             mAlphaHandler[i]      = GLES20.glGetUniformLocation(mProgram[i], "f_Alpha");
         }
-
-		initCameraBillboard();
+        initCameraFeed();
 	}
 
 	@Override
@@ -447,13 +516,13 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	}
 
 	
-	   private void initCameraBillboard() {
+	   private void initCameraFeed() {
 	        int texture[] = new int[1];
 
 	        GLES20.glGenTextures(1, texture, 0);
-	        mCameraTextureId = texture[0];
+	        int TextureId = texture[0];
 
-	        if (mCameraTextureId == 0) {
+	        if (TextureId == 0) {
 	            throw new RuntimeException("CAMERA TEXTURE ID == 0");
 	        }
 
@@ -469,29 +538,20 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T,
 	                GLES20.GL_CLAMP_TO_EDGE);
 
-	        mCameraSurfaceTex = new SurfaceTexture(mCameraTextureId);
+	        SurfaceTexture CameraSurfaceTex = new SurfaceTexture(TextureId);
 	        //mCameraSurfaceTex.setDefaultBufferSize(640, 480);
-	        mCameraSurfaceTex.setDefaultBufferSize(1280, 720);
+	        CameraSurfaceTex.setDefaultBufferSize(1280, 720);
 
-	        mCameraBillboardLeft = new Snapshot(false);
-	        mCameraBillboardLeft.setTextureId(mCameraTextureId);
-	        mCameraBillboardLeft.setMode(CAMERA);
-
-	        mCameraBillboardRight = new Snapshot(false);
-	        mCameraBillboardRight.setTextureId(mCameraTextureId);
-	        mCameraBillboardRight.setMode(CAMERA);
-
-	        // Setup viewfinder billboard
-	        //mViewfinderBillboard = new Snapshot(false);
-	       // mViewfinderBillboard.setTexture(BitmapFactory.decodeResource(mContext.getResources(),
-	        //        R.drawable.ic_picsphere_viewfinder));
+	        mCameraBillboardLeft = new CameraFeed(EYE_LEFT, 0.0f, 0.0f, 0.0f, TextureId);
+	        mCameraBillboardRight = new CameraFeed(EYE_RIGHT, 0.0f, 0.0f, 0.0f, TextureId);
 	        
-			mVideoSurface = new Surface(mCameraSurfaceTex);
-			mHandler.sendEmptyMessage(PLAYER_CMD_INIT);	
+	        Surface VideoSurface = new Surface(CameraSurfaceTex);
+			// TODO
+			mHandler.sendEmptyMessage(VrDecodeToTexture.PLAYER_CMD_INIT, VideoSurface);	
 			
-			for (Snapshot snap : mCameras) {
+			/*for (Snapshot snap : mCameras) {
 				snap.draw();
-			}
+			}*/
 	    }
 	@Override
 	public void onDrawFrame(GL10 gl) {
@@ -537,6 +597,5 @@ public class VrCompositor  implements GLSurfaceView.Renderer {
 	        Matrix.rotateM(mCameraBillboardRight.mModelMatrix, 0, 180, 0, 0, 1);
 
 	        mCameraBillboardRight.draw();
-
 	}
 }

@@ -11,12 +11,14 @@ import android.view.TextureView;
 import com.mcntech.rtspplyer.R;
 import com.mcntech.sphereview.CameraManager;
 import com.mcntech.sphereview.Capture3DRenderer;
+import com.mcntech.sphereview.VrCompositor;
 import com.mcntech.sphereview.VrDecodePipe;
+import com.mcntech.sphereview.VrEyeRender;
 
 public class VrPlayerActivity extends Activity implements CameraManager/*, SurfaceTexture.OnFrameAvailableListener*/  {
 	
 	public final String LOG_TAG = "rtsp";	
-	Capture3DRenderer             mVrRender = null;
+	VrEyeRender                   mVrRender = null;
 	SurfaceTexture                mVrTexture;
 	private GLSurfaceView         mGLSurfaceView;
 	
@@ -34,23 +36,16 @@ public class VrPlayerActivity extends Activity implements CameraManager/*, Surfa
 		super.onCreate(savedInstanceState);
 
 		Bundle b = getIntent().getExtras();
-		int gridId = b.getInt("windows");
+		//int gridId = b.getInt("windows");
 		String[] urls = b.getStringArray("urls");
+		mGLSurfaceView = new GLSurfaceView(this); 
+		mGLSurfaceView.setEGLContextClientVersion(2);
 		
-		switch(gridId) {
-			case 1:
-			{
-				mGLSurfaceView = new GLSurfaceView(this); 
-				mGLSurfaceView.setEGLContextClientVersion(2);
-				
-				//mVrRender = new Capture3DRenderer(this, this);
-				VrDecodePipe mVrRender = new VrDecodePipe(this, urls[0], 3840, 2160);
-				mGLSurfaceView.setRenderer(mVrRender);
-				//mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-				setContentView(mGLSurfaceView);
-			}
-			break;
-		}
+		//mVrRender = new Capture3DRenderer(this, this);
+		VrEyeRender mVrRender = new VrEyeRender(this, urls, 1280, 720);
+		mGLSurfaceView.setRenderer(mVrRender);
+		//mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+		setContentView(mGLSurfaceView);
 	}
 	
     void makeStreamVisible(String url) {

@@ -276,7 +276,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		   startMultiPlayer(16, RemoteNode.VID_RES_480P);
 	   }
 	   public void start_6_360(View v){
-		   startVrPlayer(1, RemoteNode.VID_RES_480P);
+		   startVrPlayer(6, RemoteNode.VID_RES_480P);
 	   }
 	   @Override
 	    public void onBackPressed() {

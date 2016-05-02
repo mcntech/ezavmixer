@@ -48,7 +48,7 @@ public class VrDecodeToTexture  {
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler;
 	Surface                       mVideoSurface = null;
-	SurfaceTexture                mSurfaceTexture;
+	SurfaceTexture                mSurfaceTexture = null;
 	ByteBuffer                    mBuff;
 	long                          mPts;
 	public static int             mFramesInBuff = 0;

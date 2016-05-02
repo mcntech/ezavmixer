@@ -162,10 +162,10 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
 		mStartTextureId = (int) (offset);
 		mStitchX = offset - mStartTextureId;
     	int id1 = mStartTextureId % mTextureIdList.length;
-    	int id2 = (mStartTextureId + 1) % mTextureIdList.length;
+    	int id2 = (mTextureIdList.length + mStartTextureId - 1) % mTextureIdList.length;
     	mTextureIdStitch1 = mTextureIdList[id1];
     	mTextureIdStitch2 = mTextureIdList[id2];
-        Log.d(TAG, "HeadView: id1=" + id1 + " id2=" + id2 + " stitch=" + mStitchX);
+        //Log.d(TAG, "HeadView: start" + mStartTextureId + " id1=" + id1 + " id2=" + id2 + " stitch=" + mStitchX);
     }
    
 

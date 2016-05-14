@@ -22,11 +22,10 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.mcntech.rtspplyer.R;
+import com.mcntech.sphereview.VrRenderDb.VideoFeed;
 
 public class VrEyeRender  implements GLSurfaceView.Renderer {
-	public static final String TAG = "VrEyeRender";
-	private List<VrDecodeToTexture> mDecodePipes;
-        
+	public static final String TAG = "VrEyeRender";        
     private FloatBuffer mVertexBuffer;
     private FloatBuffer mTexCoordBuffer;
     
@@ -81,27 +80,24 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
     
 	private float mStitchX = 1.0f;
 	private float mIncr = -0.01f;
-	private int   mStartTextureId = 0;
-	private int   mTextureIdStitch1;
-	private int   mTextureIdStitch2;
-
 	
     //private Snapshot mViewfinderBillboard;
     private Context mContext;
     private float[] mMVPMatrix = new float[16];
     
-    private int[] mTextureIdList = null;
+    private int[] mTextureIdListLeft = null;
+    private int[] mTextureIdListRight = null;
     
-	public VrEyeRender(Activity activity, String[] urls, int maxVidWidth, int maxVidHeight) {
+	public VrEyeRender(Activity activity,  int maxVidWidth, int maxVidHeight) {
 
 		Context context = activity.getApplicationContext();
 		mSensorFusion = new SensorFusion(context);
 	    mCameraQuat = new Quaternion();
 	    mContext = activity;
-	    mDecodePipes = new ArrayList<VrDecodeToTexture>();
-		for(int i=0; i < urls.length; i++){
-		    VrDecodeToTexture decodePipe = new VrDecodeToTexture(activity, urls[i], maxVidWidth, maxVidHeight);
-		    mDecodePipes.add(decodePipe);
+
+		for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
+			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
+			videoFeed.decodePipe = new VrDecodeToTexture(activity, videoFeed.mUrl, maxVidWidth, maxVidHeight);
 		}
 	}
 
@@ -152,19 +148,42 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
 
         return shaderHandle;
     }
-    
-    public void updateHeadViewLocation()
+
+    public int [][] getActiveTexturesForEye(int [] textures,  int startTextureId, int nEyeId)
     {
-        float[] orientation = mSensorFusion.getFusedOrientation();
-		float rY = 180.0f - (float) (orientation[0] * 180.0f / Math.PI);
-		float fov = 360 / mTextureIdList.length;
-		float offset = rY / fov;
-		mStartTextureId = (int) (offset);
-		mStitchX = offset - mStartTextureId;
-    	int id1 = mStartTextureId % mTextureIdList.length;
-    	int id2 = (mTextureIdList.length + mStartTextureId - 1) % mTextureIdList.length;
-    	mTextureIdStitch1 = mTextureIdList[id1];
-    	mTextureIdStitch2 = mTextureIdList[id2];
+		int id1 = startTextureId % textures.length;
+    	int id2 = (textures.length + startTextureId - 1) % textures.length;
+    	
+		int   textureIdStitch1;
+		int   textureIdStitch2;
+
+		textureIdStitch1 = textures[id1];
+		textureIdStitch2 = textures[id2];
+
+		int [][]activeTextures = new int[3][2];
+		activeTextures[1][0] = textureIdStitch1;
+		activeTextures[1][1] = textureIdStitch2;
+		
+		return activeTextures;
+	}
+
+    public void updateTexturesForHeadViewLocation()
+    {
+    	int startTextureId = 0;
+    	mStitchX = 0;
+    	if(mTextureIdListLeft.length > 1) {
+	        float[] orientation = mSensorFusion.getFusedOrientation();
+			float rY = 180.0f - (float) (orientation[0] * 180.0f / Math.PI);
+			float fov = 360 / mTextureIdListLeft.length;
+			float offset = rY / fov;
+			startTextureId = (int) (offset);
+			mStitchX = offset - startTextureId;
+    	}
+    	
+    	int [][]textures = getActiveTexturesForEye(mTextureIdListLeft, startTextureId, VrRenderDb.ID_EYE_LEFT);
+    	mLeftEye.setActiveTextures(textures);
+    	textures = getActiveTexturesForEye(mTextureIdListRight, startTextureId, VrRenderDb.ID_EYE_RIGHT);
+    	mRightEye.setActiveTextures(textures);
         //Log.d(TAG, "HeadView: start" + mStartTextureId + " id1=" + id1 + " id2=" + id2 + " stitch=" + mStitchX);
     }
    
@@ -185,6 +204,10 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
 		private float mPosX;
 		private float mPosY;
 		private float mPosZ;
+		private int   mActiveTextures[][];
+		public static  final int ROW_TOP = 0;
+		public static  final int ROW_MIDDLE = 1;
+		public static  final int ROW_BOTTOM = 2;
 		
         public CameraStitch(int Eye, float PosX, float PosY, float PosZ) {
             mPosX=PosX;
@@ -192,8 +215,14 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
             mPosZ=PosZ;
             mEye = Eye;
             mMode = CAMERA;
+            mActiveTextures = new int[3][2];
         }
 
+        public void setActiveTextures(int textures[][])
+        {
+        	mActiveTextures = textures;
+        }
+        
         public void setAlpha(float alpha) {
             mAlpha = alpha;
         }
@@ -218,16 +247,6 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
             mVertexBuffer.position(0);
             mTexCoordBuffer.position(0);
 
-/*            mStitchX += mIncr;
-            if(mStitchX <= 0.0f) {
-            	mStitchX = 1.0f;
-            	mStartTextureId++;
-            	int id1 = mStartTextureId % mTextureIdList.length;
-            	int id2 = (mStartTextureId + 1) % mTextureIdList.length;
-            	mTextureIdStitch1 = mTextureIdList[id1];
-            	mTextureIdStitch2 = mTextureIdList[id2];
-            }
-*/            
             GLES20.glEnableVertexAttribArray(mTexCoordHandlerStitch[0]);
             GLES20.glEnableVertexAttribArray(mTexCoordHandlerStitch[1]);
             
@@ -255,11 +274,11 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
             GLES20.glUniform1f(mHandleStitchX, mStitchX);
     
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,mTextureIdStitch1);
+            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mActiveTextures[ROW_MIDDLE][0]);
             GLES20.glUniform1i(mTextureHandlerStitch[0], 0);
 
             GLES20.glActiveTexture(GLES20.GL_TEXTURE4);
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mTextureIdStitch2);
+            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mActiveTextures[ROW_MIDDLE][1]);
             GLES20.glUniform1i(mTextureHandlerStitch[1], 4);
             
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 4);
@@ -341,12 +360,15 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
             mAlphaHandlerStitch[0]      = GLES20.glGetUniformLocation(mProgramStitch, "f_Alpha");
             mHandleStitchX      = GLES20.glGetUniformLocation(mProgramStitch, "f_StitchX");
 
-            initCameraStitch(mDecodePipes);
+            initCameraStitch(VrRenderDb.mVideoFeeds);
 
             mLeftEye = new CameraStitch(EYE_LEFT, SNAPSHOT_SCALE, 0, -DISTANCE);
             mRightEye = new CameraStitch(EYE_RIGHT,-SNAPSHOT_SCALE, 0, -DISTANCE);
 
-}
+            mTextureIdListLeft = initTexturesForEye(VrRenderDb.mVideoFeeds, VrRenderDb.ID_EYE_LEFT);
+            mTextureIdListRight = initTexturesForEye(VrRenderDb.mVideoFeeds, VrRenderDb.ID_EYE_RIGHT);
+
+ 	}
 
 	@Override
 	public void onSurfaceChanged(GL10 gl, int width, int height) {
@@ -370,21 +392,40 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
         Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
 	}
 
-
-	private void initCameraStitch(List<VrDecodeToTexture> mDecodePipes) {
+	private int[] initTexturesForEye(List<VideoFeed> videoFeeds,  int eyeId)
+	{
+		int []textureList = null;
+        int numEyeFeeds = VrRenderDb.getFeedCountForEye(eyeId);
+        if(numEyeFeeds > 0) {
+	        textureList = new int[numEyeFeeds];
+	
+			int idx = 0;
+			for(VideoFeed videoFeed : videoFeeds) {
+				int texture = videoFeed.textureId;
+				if((videoFeed.mIdEye & eyeId) != 0) {
+					textureList[idx] = texture;
+					idx++;
+				}
+			}
+        }
+		return textureList;
+	}
+	
+	private void initCameraStitch(List<VideoFeed> videoFeeds) {
 
 		int i = 0;
-		mTextureIdList = new int[mDecodePipes.size()]; 
-		for(VrDecodeToTexture decodePipe : mDecodePipes) {
+		for(VideoFeed videoFeed : videoFeeds) {
 			int texture[] = new int[1];
 	
 			GLES20.glGenTextures(1, texture, 0);
 			int TextureId = texture[0];
-			mTextureIdList[i] = TextureId;
+			
 			if (TextureId == 0) {
 				throw new RuntimeException("CAMERA TEXTURE ID == 0");
 			}
-	
+			videoFeed.textureId = TextureId;
+
+			
 			GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, TextureId);
 
 			GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
@@ -403,7 +444,7 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
 			// mCameraSurfaceTex.setDefaultBufferSize(640, 480);
 			CameraSurfaceTex.setDefaultBufferSize(1280, 720);
 		
-			Handler handler = decodePipe.getHandler();
+			Handler handler = videoFeed.decodePipe.getHandler();
 			handler.sendMessage(handler.obtainMessage(
 					VrDecodeToTexture.PLAYER_CMD_INIT, CameraSurfaceTex));
 			i++;
@@ -412,10 +453,14 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
 	
 	@Override
 	public void onDrawFrame(GL10 gl) {
-		for (VrDecodeToTexture decodePipe : mDecodePipes) {
-			SurfaceTexture sufraceTexture = decodePipe.getSurfaceTexture();
-			if(sufraceTexture != null)
-				sufraceTexture.updateTexImage();
+		for (VideoFeed videoFeed : VrRenderDb.mVideoFeeds) {
+
+			if(videoFeed.decodePipe != null) {
+				SurfaceTexture sufraceTexture = videoFeed.decodePipe.getSurfaceTexture();
+				if(sufraceTexture != null){
+					sufraceTexture.updateTexImage();
+				}
+			}
 		}
 		
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
@@ -437,7 +482,7 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
 		mCameraQuat.normalise();
 		mViewMatrix = mCameraQuat.getMatrix();
 
-        updateHeadViewLocation();
+		updateTexturesForHeadViewLocation();
         
 		if(mLeftEye != null) {
 			mLeftEye.mModelMatrix = mCameraQuat.getMatrix();

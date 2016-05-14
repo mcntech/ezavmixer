@@ -28,23 +28,16 @@ public class VrPlayerActivity extends Activity implements CameraManager/*, Surfa
 	    DecodePipe                mDecodePipe;
 	    boolean                   mVisible;
 	}
-
-    //LinearLayout                     mStatsLayout;
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		Bundle b = getIntent().getExtras();
-		//int gridId = b.getInt("windows");
-		String[] urls = b.getStringArray("urls");
 		mGLSurfaceView = new GLSurfaceView(this); 
 		mGLSurfaceView.setEGLContextClientVersion(2);
 		
-		//mVrRender = new Capture3DRenderer(this, this);
-		VrEyeRender mVrRender = new VrEyeRender(this, urls, 1280, 720);
+		VrEyeRender mVrRender = new VrEyeRender(this, 1280, 720);
 		mGLSurfaceView.setRenderer(mVrRender);
-		//mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 		setContentView(mGLSurfaceView);
 	}
 	

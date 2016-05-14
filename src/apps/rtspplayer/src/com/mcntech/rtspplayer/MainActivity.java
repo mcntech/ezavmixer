@@ -305,7 +305,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	   }
 	   
 	   public void start_2_stereo(View v){
-		   startVrPlayerStereo(6, RemoteNode.VID_RES_480P);
+		   startVrPlayerStereo(2, RemoteNode.VID_RES_480P);
 	   }
 	   
 	   @Override

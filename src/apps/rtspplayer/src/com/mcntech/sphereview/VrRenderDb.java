@@ -22,7 +22,7 @@ public class VrRenderDb {
     /*
      * video feed list
      */
-    public static ArrayList<VideoFeed> mVideoFeeds;
+    public static ArrayList<VideoFeed> mVideoFeeds = null;
     
     public static int getFeedCountForEye(int nIdEye){
     	int numFeeds = 0;

@@ -22,14 +22,15 @@ import android.widget.LinearLayout;
 
 import com.mcntech.rtspplayer.Configure;
 import com.mcntech.rtspplayer.OnyxPlayerApi;
+import com.mcntech.sphereview.VrRenderDb.DecPipeBase;
 
 
-public class DecodePipe  implements TextureView.SurfaceTextureListener {
+public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListener {
 	
 	public final String LOG_TAG = "DecodePipe";
 	String                        mUrl;                   
 	private PlayerThread          mVidPlayer = null;
-	Handler                       mHandler;
+	Handler                       mHandler = null;
 	TextureView                   mVideoTexView = null;
 	Surface                       mVideoSurface = null;
 	
@@ -122,7 +123,7 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 			 				mExitPlayerLoop = true;
 			 				waitForVideoStop();
 			 			}
-						OnyxPlayerApi.deinitialize();
+						//OnyxPlayerApi.deinitialize();
 					}
  				}).start();
 		    }
@@ -462,5 +463,16 @@ public class DecodePipe  implements TextureView.SurfaceTextureListener {
 	public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public Handler getHandler() {
+		return mHandler;
+	}
+
+	@Override
+	public SurfaceTexture getSurfaceTexture() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

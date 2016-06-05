@@ -38,10 +38,11 @@ import com.mcntech.rtspplayer.CodecInfo;
 import com.mcntech.rtspplayer.Configure;
 import com.mcntech.rtspplayer.OnyxPlayerApi;
 import com.mcntech.rtspplyer.R;
+import com.mcntech.sphereview.VrRenderDb.DecPipeBase;
 
 
 
-public class VrDecodeToTexture  {
+public class VrDecodeToTexture implements DecPipeBase {
 	public static final String TAG = "VrDecodeToTexture";
 	public final String LOG_TAG = "VrDecodeToTexture";
 	String                        mUrl;                   
@@ -99,11 +100,13 @@ public class VrDecodeToTexture  {
 		//mVideoTexView.setSurfaceTextureListener(this);
 	}
 	
-	Handler getHandler(){
+	@Override
+	public Handler getHandler(){
 		return mHandler;
 	}
 	
-	SurfaceTexture getSurfaceTexture(){
+	@Override
+	public SurfaceTexture getSurfaceTexture(){
 		return mSurfaceTexture;
 	}
 	

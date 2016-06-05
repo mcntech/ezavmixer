@@ -5,15 +5,12 @@ import java.util.ArrayList;
 import com.mcntech.rtspplayer.OnyxPlayerApi.RemoteNodeHandler;
 import com.mcntech.rtspplyer.R;
 import com.mcntech.sphereview.VrRenderDb;
-import com.mcntech.sphereview.VrRenderDb.VideoFeed;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -21,12 +18,12 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
-import android.widget.EditText;
+
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
-import android.view.View.OnClickListener;
+
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
@@ -216,30 +213,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	       startActivity(intent);
 	   }
 	  
-	   public void startMultiPlayer(int numWindows, int res){
-	       Intent intent = new Intent(this, MultiPlayerActivity.class);
-	       
-	       Bundle b = new Bundle();
-	       b.putInt("windows", numWindows);
-
-	       int numUrls = mRemoteNodeList.size();
-	       if(numUrls > numWindows)
-	    	   numUrls = numWindows;
-	       String[] urlList = new String[numUrls];
-	       for(int i=0; i < numUrls; i++) {
-		       RemoteNode node  = mRemoteNodeList.get(i);
-		       if(node != null) {
-		    	   urlList[i] = node.getRtspStream(res);
-		       }
-	       }
-	       b.putStringArray("urls", urlList);
-	       
-	       intent.putExtras(b);
-	       startActivity(intent);
-	   }
-	   
-	   public void startVrPlayerMono(int numWindows, int res){
-
+	   public void initVrRenderDb(int numWindows, int res){
 		   VrRenderDb.mVideoFeeds =  new ArrayList<VrRenderDb.VideoFeed>();
 	       int numUrls = mRemoteNodeList.size();
 	       if(numUrls > numWindows)
@@ -248,29 +222,6 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	    	   Toast.makeText(this, "No Cameras", Toast.LENGTH_LONG).show();
 	    	   return;
 	       }
-		   Intent intent = new Intent(this, VrPlayerActivity.class);
-	       
-	       for(int i=0; i < numUrls; i++) {
-		       RemoteNode node  = mRemoteNodeList.get(i);
-		       if(node != null) {
-		    	   String url = node.getRtspStream(res);
-		    	   VrRenderDb.mVideoFeeds.add(new VrRenderDb.VideoFeed(url, VrRenderDb.ID_EYE_LEFT | VrRenderDb.ID_EYE_RIGHT));
-		       }
-	       }
-	       startActivity(intent);
-	   }
-	   
-	   public void startVrPlayerStereo(int numWindows, int res){
-
-		   VrRenderDb.mVideoFeeds =  new ArrayList<VrRenderDb.VideoFeed>();
-	       int numUrls = mRemoteNodeList.size();
-	       if(numUrls > numWindows)
-	    	   numUrls = numWindows;
-	       else if (numUrls  == 0) {
-	    	   Toast.makeText(this, "No Cameras", Toast.LENGTH_LONG).show();
-	    	   return;
-	       }
-		   Intent intent = new Intent(this, VrPlayerActivity.class);
 	       
 		   int eyeId = VrRenderDb.ID_EYE_LEFT;
 	       for(int i=0; i < numUrls; i++) {
@@ -286,8 +237,28 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		    		   
 		       }
 	       }
+	   }
+	   
+	   public void startMultiPlayer(int numWindows, int res){
+		   initVrRenderDb(numWindows, res);
+		   Intent intent = new Intent(this, MultiPlayerActivity.class);
 	       startActivity(intent);
 	   }
+	   
+	   public void startVrPlayerMono(int numWindows, int res){
+
+		   initVrRenderDb(numWindows, res);
+		   Intent intent = new Intent(this, VrPlayerActivity.class);
+	       startActivity(intent);
+	   }
+	   
+	   public void startVrPlayerStereo(int numWindows, int res){
+
+		   initVrRenderDb(numWindows, res);
+		   Intent intent = new Intent(this, VrPlayerActivity.class);
+	       startActivity(intent);
+	   }
+	   
 	   public void start_1_1(View v){
 		   startMultiPlayer(1, RemoteNode.VID_RES_720P);
 	   }

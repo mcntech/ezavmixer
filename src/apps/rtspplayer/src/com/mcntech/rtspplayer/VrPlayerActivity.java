@@ -10,9 +10,7 @@ import android.view.TextureView;
 
 import com.mcntech.rtspplyer.R;
 import com.mcntech.sphereview.CameraManager;
-import com.mcntech.sphereview.Capture3DRenderer;
-import com.mcntech.sphereview.VrCompositor;
-import com.mcntech.sphereview.VrDecodePipe;
+
 import com.mcntech.sphereview.VrEyeRender;
 
 public class VrPlayerActivity extends Activity implements CameraManager/*, SurfaceTexture.OnFrameAvailableListener*/  {

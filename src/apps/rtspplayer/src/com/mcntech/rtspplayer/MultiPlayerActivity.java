@@ -1,58 +1,39 @@
 package com.mcntech.rtspplayer;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.json.JSONException;
 
 import android.app.Activity;
-import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.graphics.PixelFormat;
-import android.media.AudioManager;
-import android.media.MediaCodec;
-import android.media.MediaCodec.BufferInfo;
-import android.media.MediaCodecInfo;
+import android.content.ClipData;
+import android.content.ClipDescription;
 
-import android.media.MediaFormat;
-import android.opengl.GLES20;
+import android.graphics.Rect;
+
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
-import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.view.DragEvent;
 import android.view.TextureView;
 import android.view.View;
-import android.view.MotionEvent;
-import android.view.View.MeasureSpec;
-import android.widget.LinearLayout;
+
+import android.widget.ImageView;
 
 import com.mcntech.rtspplyer.R;
 import com.mcntech.rtspplayer.Configure;
 import com.mcntech.rtspplayer.OnyxPlayerApi;
 import com.mcntech.rtspplayer.OnyxPlayerApi.RemoteNodeHandler;
-import com.mcntech.rtspplayer.Settings;
+import com.mcntech.sphereview.VrDecodeToTexture;
+import com.mcntech.sphereview.VrRenderDb;
+import com.mcntech.sphereview.VrRenderDb.VideoFeed;
 
-import com.android.grafika.gles.EglCore;
-import com.android.grafika.gles.WindowSurface;
-
-public class MultiPlayerActivity extends Activity  {
+public class MultiPlayerActivity  extends Activity implements View.OnDragListener, View.OnLongClickListener  {
 	
 	public final String LOG_TAG = "rtsp";
-	List<DecodeCtx>               mListDecCtx;                   
 	RemoteNodeHandler             mNodeHandler;
 	Handler                       mHandler;
+	ImageView                     img;
+	int                           mLayoutId;
 	
-	public class DecodeCtx {
-		TextureView               mVideoSv = null;
-		String                    mUrl;                		
-	    DecodePipe                mDecodePipe;
-	    boolean                   mVisible;
-	}
 
     //LinearLayout                     mStatsLayout;
     
@@ -60,59 +41,52 @@ public class MultiPlayerActivity extends Activity  {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		Bundle b = getIntent().getExtras();
-		int gridId = b.getInt("windows");
-		String[] urls = b.getStringArray("urls");
-		
+		mLayoutId = VrRenderDb.mVideoFeeds.size();
+		int maxDecWidth = 0;
+		int maxDecHeight = 0;
 		//mHandler = new LocalHandler();
 		Configure.loadSavedPreferences(this, false);
-		switch(gridId) {
+
+		switch(mLayoutId) {
 			case 1:
 			{
 				setContentView(R.layout.activity_multi_player_1_1);
-				for(int i=0; i < urls.length; i++){
-					TextureView textureView = getTexture(gridId, i);
-					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 3840, 2160);
-				}
+					maxDecWidth = 3840;
+					maxDecHeight = 2160;
 			}
-				break;
+			break;
 			case 4:
 			{
 				setContentView(R.layout.activity_multi_player_2_2);
-				for(int i=0; i < urls.length; i++){
-					TextureView textureView = getTexture(gridId, i);
-					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 1280, 720);
-				}
+				maxDecWidth = 1280;
+				maxDecHeight = 720;
 			}
 				break;
 	
 			case 9:
 			{
 				setContentView(R.layout.activity_multi_player_3_3);
-
-				for(int i=0; i < urls.length; i++){
-					TextureView textureView = getTexture(gridId, i);
-					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 1280, 720);
-				}
+				maxDecWidth = 1280;
+				maxDecHeight = 720;
 			}
 				break;
 	
 			case 16:
 				setContentView(R.layout.activity_multi_player_4_4);
-				for(int i=0; i < urls.length; i++){
-					TextureView textureView = getTexture(gridId, i);
-					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 640, 360);
-				}				
+				maxDecWidth = 640;
+				maxDecHeight = 360;
 				break;
-			case 6:
-				setContentView(R.layout.activity_multi_player_6_360);
-				for(int i=0; i < urls.length; i++){
-					TextureView textureView = getTexture(gridId, i);
-					DecodePipe decPipe1 = new DecodePipe(this, urls[i], textureView, 640, 360);
-				}				
-				break;				
+
 		}
 		//mStatsLayout = (LinearLayout)findViewById(R.id.stats_layout);
+		for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
+			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
+			TextureView textureView = getTexture(mLayoutId, i);
+			videoFeed.decodePipe = new DecodePipe(this, videoFeed.mUrl, textureView, maxDecWidth, maxDecHeight);
+			videoFeed.textureId = i;
+			textureView.setOnLongClickListener(this);
+			textureView.setOnDragListener(this);
+		}
 
 		
 		new Thread(new Runnable() {
@@ -174,7 +148,27 @@ public class MultiPlayerActivity extends Activity  {
 	 	
 	 	OnyxPlayerApi.setDeviceHandler(mNodeHandler);
 	}
-
+	
+	private void StopStreaming()	
+	{
+		for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
+			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
+			if(videoFeed.decodePipe != null){
+				Handler handler = videoFeed.decodePipe.getHandler();
+				if(handler != null)
+					handler.sendMessage(handler.obtainMessage(VrDecodeToTexture.PLAYER_CMD_STOP, 0));
+			}
+		}
+	}
+	
+	public String findUrlForTexture(TextureView textureView)
+	{
+		for(VideoFeed videoFeed: VrRenderDb.mVideoFeeds){
+			if(getTexture(mLayoutId, videoFeed.textureId) == textureView)
+				return videoFeed.mUrl;
+		}
+		return null;
+	}
 	TextureView getTexture(int layoutId, int windowId) {
 		switch(layoutId) {
 			case 1:
@@ -231,18 +225,6 @@ public class MultiPlayerActivity extends Activity  {
 				}
 			}
 			break;
-			case 6:
-			{
-				switch(windowId){
-				case 0: return (TextureView)findViewById(R.id.multi_player_surface_m_1);
-				case 1: return (TextureView)findViewById(R.id.multi_player_surface_m_2);
-				case 2: return  (TextureView)findViewById(R.id.multi_player_surface_m_3);
-				case 3: return  (TextureView)findViewById(R.id.multi_player_surface_m_4);
-				case 4: return  (TextureView)findViewById(R.id.multi_player_surface_m_5);
-				case 5: return  (TextureView)findViewById(R.id.multi_player_surface_m_6);
-				}
-			}
-			break;
 		}
 		return null;
 	}
@@ -263,6 +245,8 @@ public class MultiPlayerActivity extends Activity  {
 	
    @Override
     protected void onPause() {
+	   StopStreaming();
+	   super.onPause();
 
    }
   
@@ -270,5 +254,56 @@ public class MultiPlayerActivity extends Activity  {
    public void onBackPressed() {
 	   System.exit(2);
   }
-   
+
+   @Override
+public boolean onDrag(View v, DragEvent event) {
+	int action = event.getAction();
+
+	if(action == DragEvent.ACTION_DRAG_STARTED) {
+		String url = "";
+		String position = "";
+		float x =event.getX();
+		float y =event.getY();
+		TextureView textureView = (TextureView)v;
+		url = findUrlForTexture(textureView);
+		//Toast toast = Toast.makeText(this, "Drag : Action= Drag Start: " + " Item= " + url + " X=" + x + " Y=" + y, Toast.LENGTH_SHORT );
+		//toast.show();
+		//Log.d(LOG_TAG, "Drag : Action= Drag Start: " + " Item= " + url + " X=" + x + " Y=" + y );
+		
+	} else if(action == DragEvent.ACTION_DROP) {
+		String urlDest = "";
+		String urlSrc = "";
+
+		TextureView textureView = (TextureView)v;
+		urlDest = findUrlForTexture(textureView);
+		//Toast toast = Toast.makeText(this, "Drag : Action= Drag Stop " + " Item= " + url + " X=" + x + " Y=" + y, Toast.LENGTH_SHORT );
+		//toast.show();
+		ClipData clipData = event.getClipData();
+		ClipData.Item item = clipData.getItemAt(0);
+		if(item != null)
+			urlSrc = item.getText().toString();
+		Log.d(LOG_TAG, "Drag : Action= Drag Stop " + " src= " + urlSrc  + " Dest=" + urlDest);
+		if(VrRenderDb.moveUrl(urlSrc, urlDest)) {
+			recreate();
+		}
+	}
+	return true;
+}
+   @Override
+   public boolean onLongClick(View v) {
+      //ClipData.Item item = new ClipData.Item((CharSequence)v.getTag());
+	   String url = "";
+	  
+      String[] mimeTypes = {ClipDescription.MIMETYPE_TEXT_PLAIN};
+      TextureView textureView = (TextureView)v;
+		url = findUrlForTexture(textureView);
+      //ClipData dragData = new ClipData(v.getTag().toString(),mimeTypes, item);
+		ClipData.Item item = new ClipData.Item(url);
+      ClipData clipData = new ClipData("move",mimeTypes, item);
+      View.DragShadowBuilder myShadow = new View.DragShadowBuilder(img);
+      
+      v.startDrag(clipData,myShadow,null,0);
+      return true;
+   }
+      
 }

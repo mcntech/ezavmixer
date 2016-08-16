@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import com.mcntech.rtspplayer.OnyxPlayerApi.RemoteNodeHandler;
 import com.mcntech.rtspplyer.R;
+import com.mcntech.sphereview.VideoFeedPosDb;
 import com.mcntech.sphereview.VrRenderDb;
 
 import android.app.Activity;
@@ -213,8 +214,9 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	       startActivity(intent);
 	   }
 	  
-	   public void initVrRenderDb(int numWindows, int res){
-		   VrRenderDb.mVideoFeeds =  new ArrayList<VrRenderDb.VideoFeed>();
+	   public void initVrRenderDb(int numWindows, int res, boolean stereo){
+		   int eyeId;
+		   VrRenderDb.init();
 	       int numUrls = mRemoteNodeList.size();
 	       if(numUrls > numWindows)
 	    	   numUrls = numWindows;
@@ -223,38 +225,80 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	    	   return;
 	       }
 	       
-		   int eyeId = VrRenderDb.ID_EYE_LEFT;
 	       for(int i=0; i < numUrls; i++) {
 		       RemoteNode node  = mRemoteNodeList.get(i);
 		       if(node != null) {
 		    	   String url = node.getRtspStream(res);
-		    	   VrRenderDb.mVideoFeeds.add(new VrRenderDb.VideoFeed(url, eyeId));
-		    	   // Toggle ID
-		    	   if(eyeId == VrRenderDb.ID_EYE_LEFT)
-		    		   eyeId = VrRenderDb.ID_EYE_RIGHT;
-		    	   else
-		    		   eyeId = VrRenderDb.ID_EYE_LEFT;
-		    		   
+		    	   VrRenderDb.addFeed(url, 0);
+		       }
+	       }
+	       initEyeIds(stereo);
+	   }
+
+	   public void initEyeIds(boolean stereo){
+		   int eyeId;
+		   ArrayList<VrRenderDb.VideoFeed> feedRenderList = VrRenderDb.getVideoFeeds();
+		   if(feedRenderList != null) {
+		       if(stereo) {
+		    	   eyeId = VrRenderDb.ID_EYE_LEFT;
+		       } else {
+		    	   eyeId = VrRenderDb.ID_EYE_LEFT | VrRenderDb.ID_EYE_RIGHT;
+		       }
+		       for(VrRenderDb.VideoFeed feed : feedRenderList) {
+		    	   feed.mIdEye  = eyeId;
+		    	   if(stereo) {
+			    	   // Toggle ID
+			    	   if(eyeId == VrRenderDb.ID_EYE_LEFT)
+			    		   eyeId = VrRenderDb.ID_EYE_RIGHT;
+			    	   else
+			    		   eyeId = VrRenderDb.ID_EYE_LEFT;
+		    	   }
+		       }
+		   }
+	   }
+	   public void restoreVideoFeedPos() {
+		   VideoFeedPosDb videoFeedPosDb = new VideoFeedPosDb(this);
+		   VrRenderDb.init();
+	       int numUrls = mRemoteNodeList.size();
+	       
+	       for(int i=0; i < numUrls; i++) {
+		       RemoteNode node  = mRemoteNodeList.get(i);
+		       if(node != null) {
+		    	   String url = videoFeedPosDb.getUrl(i);
+		    	   VrRenderDb.mVideoFeeds.add(new VrRenderDb.VideoFeed(url, 0));
 		       }
 	       }
 	   }
-	   
+
+	   public void saveVideoFeedPos() {
+		   VideoFeedPosDb videoFeedPosDb = new VideoFeedPosDb(this);
+		   videoFeedPosDb.clear();
+		   ArrayList<VrRenderDb.VideoFeed> feedRenderList = VrRenderDb.getVideoFeeds();
+		   if(feedRenderList != null) {
+			   int i = 1;
+		       for(VrRenderDb.VideoFeed feed : feedRenderList) {
+		    	   videoFeedPosDb.insertFeed(feed.mUrl, i);
+		    	   i++;
+		       }
+		   }
+	   }
+
 	   public void startMultiPlayer(int numWindows, int res){
-		   initVrRenderDb(numWindows, res);
+		   initVrRenderDb(numWindows, res, false);
 		   Intent intent = new Intent(this, MultiPlayerActivity.class);
 	       startActivity(intent);
 	   }
 	   
 	   public void startVrPlayerMono(int numWindows, int res){
 
-		   initVrRenderDb(numWindows, res);
+		   initVrRenderDb(numWindows, res, false);
 		   Intent intent = new Intent(this, VrPlayerActivity.class);
 	       startActivity(intent);
 	   }
 	   
 	   public void startVrPlayerStereo(int numWindows, int res){
 
-		   initVrRenderDb(numWindows, res);
+		   initVrRenderDb(numWindows, res, true);
 		   Intent intent = new Intent(this, VrPlayerActivity.class);
 	       startActivity(intent);
 	   }
@@ -271,8 +315,12 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	   public void start_4_4(View v){
 		   startMultiPlayer(16, RemoteNode.VID_RES_480P);
 	   }
-	   public void start_6_360_mono(View v){
+	   public void start_multi_mono(View v){
 		   startVrPlayerMono(6, RemoteNode.VID_RES_480P);
+	   }
+
+	   public void start_multi_stereo(View v){
+		   startVrPlayerStereo(6, RemoteNode.VID_RES_480P);
 	   }
 	   
 	   public void start_2_stereo(View v){

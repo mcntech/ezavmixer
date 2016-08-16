@@ -17,6 +17,7 @@ import android.view.TextureView;
 import android.view.View;
 
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.mcntech.rtspplyer.R;
 import com.mcntech.rtspplayer.Configure;
@@ -40,8 +41,17 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		mLayoutId = VrRenderDb.mVideoFeeds.size();
+		mLayoutId = 0;
+		int numUrls = VrRenderDb.mVideoFeeds.size();
+		if(numUrls > 0 &&  numUrls <= 1) {
+			mLayoutId = 1;
+		} else if(numUrls > 1 &&  numUrls <= 4) {
+			mLayoutId = 4;
+		} else if(numUrls > 4 &&  numUrls <= 9) {
+			mLayoutId = 9;
+		} else if(numUrls > 9 &&  numUrls <= 16) {
+			mLayoutId = 16;
+		}
 		int maxDecWidth = 0;
 		int maxDecHeight = 0;
 		//mHandler = new LocalHandler();
@@ -79,15 +89,19 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 
 		}
 		//mStatsLayout = (LinearLayout)findViewById(R.id.stats_layout);
-		for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
-			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
-			TextureView textureView = getTexture(mLayoutId, i);
-			videoFeed.decodePipe = new DecodePipe(this, videoFeed.mUrl, textureView, maxDecWidth, maxDecHeight);
-			videoFeed.textureId = i;
-			textureView.setOnLongClickListener(this);
-			textureView.setOnDragListener(this);
+		if(mLayoutId > 0) {
+			for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
+				VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
+				TextureView textureView = getTexture(mLayoutId, i);
+				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mUrl, textureView, maxDecWidth, maxDecHeight);
+				videoFeed.textureId = i;
+				textureView.setOnLongClickListener(this);
+				textureView.setOnDragListener(this);
+			}
+		} else {
+			Toast toast = Toast.makeText(this, "No suitable Layout for stream count  " +  numUrls, Toast.LENGTH_SHORT);
+			toast.show();
 		}
-
 		
 		new Thread(new Runnable() {
 			@Override

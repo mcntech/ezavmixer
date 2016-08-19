@@ -3,6 +3,7 @@ package com.mcntech.sphereview;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -111,5 +112,9 @@ public class VideoFeedPosDb extends SQLiteOpenHelper {
         db.close();
      
         return updateSuccessful;
+    }
+    public  long getNumFeeds() {
+	    SQLiteDatabase db = getReadableDatabase();
+	    return DatabaseUtils.queryNumEntries(db, TABLE_FEED_POSITION);
     }
 }

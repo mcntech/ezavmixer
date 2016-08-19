@@ -1,5 +1,6 @@
 package com.mcntech.rtspplayer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -23,6 +24,7 @@ import com.mcntech.rtspplyer.R;
 import com.mcntech.rtspplayer.Configure;
 import com.mcntech.rtspplayer.OnyxPlayerApi;
 import com.mcntech.rtspplayer.OnyxPlayerApi.RemoteNodeHandler;
+import com.mcntech.sphereview.VideoFeedPosDb;
 import com.mcntech.sphereview.VrDecodeToTexture;
 import com.mcntech.sphereview.VrRenderDb;
 import com.mcntech.sphereview.VrRenderDb.VideoFeed;
@@ -266,6 +268,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
   
    @Override
    public void onBackPressed() {
+	   saveVideoFeedPos();
 	   System.exit(2);
   }
 
@@ -319,5 +322,17 @@ public boolean onDrag(View v, DragEvent event) {
       v.startDrag(clipData,myShadow,null,0);
       return true;
    }
-      
+  
+   public void saveVideoFeedPos() {
+	   VideoFeedPosDb videoFeedPosDb = new VideoFeedPosDb(this);
+	   videoFeedPosDb.clear();
+	   ArrayList<VrRenderDb.VideoFeed> feedRenderList = VrRenderDb.getVideoFeeds();
+	   if(feedRenderList != null) {
+		   int i = 1;
+	       for(VrRenderDb.VideoFeed feed : feedRenderList) {
+	    	   videoFeedPosDb.insertFeed(feed.mUrl, i);
+	    	   i++;
+	       }
+	   }
+   }
 }

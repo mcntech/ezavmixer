@@ -256,18 +256,21 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		       }
 		   }
 	   }
-	   public void restoreVideoFeedPos() {
+	   
+	   public void restoreVideoFeedPos(boolean stereo) {
 		   VideoFeedPosDb videoFeedPosDb = new VideoFeedPosDb(this);
 		   VrRenderDb.init();
-	       int numUrls = mRemoteNodeList.size();
+	       long numUrls = videoFeedPosDb.getNumFeeds();
 	       
 	       for(int i=0; i < numUrls; i++) {
-		       RemoteNode node  = mRemoteNodeList.get(i);
-		       if(node != null) {
-		    	   String url = videoFeedPosDb.getUrl(i);
-		    	   VrRenderDb.mVideoFeeds.add(new VrRenderDb.VideoFeed(url, 0));
-		       }
+	    	   String url = videoFeedPosDb.getUrl(i+1);
+	    	   if(url != null) {
+	    		   VrRenderDb.mVideoFeeds.add(new VrRenderDb.VideoFeed(url, 0));
+	    	   } else {
+	    		   // Show missing url
+	    	   }
 	       }
+	       initEyeIds(stereo);
 	   }
 
 	   public void saveVideoFeedPos() {
@@ -295,6 +298,21 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		   Intent intent = new Intent(this, VrPlayerActivity.class);
 	       startActivity(intent);
 	   }
+
+	   public void startVrPlayerMonoArranged(){
+
+		   restoreVideoFeedPos(false);
+		   Intent intent = new Intent(this, VrPlayerActivity.class);
+	       startActivity(intent);
+	   }
+	   
+	   public void startPlayerMonoForArrangement(int numWindows, int res){
+
+		   initVrRenderDb(numWindows, res, false);
+		   Intent intent = new Intent(this, MultiPlayerActivity.class);
+	       startActivity(intent);
+	   }
+
 	   
 	   public void startVrPlayerStereo(int numWindows, int res){
 
@@ -302,6 +320,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		   Intent intent = new Intent(this, VrPlayerActivity.class);
 	       startActivity(intent);
 	   }
+
 	   
 	   public void start_1_1(View v){
 		   startMultiPlayer(1, RemoteNode.VID_RES_720P);
@@ -325,6 +344,13 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	   
 	   public void start_2_stereo(View v){
 		   startVrPlayerStereo(2, RemoteNode.VID_RES_480P);
+	   }
+
+	   public void multi_mono_use_arranged(View v){
+		   startVrPlayerMonoArranged();
+	   }
+	   public void multi_mono_tile_arrange(View v){
+		   startPlayerMonoForArrangement(6, RemoteNode.VID_RES_480P);
 	   }
 	   
 	   @Override

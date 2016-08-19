@@ -171,20 +171,22 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
     {
     	int startTextureId = 0;
     	mStitchX = 0;
-    	if(mTextureIdListLeft.length > 1) {
-	        float[] orientation = mSensorFusion.getFusedOrientation();
-			float rY = 180.0f - (float) (orientation[0] * 180.0f / Math.PI);
-			float fov = 360 / mTextureIdListLeft.length;
-			float offset = rY / fov;
-			startTextureId = (int) (offset);
-			mStitchX = offset - startTextureId;
+    	if(mTextureIdListLeft != null) {
+	    	if(mTextureIdListLeft.length > 1) {
+		        float[] orientation = mSensorFusion.getFusedOrientation();
+				float rY = 180.0f - (float) (orientation[0] * 180.0f / Math.PI);
+				float fov = 360 / mTextureIdListLeft.length;
+				float offset = rY / fov;
+				startTextureId = (int) (offset);
+				mStitchX = offset - startTextureId;
+	    	}
+	    	
+	    	int [][]textures = getActiveTexturesForEye(mTextureIdListLeft, startTextureId, VrRenderDb.ID_EYE_LEFT);
+	    	mLeftEye.setActiveTextures(textures);
+	    	textures = getActiveTexturesForEye(mTextureIdListRight, startTextureId, VrRenderDb.ID_EYE_RIGHT);
+	    	mRightEye.setActiveTextures(textures);
+	        //Log.d(TAG, "HeadView: start" + mStartTextureId + " id1=" + id1 + " id2=" + id2 + " stitch=" + mStitchX);
     	}
-    	
-    	int [][]textures = getActiveTexturesForEye(mTextureIdListLeft, startTextureId, VrRenderDb.ID_EYE_LEFT);
-    	mLeftEye.setActiveTextures(textures);
-    	textures = getActiveTexturesForEye(mTextureIdListRight, startTextureId, VrRenderDb.ID_EYE_RIGHT);
-    	mRightEye.setActiveTextures(textures);
-        //Log.d(TAG, "HeadView: start" + mStartTextureId + " id1=" + id1 + " id2=" + id2 + " stitch=" + mStitchX);
     }
    
 

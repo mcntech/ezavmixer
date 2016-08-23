@@ -152,7 +152,7 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
     public int [][] getActiveTexturesForEye(int [] textures,  int startTextureId, int nEyeId)
     {
 		int id1 = startTextureId % textures.length;
-    	int id2 = (textures.length + startTextureId - 1) % textures.length;
+    	int id2 = (textures.length + startTextureId + 1) % textures.length;
     	
 		int   textureIdStitch1;
 		int   textureIdStitch2;
@@ -160,13 +160,16 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
 		textureIdStitch1 = textures[id1];
 		textureIdStitch2 = textures[id2];
 
-		int [][]activeTextures = new int[3][2];
-		activeTextures[1][0] = textureIdStitch1;
-		activeTextures[1][1] = textureIdStitch2;
+		int [][]activeTextures = new int[CameraStitch.ACTIVE_ROWS][CameraStitch.ACTIVE_COLUMNS];
+		activeTextures[CameraStitch.ROW_MIDDLE][CameraStitch.COLUMN_LEFT] = textureIdStitch1;
+		activeTextures[CameraStitch.ROW_MIDDLE][CameraStitch.COLUMN_RIGHT] = textureIdStitch2;
 		
 		return activeTextures;
 	}
 
+	/*    
+	**    After translation, Azimuth (rY): Facing north 0 or360, east 90, south 180 and west 270
+	*/    
     public void updateTexturesForHeadViewLocation()
     {
     	int startTextureId = 0;
@@ -174,18 +177,21 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
     	if(mTextureIdListLeft != null) {
 	    	if(mTextureIdListLeft.length > 1) {
 		        float[] orientation = mSensorFusion.getFusedOrientation();
-				float rY = 180.0f - (float) (orientation[0] * 180.0f / Math.PI);
+				float rY = (float) (orientation[0] * 180.0f / Math.PI);
+				if(rY < 0.0)
+					rY = 360 + rY;
 				float fov = 360 / mTextureIdListLeft.length;
 				float offset = rY / fov;
 				startTextureId = (int) (offset);
 				mStitchX = offset - startTextureId;
+				Log.d(TAG, "HeadView: azimuth=" + orientation[0] + " rY=" + rY + " offset=" + offset);
 	    	}
 	    	
 	    	int [][]textures = getActiveTexturesForEye(mTextureIdListLeft, startTextureId, VrRenderDb.ID_EYE_LEFT);
 	    	mLeftEye.setActiveTextures(textures);
 	    	textures = getActiveTexturesForEye(mTextureIdListRight, startTextureId, VrRenderDb.ID_EYE_RIGHT);
 	    	mRightEye.setActiveTextures(textures);
-	        //Log.d(TAG, "HeadView: start" + mStartTextureId + " id1=" + id1 + " id2=" + id2 + " stitch=" + mStitchX);
+	        Log.d(TAG, "HeadView: start=" + startTextureId + " id1=" + textures[1][0] + " id2=" + textures[1][1] + " stitch=" + mStitchX);
     	}
     }
    
@@ -207,9 +213,15 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
 		private float mPosY;
 		private float mPosZ;
 		private int   mActiveTextures[][];
+		
+		public static  final int ACTIVE_ROWS = 3;
+		public static  final int ACTIVE_COLUMNS = 2;
 		public static  final int ROW_TOP = 0;
 		public static  final int ROW_MIDDLE = 1;
 		public static  final int ROW_BOTTOM = 2;
+		
+		public static  final int COLUMN_LEFT = 0;
+		public static  final int COLUMN_RIGHT = 1;
 		
         public CameraStitch(int Eye, float PosX, float PosY, float PosZ) {
             mPosX=PosX;
@@ -217,7 +229,7 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
             mPosZ=PosZ;
             mEye = Eye;
             mMode = CAMERA;
-            mActiveTextures = new int[3][2];
+            mActiveTextures = new int[ACTIVE_ROWS][ACTIVE_COLUMNS];
         }
 
         public void setActiveTextures(int textures[][])
@@ -330,7 +342,7 @@ public class VrEyeRender  implements GLSurfaceView.Renderer {
                 + "vec2 texcoord;\n"
                 + "void main()                    \n"
                 + "{                              \n"
-                + "   if(v_TexCoordinate1.x < f_StitchX) { texcoord = vec2(1.0 - f_StitchX + v_TexCoordinate1.x , v_TexCoordinate1.y);gl_FragColor = texture2D(u_Texture1, texcoord);} else {texcoord = vec2(v_TexCoordinate2.x - f_StitchX, v_TexCoordinate2.y); gl_FragColor = texture2D(u_Texture2, texcoord);}\n"
+                + "   if(v_TexCoordinate1.x < (1.0 - f_StitchX)) { texcoord = vec2( v_TexCoordinate1.x + f_StitchX, v_TexCoordinate1.y);gl_FragColor = texture2D(u_Texture1, texcoord);} else {texcoord = vec2(v_TexCoordinate2.x - (1.0 - f_StitchX), v_TexCoordinate2.y); gl_FragColor = texture2D(u_Texture2, texcoord);}\n"
                 + "   gl_FragColor.a = gl_FragColor.a * f_Alpha;"
                 + "}                              \n";
 

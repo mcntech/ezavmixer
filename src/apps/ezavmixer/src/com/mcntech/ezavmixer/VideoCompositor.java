@@ -17,10 +17,7 @@ import android.util.Log;
 public class VideoCompositor  implements GLSurfaceView.Renderer {
 	public static final String TAG = "VideoCompositor";        
 
-    
-    private final static float SNAPSHOT_SCALE = 65.5f;
-    private final static float DISTANCE = 135.0f;
-    
+        
     public enum TransitionId {
     	WIPE,
     	MIX,
@@ -35,7 +32,7 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
     private Quaternion mCameraQuat;
     private float[] mViewMatrix = new float[16];
     private float[] mProjectionMatrix = new float[16];
-    
+    private float[] mMVPMatrix = new float[16];
 
     private int mProgramStitch;
     private int mVertexShaderStitch;
@@ -51,7 +48,7 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
     private ArrayList<VideoPlane> mListPlanes = null;
 
     
-    private float[] mMVPMatrix = new float[16];
+
     
     TransitionControl mTransitionController;
 	public VideoCompositor(TransitionControl transitionController) {
@@ -128,6 +125,11 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
 		private float mPosX;
 		private float mPosY;
 		private float mPosZ;
+
+		private float mScaleX;
+		private float mScaleY;
+		private float mScaleZ;
+
 		private int   mActiveTextures[];
 		
 	    private FloatBuffer mVertexBuffer;
@@ -136,15 +138,14 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
 		private float mStitchX = 1.0f;
 		private float mIncr = -0.01f;
 		
-	    // x, y,
-	    private final float mVertexData[] =
-        {
-			-SNAPSHOT_SCALE,  -SNAPSHOT_SCALE * 1.5f,
-			-SNAPSHOT_SCALE, SNAPSHOT_SCALE  * 1.5f,
-			SNAPSHOT_SCALE, SNAPSHOT_SCALE  * 1.5f,
-			SNAPSHOT_SCALE, -SNAPSHOT_SCALE  * 1.5f
-        };
 
+	    private final float mVertexData[] =
+	        {
+				-1.6f,  -1.0f,
+				-1.6f, 1.0f,
+				1.6f, 1.0f,
+				1.6f, -1.0f
+	        };
 
 	    // u,v
 	    private final float mTexCoordData[] =
@@ -155,11 +156,14 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
             1.0f, 0.0f
         };
 
-        public VideoPlane(int id, float PosX, float PosY, float PosZ) {
+        public VideoPlane(int id, float PosX, float PosY, float PosZ, float scaleX, float scaleY, float scaleZ) {
         	mId = id;
             mPosX=PosX;
             mPosY=PosY;
             mPosZ=PosZ;
+            mScaleX = scaleX;
+            mScaleY = scaleY;
+            mScaleZ = scaleZ;
             mActiveTextures = new int[2];
             
             // Initialize plane vertex data and texcoords data
@@ -219,13 +223,10 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
             GLES20.glVertexAttribPointer(mTexCoordHandlerStitch[1], 2,
                     GLES20.GL_FLOAT, false, 8, mTexCoordBuffer);
             
-            // This multiplies the view matrix by the model matrix, and stores the
-            // result in the MVP matrix (which currently contains model * view).
             Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-
-            // This multiplies the modelview matrix by the projection matrix, and stores
-            // the result in the MVP matrix (which now contains model * view * projection).
             Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
+
+            //Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
 
             // Pass in the combined matrix.
             GLES20.glUniformMatrix4fv(mMVPMatrixHandlerStitch[0], 1, false, mMVPMatrix, 0);
@@ -347,18 +348,15 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
         GLES20.glViewport(0, 0, width, height);
 
         // We use here a field of view of 40, which is mostly fine for a camera app representation
-        final float hfov = 90f;
+        //final float hfov = 90f;
 
-        // Create a new perspective projection matrix. The height will stay the same
-        // while the width will vary as per aspect ratio.
-        //final float ratio = 640.0f / 480.0f;
-        final float ratio = 1280.0f / 720.0f;
-        final float near = 0.1f;
-        final float far = 1500.0f;
-        final float left = (float) Math.tan(hfov * Math.PI / 360.0f) * near;
+        final float ratio = (float)width/height;//1280.0f / 720.0f;
+        final float near = 3;//0.1f;
+        final float far = 20;//1500.0f;
+        final float left = ratio; //(float) Math.tan(hfov * Math.PI / 360.0f) * near;
         final float right = -left;
-        final float bottom = ratio * right / 1.0f;
-        final float top = ratio * left / 1.0f;
+        final float bottom = -1;//ratio * right / 1.0f;
+        final float top = 1;//ratio * left / 1.0f;
 
         Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
 	}
@@ -391,9 +389,9 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
 		return textureId;
 	}
 	
-	public void AddVideoPlane(int id, float posX, float posY, float posZ)
+	public void AddVideoPlane(int id, float posX, float posY, float posZ, float scaleX, float scaleY, float scaleZ)
 	{
-	    VideoPlane videoPlane = new VideoPlane(id, posX, posY, posZ);
+	    VideoPlane videoPlane = new VideoPlane(id, posX, posY, posZ, scaleX, scaleY, scaleZ);
 	    mListPlanes.add(videoPlane);
 	}
 	
@@ -418,17 +416,20 @@ public class VideoCompositor  implements GLSurfaceView.Renderer {
 		float rX = 0; float rY = 0; float rZ = 0;
 		
 		// Update quaternion from euler angles out of orientation
-		mCameraQuat.fromEuler(rX, 180.0f - rZ, rY);
+		/*mCameraQuat.fromEuler(rX, 180.0f - rZ, rY);
 		mCameraQuat = mCameraQuat.getConjugate();
 		mCameraQuat.normalise();
 		mViewMatrix = mCameraQuat.getMatrix();
+		*/
+		Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
 
 		
 		for (VideoPlane plane : mListPlanes) {
 			if(plane.mActiveTextures[0] != 0) {
-				plane.mModelMatrix = mCameraQuat.getMatrix();
-				Matrix.invertM(plane.mModelMatrix, 0,
-						plane.mModelMatrix, 0);
+				plane.mModelMatrix = new float[16];
+				Matrix.setIdentityM(plane.mModelMatrix, 0);//mCameraQuat.getMatrix();
+				//Matrix.invertM(plane.mModelMatrix, 0, plane.mModelMatrix, 0);
+				Matrix.scaleM(plane.mModelMatrix, 0, plane.mScaleX, plane.mScaleY, plane.mScaleZ);
 				Matrix.translateM(plane.mModelMatrix, 0, plane.mPosX, plane.mPosY, plane.mPosZ);
 				Matrix.rotateM(plane.mModelMatrix, 0, 180, 0, 0, 1);
 				plane.draw();

@@ -17,13 +17,13 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 
 import com.mcntech.ezavmixer.OnyxPlayerApi.RemoteNodeHandler;
-import com.mcntech.ezavmixer.VideoCompositor.TransitionControl;
+import com.mcntech.ezavmixer.VideoMixerActivity.VideoFeedControl;
 import com.mcntech.ezavmixer.VideoFeedList.VideoFeed;
 import com.mcntech.ezavmixer.RemoteNode;
 import com.mcntech.ezavmixer.R;
 import com.mcntech.ezavmixer.OnyxPlayerApi;
 
-public class MainActivity extends Activity implements TransitionControl {
+public class VideoFeedController  implements VideoFeedControl {
 
 	RemoteNodeHandler mNodeHandler;
 	VideoCompositor mCompositor;
@@ -44,18 +44,15 @@ public class MainActivity extends Activity implements TransitionControl {
 	GLSurfaceView mThaumbnailView;
 	static final String TAG = "ezavmixer";
 	
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-		
-		Configure.loadSavedPreferences(this, false);
+	Activity mActivity;
+	protected void VideoFeedController(Activity activity) {
+		Configure.loadSavedPreferences(activity, false);
 		mCompPlaneTexIds = new int[2];
 		mThaumnail10TexId = new int[2];
 		mThaumnail11TexId = new int[2];
 		mThaumnail12TexId = new int[2];
 		mThaumnail13TexId = new int[2];
-		
+		mActivity = activity;
 		VideoFeedList.init();
 		
 		mNodeHandler = new RemoteNodeHandler(){
@@ -67,13 +64,6 @@ public class MainActivity extends Activity implements TransitionControl {
 				//mRemoteNodeList.add(node);
 				RemoteNode remoteNode = new RemoteNode(url);
 				VideoFeedList.addFeed(remoteNode.getRtspStream(RemoteNode.VID_RES_480P),  VideoFeedList.ID_EYE_LEFT | VideoFeedList.ID_EYE_RIGHT);
-				runOnUiThread(new Runnable() {
-					@Override
-                    public void run() {
-						//((BaseAdapter)((ListView)findViewById(R.id.listRemoteNodes)).getAdapter()).notifyDataSetChanged();
-						// TODO: Update video
-					}
-				});
 			}
 			@Override
 			public void onConnectRemoteNode(String url) {
@@ -128,37 +118,15 @@ public class MainActivity extends Activity implements TransitionControl {
 		}).start();
 	}
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
-	}
 	
 	public void onStartStopMixer(View v)
 	{
 		// Initialize decode to texture
 		for(int i=0; i < VideoFeedList.mVideoFeeds.size(); i++){
 			VideoFeed videoFeed = VideoFeedList.mVideoFeeds.get(i);
-			videoFeed.decodePipe = new DecodeToTexture(this, videoFeed.mUrl, 1280, 720);
+			videoFeed.decodePipe = new DecodeToTexture(mActivity, videoFeed.mUrl, 1280, 720);
 		}
 
-
-		mGLSurfaceView = new GLSurfaceView(this); 
-		mGLSurfaceView.setEGLContextClientVersion(2);
-		
 		mCompositor = new VideoCompositor(this);
 		mCompositor.AddVideoPlane(mCompPlaneId, -1.0f, 0f, 0.0f, 1.0f, 1.0f, 1.0f);
 		mCompositor.AddVideoPlane(mThumbnail0, 5.0f, 2.0f, 0.0f, 0.25f, 0.25f, 1.0f);
@@ -167,9 +135,6 @@ public class MainActivity extends Activity implements TransitionControl {
 		mGLSurfaceView.setRenderer(mCompositor);
 		LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 		
-		LinearLayout layout = (LinearLayout) findViewById(R.id.l22);
-		layout.addView(mGLSurfaceView, lp);
-
 	}
 
 	public void onSwap(View v)
@@ -233,6 +198,5 @@ public class MainActivity extends Activity implements TransitionControl {
 		if(VideoFeedList.mVideoFeeds.size() > 1) {
 			mThaumnail11TexId[0] = VideoFeedList.mVideoFeeds.get(1).textureId;
 		}
-
 	}
 }

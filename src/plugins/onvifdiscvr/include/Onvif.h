@@ -45,9 +45,18 @@ typedef struct {
  *
  * Returns number of ONVIF Devices found in network.
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int ONVIF_Device_Discover(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request);
 
 int onvifdicvrStart(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request);
 int onvifdicvrSop();
+
+#if __cplusplus
+}
+#endif
 
 #endif /* ONVIF_H_ */

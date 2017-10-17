@@ -16,9 +16,10 @@
 #include <stdlib.h>
 
 #define MAX_IP_ADDRESS_WIDTH	(16)
+#define MAX_NUM_IP_ADDRESSES    (4)
 
 typedef struct {
-	char ip_addr[MAX_IP_ADDRESS_WIDTH];
+	char ip_addr[MAX_IP_ADDRESS_WIDTH * MAX_NUM_IP_ADDRESSES];
 	u_int16_t port;
 } ONVIF_DEVICE_INFO_t;
 

@@ -232,8 +232,7 @@ int ONVIF_Device_Discover(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request) {
 		if (conn_fd < 0) {
 			printf("Creating multicast Socket Failed ");
 		} else {
-			if (setsockopt(conn_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
-					sizeof(reuse)) < 0) {
+			if (setsockopt(conn_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse, sizeof(reuse)) < 0) {
 				printf("Setting SO_REUSEADDR error ");
 			} else {
 				sock_addr.sin_family = AF_INET;
@@ -241,9 +240,7 @@ int ONVIF_Device_Discover(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request) {
 				sock_addr.sin_port = htons(ONVIF_MULTICAST_PORT);
 
 				// Multicast Discovery Message
-				if (sendto(conn_fd, buffer, length, MSG_NOSIGNAL,
-						(struct sockaddr*) &sock_addr, sizeof(sock_addr))
-						< length) {
+				if (sendto(conn_fd, buffer, length, MSG_NOSIGNAL, (struct sockaddr*) &sock_addr, sizeof(sock_addr)) < length) {
 					printf("Sending Datagram Failed ");
 
 				} else {
@@ -259,9 +256,7 @@ int ONVIF_Device_Discover(ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request) {
 								&time);
 
 						if ((retVal > 0) && (FD_ISSET(conn_fd, &readFd))) {
-							if ((length = recv(conn_fd, buffer,
-									(MAX_MULTICAST_MESSAGE_LEN - 1),
-									MSG_NOSIGNAL)) > 0) {
+							if ((length = recv(conn_fd, buffer, (MAX_MULTICAST_MESSAGE_LEN - 1), MSG_NOSIGNAL)) > 0) {
 								buffer[length] = '\0';
 								// NOTE: here we can directly get IP of camera from sender address
 								// But parsing further for verification

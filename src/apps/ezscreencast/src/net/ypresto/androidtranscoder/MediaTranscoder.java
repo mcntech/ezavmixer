@@ -161,6 +161,7 @@ public class MediaTranscoder {
      */
     public Future<Void> transcodeVideo(final FileDescriptor inFileDescriptor, final String outPath, final MediaFormatStrategy outFormatStrategy, final Listener listener, final StreamIf streamif) {
         Looper looper = Looper.myLooper();
+        /*
         if (looper == null) looper = Looper.getMainLooper();
         final Handler handler = new Handler(looper);
         final AtomicReference<Future<Void>> futureReference = new AtomicReference<>();
@@ -218,6 +219,8 @@ public class MediaTranscoder {
         });
         futureReference.set(createdFuture);
         return createdFuture;
+        */
+        return null;
     }
 
     public interface Listener {

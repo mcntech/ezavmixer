@@ -7,6 +7,7 @@ include $(SRC_FOLDER)/plugins/jdhttp/jni/Android.mk
 include $(SRC_FOLDER)/plugins/jdnet/jni/Android.mk
 include $(SRC_FOLDER)/plugins/tsmux/jni/Android.mk
 include $(SRC_FOLDER)/plugins/mp4mux/jni/Android.mk
+include $(SRC_FOLDER)/plugins/onvifsrvr/jni/Android.mk
 include $(SRC_FOLDER)/plugins/parseutil/jni/Android.mk
 include $(SRC_FOLDER)/plugins/osal/jni/Android.mk
 include $(SRC_FOLDER)/core/jni/Android.mk
@@ -32,6 +33,7 @@ LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/parseutil/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/tsdemux/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/tinyxml/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/mp4mux/include
+LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/onvifsrvr/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/mpegdash/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/osal/include
 LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/configdb/include
@@ -55,5 +57,5 @@ LOCAL_SRC_FILES +=	ServerNode.cpp
 
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_LDLIBS := -llog
-LOCAL_STATIC_LIBRARIES := onyxcore jdrtsp  mpegdash jdaws opencrypto_static jdhttp jdnet tsmux mp4mux parseutil streamif tinyxml configdb jdosal
+LOCAL_STATIC_LIBRARIES := onyxcore jdrtsp  mpegdash jdaws opencrypto_static jdhttp jdnet tsmux mp4mux onvifsrvr parseutil streamif tinyxml configdb jdosal
 include $(BUILD_SHARED_LIBRARY)

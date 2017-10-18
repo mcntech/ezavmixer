@@ -1,6 +1,6 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
-LOCAL_MODULE := onvifdiscvr
+LOCAL_MODULE := onvifsrvr
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)
 
 OSAL_FOLDER := $(LOCAL_PATH)/../../osal
@@ -13,6 +13,6 @@ MY_SRCS := ../src
 
 LOCAL_CFLAGS += -DPLATFORM_ANDROID
 
-LOCAL_SRC_FILES := $(MY_SRCS)/Onvif.cpp
+LOCAL_SRC_FILES := $(MY_SRCS)/Onvifsrvr.cpp
 
 include $(BUILD_STATIC_LIBRARY)

@@ -362,7 +362,7 @@ int onvifSrvrStart(ONVIF_DEVICE_INFO_t *deviceInfo) {
 	return 0;
 }
 
-int onvifSrvrSop() {
+int onvifSrvrStop() {
 	m_fRun = 0;
 	close(m_fd);
 	if(m_thrdHandleOnvif){

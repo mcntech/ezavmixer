@@ -45,13 +45,19 @@ public class QueuedMuxer {
     public QueuedMuxer(MediaMuxer muxer, Listener listener) {
         mMuxer = muxer;
         mListener = listener;
+        /*
         mSampleInfoList = new ArrayList<>();
+        */
+        mSampleInfoList = null;
     }
 
     public QueuedMuxer(MediaTranscoderEngine.StreamIf streamif, Listener listener) {
     	mStreamIf = streamif;
         mListener = listener;
+        /*
         mSampleInfoList = new ArrayList<>();
+        */
+        mSampleInfoList = null;
     }
     
     public void setOutputFormat(SampleType sampleType, MediaFormat format) {

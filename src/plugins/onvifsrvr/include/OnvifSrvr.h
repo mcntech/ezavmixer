@@ -26,6 +26,7 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
+	int get_host_address(ONVIF_DEVICE_INFO_t *deviceInfo);
 	int onvifSrvrStart(ONVIF_DEVICE_INFO_t *deviceInfo);
 	int onvifSrvrStop();
 

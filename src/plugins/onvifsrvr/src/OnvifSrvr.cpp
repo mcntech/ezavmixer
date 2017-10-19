@@ -2,6 +2,8 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
+
 #if defined (WIN32)
 #include <winsock2.h>
 #include <fcntl.h>
@@ -27,6 +29,13 @@
 #include <netdb.h>
 #endif
 #include <errno.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+//#ifdef PLATFORM_ANDROID
+#include "ifaddrs-android.h"
+//#else
+//#include <ifaddrs.h>
+//#endif
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -42,6 +51,61 @@
 
 static int modDbgLevel = CJdDbg::LVL_TRACE;
 
+
+int get_host_address(ONVIF_DEVICE_INFO_t *deviceInfo) {
+
+#ifdef WIN32
+	{
+		WORD wVersionRequested;
+		WSADATA wsaData;
+		int err;
+		wVersionRequested = MAKEWORD(2, 2);
+		err = WSAStartup(wVersionRequested, &wsaData);
+		if (err != 0) {
+			fprintf(stderr, "WSAStartup failed with error: %d\n", err);
+			return 1;
+		}
+	}
+#endif
+
+	struct ifaddrs * ifAddrStruct=NULL;
+	struct ifaddrs * ifa=NULL;
+	void * tmpAddrPtr=NULL;
+	memset(deviceInfo->ip_addr, 0x00, sizeof(deviceInfo->ip_addr));
+	getifaddrs(&ifAddrStruct);
+
+	for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+		if (!ifa->ifa_addr) {
+			continue;
+		}
+		if (ifa->ifa_addr->sa_family == AF_INET) {
+			// is a valid IP4 Address
+			tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+			char addressBuffer[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+			printf("%s IP Address %s\n", ifa->ifa_name, addressBuffer);
+			if(strstr("lo", ifa->ifa_name)) {
+				continue;
+			} else if (strlen(deviceInfo->ip_addr) < (MAX_IP_ADDRESS_WIDTH * (MAX_NUM_IP_ADDRESSES - 1))){
+				if(strlen(deviceInfo->ip_addr)) {
+					strcat(deviceInfo->ip_addr," ");
+				}
+				strcat(deviceInfo->ip_addr, addressBuffer);
+			}
+		}
+	}
+
+	if (ifAddrStruct!=NULL)
+		freeifaddrs(ifAddrStruct);
+	deviceInfo->port = 59427;
+
+	printf("IP Addresses %s port %d\n", deviceInfo->ip_addr, deviceInfo->port);
+
+#ifdef WIN32
+	 WSACleanup();
+#endif
+	return 0;
+}
 
 int mcast_recv_socket(char* multicastIP, char* multicastPort, int multicastRecvBufSize) {
 
@@ -61,7 +125,7 @@ int mcast_recv_socket(char* multicastIP, char* multicastPort, int multicastRecvB
     hints.ai_flags  = AI_NUMERICHOST;
     int status;
     if ((status = getaddrinfo(multicastIP, NULL, &hints, &multicastAddr)) != 0) {
-	    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+    	JdDbg(CJdDbg::LVL_ERR,( "getaddrinfo: %s\n", gai_strerror(status)));
 	    goto error;
     }
 
@@ -74,14 +138,14 @@ int mcast_recv_socket(char* multicastIP, char* multicastPort, int multicastRecvB
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags    = AI_PASSIVE; /* Return an address we can bind to */
     if ( getaddrinfo(NULL, multicastPort, &hints, &localAddr) != 0 ) {
-	fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+    	JdDbg(CJdDbg::LVL_ERR,( "getaddrinfo: %s\n", gai_strerror(status)));
 	goto error;
     }
 
 
     /* Create socket for receiving datagrams */
     if ( (sock = socket(localAddr->ai_family, localAddr->ai_socktype, 0)) < 0 ) {
-	perror("socket() failed");
+    	JdDbg(CJdDbg::LVL_ERR,("socket() failed"));
 	goto error;
     }
 
@@ -92,19 +156,19 @@ int mcast_recv_socket(char* multicastIP, char* multicastPort, int multicastRecvB
      * application to receive copies of the multicast datagrams.
      */
     if (setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(char*)&yes,sizeof(int)) == -1) {
-	perror("setsockopt");
+    	JdDbg(CJdDbg::LVL_ERR,("setsockopt"));
 	goto error;
     }
 
     /* Bind the local address to the multicast port */
     if ( bind(sock, localAddr->ai_addr, localAddr->ai_addrlen) != 0 ) {
-	perror("bind() failed");
+    	JdDbg(CJdDbg::LVL_ERR,("bind() failed"));
 		goto error;
     }
 
     /* get/set socket receive buffer */
     if(getsockopt(sock, SOL_SOCKET, SO_RCVBUF,(char*)&optval, &optval_len) !=0) {
-	perror("getsockopt");
+    	JdDbg(CJdDbg::LVL_ERR,("getsockopt"));
 	goto error;
     }
     dfltrcvbuf = optval;
@@ -114,11 +178,11 @@ int mcast_recv_socket(char* multicastIP, char* multicastPort, int multicastRecvB
 	goto error;
     }
     if(getsockopt(sock, SOL_SOCKET, SO_RCVBUF,(char*)&optval, &optval_len) != 0) {
-	perror("getsockopt");
+    	JdDbg(CJdDbg::LVL_ERR,("getsockopt"));
 	goto error;
     }
-    printf("tried to set socket receive buffer from %d to %d, got %d\n",
-	   dfltrcvbuf, multicastRecvBufSize, optval);
+    JdDbg(CJdDbg::LVL_ERR,("tried to set socket receive buffer from %d to %d, got %d\n",
+	   dfltrcvbuf, multicastRecvBufSize, optval));
 
 
 
@@ -141,7 +205,7 @@ int mcast_recv_socket(char* multicastIP, char* multicastPort, int multicastRecvB
 
 	    /* Join the multicast address */
 	    if ( setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &multicastRequest, sizeof(multicastRequest)) != 0 ) {
-		perror("setsockopt() failed");
+	    	JdDbg(CJdDbg::LVL_ERR,("setsockopt() failed"));
 		goto error;
 	    }
 	}
@@ -160,12 +224,12 @@ int mcast_recv_socket(char* multicastIP, char* multicastPort, int multicastRecvB
 
 	    /* Join the multicast address */
 	    if ( setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*) &multicastRequest, sizeof(multicastRequest)) != 0 ) {
-		perror("setsockopt() failed");
+	    	JdDbg(CJdDbg::LVL_ERR,("setsockopt() failed"));
 		goto error;
 	    }
 	}
     else {
-	perror("Neither IPv4 or IPv6");
+    	JdDbg(CJdDbg::LVL_ERR,("Neither IPv4 or IPv6"));
   	goto error;
     }
 

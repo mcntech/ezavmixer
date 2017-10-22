@@ -214,6 +214,6 @@ public class OnyxApi {
 	native static boolean StopRtspPublishNode(long handle,  String jId);
 	
 	native static boolean UpdateMpdPublishStatus(long mHandle, String mPublishId);
-	native static int onvifSrvrStart(long handle, long ctx);
-	native static int onvifSrvrStop(long handle, long ctx);
+	native static int onvifSrvrStart(long handle);
+	native static int onvifSrvrStop(long handle);
 }

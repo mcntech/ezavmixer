@@ -538,13 +538,13 @@ jlong Java_com_mcntech_ezscreencast_OnyxApi_getClockUs(JNIEnv *env, jobject self
 	return clock;
 }
 
-int Java_com_mcntech_ezscreencast_OnyxApi_onvifSrvrStart(JNIEnv *env, jobject self, jlong ctx) {
+int Java_com_mcntech_ezscreencast_OnyxApi_onvifSrvrStart(JNIEnv *env, jobject self) {
 	ONVIF_DEVICE_INFO_t deviceInfo;
 	get_host_address(&deviceInfo);
 	return onvifSrvrStart(&deviceInfo);
 }
 
-int Java_com_mcntech_ezscreencast_OnyxApi_onvifSrvrStop(JNIEnv *env, jobject self, jlong ctx) {
+int Java_com_mcntech_ezscreencast_OnyxApi_onvifSrvrStop(JNIEnv *env, jobject self) {
 	return onvifSrvrStop();
 }
 } // extern "C"

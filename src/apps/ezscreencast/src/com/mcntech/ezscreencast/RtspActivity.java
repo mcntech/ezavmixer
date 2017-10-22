@@ -101,7 +101,7 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 		String jUrl = rtsp.mInputUrl;	
 		String jInterface = "auto";
 		String jStreamName = "V01";
-		int nLocalServerPort = 554;
+		int nLocalServerPort = 40554;
 		boolean fEnableMux = false;
 		String mError = "";
 		
@@ -127,7 +127,7 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 			mError = "Failed to StartPublishStream";
 			return result;
 		}
-		
+		OnyxApi.onvifSrvrStart(mHandle);
 		mError = "Succcess";
 		return result;
 	}

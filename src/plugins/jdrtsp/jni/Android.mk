@@ -1,5 +1,8 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
+
+LOCAL_CFLAGS += -DPLATFORM_ANDROID
+
 LOCAL_MODULE := jdrtsp
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)
 
@@ -7,8 +10,6 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/..
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../logutil/include
 MY_SRCS := ../src
-
-LOCAL_CFLAGS += -DPLATFORM_ANDROID
 
 LOCAL_SRC_FILES := $(MY_SRCS)/JdRtp.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/JdRtcp.cpp

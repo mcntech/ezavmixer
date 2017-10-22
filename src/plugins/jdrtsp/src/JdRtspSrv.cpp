@@ -22,6 +22,7 @@
 #include <strings.h>
 #include <netdb.h>
 #include <string.h>
+
 #define O_BINARY	0
 #endif
 #include <stdlib.h>
@@ -29,7 +30,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-
+#include <errno.h>
 #include "JdSdp.h"
 #include "JdRtpSnd.h"
 #include "JdRtspSrv.h"
@@ -37,6 +38,7 @@
 #include "JdNetUtil.h"
 #include "JdRfc3984.h"
 #include "JdRfc3640.h"
+#include "JdDbg.h"
 
 #define REQUEST_BUF_SIZE 		1024
 #define HEADER_BUF_SIZE 		1024
@@ -81,6 +83,7 @@ int CJdRtspSrvSession::CreateSetupRepy(char *pBuff, int nMaxLen, CRtspRequest *c
 				pTrans->mClientRtpPort, pTrans->mClientRtcpPort,
 				pTrans->mServerRtpPort, pTrans->mServerRtcpPort);
 	}
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s: reply=%s", __FUNCTION__, pBuff));
 	return strlen(pBuff);
 }
 
@@ -94,6 +97,7 @@ int CJdRtspSrvSession::CreatePlayReply(char *pBuff, int nMaxLen, CRtspRequest *c
 			RTSP_VERSION, 
 			clntReq->mCSeq,
 			m_ulSessionId);
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s: reply=%s", __FUNCTION__, pBuff));
 	return strlen(pBuff);
 
 }
@@ -106,6 +110,8 @@ int CJdRtspSrvSession::CreateTearDownreply(char *pBuff, int nMaxLen, CRtspReques
 			"\r\n",
 			RTSP_VERSION, 
 			clntReq->mCSeq);
+
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s: reply=%s", __FUNCTION__, pBuff));
 	return strlen(pBuff);
 
 }
@@ -165,6 +171,7 @@ const char *GetStatusMsg(int nStatusId)
 	int nCount = sizeof(RTSP_STATUS_LIST) / sizeof(struct RTSP_STATUS_T);
 	for (int i=0; i < nCount; i++){
 		if(RTSP_STATUS_LIST[i].nStstusId == nStatusId)
+			JDBG_LOG(CJdDbg::LVL_SETUP,("%s: reply=%s", __FUNCTION__, RTSP_STATUS_LIST[i].pszStatus));
 			return RTSP_STATUS_LIST[i].pszStatus;
 	}
 	return pszUnknown;
@@ -189,8 +196,8 @@ bool CJdRtspSrvSession::PlayTrack(CMediaTrack *pTrack)
 	IMediaDelivery *pDelivery = NULL;
 	CRtpSnd *pRtp = NULL;
 	bool res = false;
-	JDBG_LOG(CJdDbg::LVL_TRACE,("Enter"));
-	JDBG_LOG(CJdDbg::LVL_SETUP,("codec type=%d name=%s", pTrack->mCodecType, pTrack->mCodecName.c_str()));
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s: codec type=%d name=%s", __FUNCTION__, pTrack->mCodecType, pTrack->mCodecName.c_str()));
 	if(pTrack->mCodecType == CMediaTrack::CODEC_TYPE_STREAM){
 		pRtp = m_pVRtp;
 		if(pTrack->mCodecName.compare("MP2T") == 0){
@@ -233,7 +240,7 @@ void CJdRtspSrvSession::HandlePlay(CRtspRequest &clntReq)
 	std::string nameAggregate;
 	std::string nameTrack;
 
-	JDBG_LOG(CJdDbg::LVL_SETUP,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Enter", __FUNCTION__));
 	CMediaUtil::ParseResourceName(clntReq.mUrlMedia, nameAggregate, nameTrack);
 	CMediaAggregate *pMediaAggregate = mMediaResMgr->GetMediaAggregate(nameAggregate.c_str());
 	
@@ -257,14 +264,14 @@ void CJdRtspSrvSession::HandlePlay(CRtspRequest &clntReq)
 		PrepreRtspStatus(headerBuf, 404);
 		SendRtspStatus(m_hSock, headerBuf, strlen(headerBuf));
 	}
-	JDBG_LOG(CJdDbg::LVL_SETUP,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Leave", __FUNCTION__));
 }
 
 void CJdRtspSrvSession::HandleTearDown(CRtspRequest &clntReq)
 {
 	char headerBuf[HEADER_BUF_SIZE];
 	bool res;
-
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Enter", __FUNCTION__));
 	RemoveMediaDeliveries();
 
 	if(m_hSock >= 0){
@@ -277,7 +284,7 @@ void CJdRtspSrvSession::HandleTearDown(CRtspRequest &clntReq)
 			SendRtspStatus(m_hSock, headerBuf, strlen(headerBuf));
 		}
 	}
-
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Leave", __FUNCTION__));
 	return;
 }
 
@@ -292,6 +299,9 @@ void CJdRtspSrvSession::HandleSetup(CRtspRequest &clntReq, CRtspRequestTransport
 	int addrlen = sizeof(struct sockaddr);
 	struct sockaddr_in sa;
 	CMediaTrack *pTrack = NULL;
+
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Enter", __FUNCTION__));
+
 	if(m_ulSessionId == 0){
 		srand(time(NULL));
 		m_ulSessionId = rand();
@@ -337,6 +347,7 @@ Exit:
 		PrepreRtspStatus(respBuf, 453);
 		SendRtspStatus(m_hSock, respBuf, strlen(respBuf));
 	}
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Leave", __FUNCTION__));
 	return;
 }
 
@@ -349,12 +360,13 @@ int CJdRtspSrvSession::GenerateSdp(CSdp *pSdp, const char *pszMedia)
 	int nTracks = 0;
 	CMediaAggregate *pMediaAggregate = NULL;
 
-	JDBG_LOG(CJdDbg::LVL_SETUP,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_SETUP,("Enter:%s", __FUNCTION__));
 	pMediaAggregate = mMediaResMgr->GetMediaAggregate(pszMedia);
 	if(pMediaAggregate == NULL){
-		JdDbg(CJdDbg::LVL_ERR,("%s : No MediaAggregate\n",__FUNCTION__));
+		JDBG_LOG(CJdDbg::LVL_ERR,("%s : No MediaAggregate\n",__FUNCTION__));
 		goto Exit;
 	}
+
 	nTracks = pMediaAggregate->GetTrackCount();
 	addrinfo* results;
 	addrinfo hint;
@@ -369,7 +381,7 @@ int CJdRtspSrvSession::GenerateSdp(CSdp *pSdp, const char *pszMedia)
 		if(res == 0){
 			pszAddr = strdup(inet_ntoa(addr.sin_addr));
 		} else {
-			fprintf(stderr,"%s:%s getsockname : failed\n", __FILE__, __FUNCTION__);
+			JDBG_LOG(CJdDbg::LVL_ERR,("%s:%s getsockname : failed\n", __FILE__, __FUNCTION__));
 			goto Exit;
 		}
 	}
@@ -446,7 +458,7 @@ int CJdRtspSrvSession::GenerateSdp(CSdp *pSdp, const char *pszMedia)
 Exit:
 	if(pszAddr)
 		free(pszAddr);
-	JDBG_LOG(CJdDbg::LVL_SETUP,("Leave res=%d", res));
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Leave res=%d", __FUNCTION__, res));
 	return res;
 }
 
@@ -458,7 +470,7 @@ int CJdRtspSrvSession::HandleDescribe(CRtspRequest &clntReq)
 	int res = -1;
 	int len;
 
-	JDBG_LOG(CJdDbg::LVL_SETUP,("Enter"));
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Enter", __FUNCTION__));
 	res = GenerateSdp(pSdp, clntReq.mUrlMedia.c_str());
 	if(res != 0)
 		goto Exit;
@@ -486,7 +498,7 @@ Exit:
 		PrepreRtspStatus(respBuf, 404);
 		SendRtspStatus(m_hSock, respBuf, strlen(respBuf));
 	}
-	JDBG_LOG(CJdDbg::LVL_SETUP,("Leave"));
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Leave", __FUNCTION__));
 	return 0;
 }
 
@@ -497,7 +509,7 @@ void CJdRtspSrvSession::HandleOptions(CRtspRequest &clntReq)
 	char *pData = headerBuf;
 	int res;
 	unsigned long ulSeq;
-
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Enter", __FUNCTION__));
 	snprintf(pData, HEADER_BUF_SIZE, 
 			"RTSP/%s 200 OK\r\n" \
 			"CSeq: %lu\r\n" \
@@ -507,6 +519,7 @@ void CJdRtspSrvSession::HandleOptions(CRtspRequest &clntReq)
 			clntReq.mCSeq);
 
 	send(m_hSock, pData, strlen(pData), 0);
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Leave", __FUNCTION__));
 }
 
 void *CJdRtspSrvSession::sessionThread( void *arg )
@@ -544,6 +557,7 @@ void *CJdRtspSrvSession::threadProcessRequests()
         assert(ret == 0);
 #endif
 	memset(headerBuf, 0, HEADER_BUF_SIZE);
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Enter", __FUNCTION__));
 	while(true) {
 		unsigned long ulSessionId = 0;
 		int nBytes = ReadHeader(m_hSock, headerBuf, 0/*Infinite Wait*/);
@@ -586,7 +600,7 @@ void *CJdRtspSrvSession::threadProcessRequests()
 				{
 					PrepreRtspStatus(statusBuf, 405);
 					SendRtspStatus(m_hSock, statusBuf, strlen(statusBuf));
-					fprintf(stderr,"Unsupported RTSP Method: %s\n",headerBuf);
+					JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Unsupported RTSP Method: %s\n", __FUNCTION__, headerBuf));
 					break;
 				}
 
@@ -596,7 +610,7 @@ Exit:
 	RemoveMediaDeliveries();
 	if(m_hSock != -1)
 		close(m_hSock);
-	JdDbg(CJdDbg::LVL_ERR,("%s : Leave\n",__FUNCTION__));
+	JDBG_LOG(CJdDbg::LVL_ERR,("%s : Leave\n",__FUNCTION__));
 	return NULL;
 }
 
@@ -613,7 +627,7 @@ void *CJdRtspSrv::ServerThread( void *arg )
 	int addr_len = sizeof(struct sockaddr_in);
 
 	CJdRtspSrv *pServ = (CJdRtspSrv *)arg;
-
+	JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Enter", __FUNCTION__));
 	/* set cleanup handler to cleanup ressources */
 #ifdef WIN32
 #else
@@ -622,15 +636,15 @@ void *CJdRtspSrv::ServerThread( void *arg )
 	/* open socket for server */
 	pServ->m_hSock = socket(PF_INET, SOCK_STREAM, 0);
 	if ( pServ->m_hSock < 0 ) {
-		fprintf(stderr, "socket failed\n");
+		JDBG_LOG(CJdDbg::LVL_TRACE,( "socket failed\n"));
 		goto Exit;
 	}
-	printf("%s:%s:%d\n",__FILE__, __FUNCTION__, __LINE__);
+	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:%s:%d\n",__FILE__, __FUNCTION__, __LINE__));
 	/* ignore "socket already in use" errors */
 	{
 		int on = 1;
 		if (setsockopt(pServ->m_hSock, SOL_SOCKET, SO_REUSEADDR, (const char *)&on, sizeof(on)) < 0) {
-			perror("setsockopt(SO_REUSEADDR) failed");
+			JDBG_LOG(CJdDbg::LVL_TRACE,("setsockopt(SO_REUSEADDR) failed"));
 			goto Exit;
 		}
 	}
@@ -640,13 +654,13 @@ void *CJdRtspSrv::ServerThread( void *arg )
 	addr.sin_port = htons(pServ->mRtspPort); /* is already in right byteorder */
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	if ( bind(pServ->m_hSock, (struct sockaddr*)&addr, sizeof(addr)) != 0 ) {
-		perror("bind");
+		JDBG_LOG(CJdDbg::LVL_ERR,("%s : bind failed err= %s\n",__FUNCTION__, strerror(errno)));
 		goto Exit;
 	}
 
 	/* start listening on socket */
 	if ( listen(pServ->m_hSock, 10) != 0 ) {
-		fprintf(stderr, "listen failed\n");
+		JDBG_LOG(CJdDbg::LVL_TRACE,( "listen failed\n"));
 		goto Exit;
 	}
 
@@ -668,7 +682,7 @@ void *CJdRtspSrv::ServerThread( void *arg )
 #endif
 			
 		} else {
-			fprintf(stderr,"\n!!!Exiting due to socket error!!!\n");
+			JDBG_LOG(CJdDbg::LVL_TRACE,("\n!!!Exiting due to socket error!!!\n"));
 		}
 	}
 #ifdef WIN32
@@ -676,6 +690,7 @@ void *CJdRtspSrv::ServerThread( void *arg )
 	pthread_cleanup_pop(1);
 #endif
 Exit:
+JDBG_LOG(CJdDbg::LVL_SETUP,("%s:Leave", __FUNCTION__));
 	return NULL;
 }
 
@@ -710,7 +725,7 @@ int CJdRtspSrv::Run(
     wVersionRequested = MAKEWORD(2, 2);
     err = WSAStartup(wVersionRequested, &wsaData);
     if (err != 0) {
-        printf("WSAStartup failed with error: %d\n", err);
+    	JDBG_LOG(CJdDbg::LVL_ERR,("WSAStartup failed with error: %d\n", err));
         return 1;
     }
 #endif

@@ -13,6 +13,6 @@ MY_SRCS := ../src
 
 LOCAL_CFLAGS += -DPLATFORM_ANDROID
 
-LOCAL_SRC_FILES := $(MY_SRCS)/Onvifsrvr.cpp
+LOCAL_SRC_FILES := $(MY_SRCS)/OnvifSrvr.cpp
 
 include $(BUILD_STATIC_LIBRARY)

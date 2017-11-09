@@ -53,7 +53,7 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 		mBtnStart.setText("Start");
 		mBtnStart.setOnClickListener(this);
 		mBtnStart.setTag(BTN_ID_START);
-				
+		mBtnStart.setEnabled(true);	
         mMediaProjectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
 		
         mDeviceHandler = new RemoteNodeHandler(){
@@ -86,6 +86,8 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 
     	mHandle = OnyxApi.initialize(OnyxApi.PROTOCOL_RTSP);
         OnyxApi.setRemoteNodeHandler(mDeviceHandler);
+        Intent captureIntent = mMediaProjectionManager.createScreenCaptureIntent();
+        startActivityForResult(captureIntent, MEDIAPROJECTION_REQUEST_CODE);
     }
     
     
@@ -94,14 +96,14 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 
 		boolean result = true;
 		RtspModel rtsp = mRtsp;
-		String jPublishId = rtsp.mPublishId;
+		String jPublishId = "v01";//rtsp.mPublishId;
 		String jswitchId = rtsp.mSwcitchId;
 		String jinputId = rtsp.mInputId;
 		String jInputType = rtsp.mInputType;
 		String jUrl = rtsp.mInputUrl;	
 		String jInterface = "auto";
-		String jStreamName = "V01";
-		int nLocalServerPort = 40554;
+		String jStreamName = "v01";
+		int nLocalServerPort = 8554;
 		boolean fEnableMux = false;
 		String mError = "";
 		

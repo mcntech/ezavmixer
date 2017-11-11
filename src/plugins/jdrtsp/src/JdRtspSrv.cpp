@@ -198,19 +198,19 @@ bool CJdRtspSrvSession::PlayTrack(CMediaTrack *pTrack)
 	bool res = false;
 	JDBG_LOG(CJdDbg::LVL_TRACE,("%s:Enter", __FUNCTION__));
 	JDBG_LOG(CJdDbg::LVL_SETUP,("%s: codec type=%d name=%s", __FUNCTION__, pTrack->mCodecType, pTrack->mCodecName.c_str()));
-	if(pTrack->mCodecType == CMediaTrack::CODEC_TYPE_STREAM){
+	if(m_pVRtp && pTrack->mCodecType == CMediaTrack::CODEC_TYPE_STREAM){
 		pRtp = m_pVRtp;
 		if(pTrack->mCodecName.compare("MP2T") == 0){
 			CJdRfc2250Tx *pVDelivery = new CJdRfc2250Tx(m_pVRtp, pTrack->mCodecId, pTrack->mSsrc);
 			pDelivery = pVDelivery;
 		}
-	} else if(pTrack->mCodecType == CMediaTrack::CODEC_TYPE_VIDEO){
+	} else if(m_pVRtp && pTrack->mCodecType == CMediaTrack::CODEC_TYPE_VIDEO){
 		pRtp = m_pVRtp;
 		if(pTrack->mCodecName.compare("H264") == 0){
 			CJdRfc3984Tx *pVDelivery = new CJdRfc3984Tx(m_pVRtp, pTrack->mCodecId, pTrack->mSsrc);
 			pDelivery = pVDelivery;
 		}
-	} else 	if(pTrack->mCodecType == CMediaTrack::CODEC_TYPE_AUDIO){
+	} else 	if( m_pARtp && pTrack->mCodecType == CMediaTrack::CODEC_TYPE_AUDIO){
 		pRtp = m_pARtp;
 		if(pTrack->mCodecName.compare(CODEC_NAME_AAC) == 0){
 			CJdRfc3640Tx *pADelivery = new CJdRfc3640Tx(pRtp, pTrack->mCodecId, pTrack->mSsrc);

@@ -26,18 +26,12 @@
 #include <fcntl.h>
 
 #include <signal.h>
+#include "ServerNodeBase.h"
 
-class CServerNode
-{
-public:
-	CServerNode(){}
-	virtual void start() = 0;
-	virtual void stop() = 0;
-};
 
-typedef std::map<std::string, CServerNode *> ServerNodeMap;
+typedef std::map<std::string, CServerNodeBase *> ServerNodeMap;
 
-class CRtspServerNode : public CServerNode
+class CRtspServerNode : public CServerNodeBase
 {
 public:
 	CRtspServerNode(CRtspClntBridge *pRtspClntBridge);

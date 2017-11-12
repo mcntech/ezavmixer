@@ -28,7 +28,7 @@
 
 #include <signal.h>
 
-#include "ServerNode.h"
+#include "ServerNodeRtsp.h"
 #include "PlayerBase.h"
 #include "PlayerEventBase.h"
 
@@ -63,7 +63,7 @@ public:
 	CPlayerEventBase  *m_EventCallback;
 
 private:
-	CServerNode *getServerNode(std::string url);
+	CServerNodeBase *getServerNode(std::string url);
 	void remServerNode(std::string url);
 };
 

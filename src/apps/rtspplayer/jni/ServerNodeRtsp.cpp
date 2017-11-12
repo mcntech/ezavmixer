@@ -1,4 +1,4 @@
-#include "ServerNode.h"
+#include "ServerNodeRtsp.h"
 
 
 CRtspServerNode::CRtspServerNode(CRtspClntBridge *pRtspClntBridge)

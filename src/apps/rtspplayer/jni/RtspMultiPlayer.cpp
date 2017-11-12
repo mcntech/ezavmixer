@@ -11,9 +11,9 @@ CRtspMultiPlayer::CRtspMultiPlayer(CPlayerEventBase *pEventBase)
 	m_EventCallback = pEventBase;
 }
 
-CServerNode *CRtspMultiPlayer::getServerNode(std::string url)
+CServerNodeBase *CRtspMultiPlayer::getServerNode(std::string url)
 {
-	CServerNode *pNode = NULL;
+	CServerNodeBase *pNode = NULL;
 	//TRACE_ENTER
 	ServerNodeMap::iterator it = m_ServerList.find(url);
 	if(m_ServerList.end() != it){
@@ -59,7 +59,7 @@ int CRtspMultiPlayer::removeServer(std::string url)
 int CRtspMultiPlayer::startServer(std::string url)
 {
 	TRACE_ENTER
-	CServerNode *pNode = getServerNode(url);
+	CServerNodeBase *pNode = getServerNode(url);
 	if(pNode)
 		pNode->start();
 	TRACE_LEAVE

@@ -37,7 +37,8 @@ LOCAL_CFLAGS += -DPLATFORM_ANDROID
 LOCAL_MODULE := OnyxPlayerApi
 
 LOCAL_SRC_FILES := 	RtspMultiPlayer.cpp
-LOCAL_SRC_FILES +=	ServerNode.cpp
+LOCAL_SRC_FILES +=	ServerNodeBase.cpp
+LOCAL_SRC_FILES +=	ServerNodeRtsp.cpp
 
 LOCAL_SRC_FILES +=	jOnyxPlayerApi.cpp 
 LOCAL_SRC_FILES +=	jOnyxPlayerEvents.cpp

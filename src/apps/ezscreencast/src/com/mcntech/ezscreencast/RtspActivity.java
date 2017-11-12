@@ -196,7 +196,7 @@ public class RtspActivity extends Activity implements BaseSession, View.OnClickL
 	        mRecorder.start();
 	
 	        Toast.makeText(this, "EzSceencast is running...", Toast.LENGTH_SHORT).show();
-	        /*moveTaskToBack(true);*/
+	        moveTaskToBack(true);
     	}
     }
 

@@ -13,6 +13,7 @@
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.RECORD_AUDIO"/>
 	<uses-permission android:name="android.permission.CAPTURE_AUDIO_OUTPUT"/>
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 	
     <application
         android:allowBackup="true"
@@ -69,7 +70,13 @@
             android:label="@string/server_config" >
             android:theme="@android:style/Theme.Dialog" />
         </activity>             
-                   
+     <receiver
+	    android:name="com.mcntech.ezscreencast.Receiver"
+	    android:label="ezscreencastReceiver">
+	    <intent-filter>
+	        <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+    	</intent-filter>
+	</receiver>   
     </application>
 
 </manifest>

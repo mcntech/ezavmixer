@@ -1,0 +1,111 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/container"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+    <SurfaceView
+       android:id="@+id/player_surface"
+       android:layout_width="fill_parent"
+       android:layout_height="fill_parent" />   
+       
+ 	<SurfaceView
+      android:id="@+id/overlay_surface"
+       android:layout_width="40dp"
+       android:layout_height="40dp" />	   
+
+ 	 <LinearLayout
+ 	    android:id="@+id/channel_list_container"
+ 	    android:layout_width="640dp"
+ 	    android:layout_height="240dp"
+ 	    android:layout_alignParentEnd="true" 
+ 	    android:orientation="vertical">
+	 	<TextView
+	 	    android:id="@+id/channel_label"
+	 	    android:layout_width="wrap_content"
+	 	    android:layout_height="wrap_content"
+	 	    android:text="Channels" />
+ 	     
+ 	    <ListView
+ 	         android:id="@+id/channel_list"
+ 	        android:layout_width="wrap_content"
+ 	        android:layout_height="match_parent"
+ 	        android:useDefaultMargins="true" >
+
+		</ListView>
+		
+ 	</LinearLayout>
+ 	
+ 	<LinearLayout
+ 	    android:id="@+id/stats_layout"
+ 	    android:layout_width="match_parent"
+ 	    android:layout_height="120dp"
+ 	    android:layout_alignParentBottom="true" 
+ 	    android:orientation="horizontal">
+
+ 	    <GridLayout
+ 	        android:layout_width="wrap_content"
+ 	        android:layout_height="match_parent"
+ 	        android:columnCount="2"
+ 	        android:rowCount="6"
+ 	        android:useDefaultMargins="true" >
+
+		 	<TextView
+		 	    android:id="@+id/aud_codec_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Aud Codec" />
+		 	<TextView
+		 	    android:id="@+id/aud_codec"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Aud Codec" />
+		 	
+		 	<TextView
+		 	    android:id="@+id/aud_bitrate_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Aud Bitrate" />
+		 	<TextView
+		 	    android:id="@+id/aud_bitrate"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Aud Bitrate" />
+		 			 	
+		 	<TextView
+		 	    android:id="@+id/aud_jitter_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Aud Jitter" />
+		 	<TextView
+		 	    android:id="@+id/aud_jitter"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Aud Jitter" />
+		 			 	
+		 	
+		 	<TextView
+		 	    android:id="@+id/vid_codec_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Codec" />		 	
+		 	<TextView
+		 	    android:id="@+id/vid_codec"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Codec" />
+		 			 	    
+		 	<TextView
+		 	    android:id="@+id/vid_bitrate_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Bitrate" />
+		 	<TextView
+		 	    android:id="@+id/vid_bitrate"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Bitrate" />		 	
+		 	
+		 	<TextView
+		 	    android:id="@+id/vid_jitter_label"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Jitter" />
+		 	<TextView
+		 	    android:id="@+id/vid_jitter"
+		 	    android:layout_width="wrap_content"
+		 	    android:text="Vid Jitter" />
+		 			 	
+		</GridLayout>
+		
+ 	</LinearLayout>
+ 
+</RelativeLayout>

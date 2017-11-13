@@ -9,7 +9,7 @@
 
 #include "Onvif.h"
 
-void print_result(ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response) {
+void onvifCallback(ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response) {
 
 	u_int16_t loop;
 	if ((discovery_response.no_of_camera_found > 0)
@@ -29,7 +29,7 @@ void print_result(ONVIF_DEVICE_DISCOVERY_RESPONSE_t discovery_response) {
 
 int main(int argc, char **argv) {
 
-	ONVIF_DEVICE_DISCOVERY_REQ_t discovery_request;
+	ONVIF_DEVICE_DISCOVERY_REQ_t g_discovery_request;
 
 #ifdef WIN32
 	{
@@ -45,13 +45,16 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	discovery_request.callback = print_result;
-	discovery_request.user_data = NULL;
+	g_discovery_request.callback = onvifCallback;
+	g_discovery_request.user_data = NULL;
+	//ONVIF_Device_Discover(discovery_request);
+	onvifdicvrStart(g_discovery_request);
 
-	ONVIF_Device_Discover(discovery_request);
 #ifdef WIN32
 	 WSACleanup();
 #endif
 
+	 while(1)
+		 usleep(1000*1000);
 	return EXIT_SUCCESS;
 }

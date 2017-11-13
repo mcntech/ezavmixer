@@ -28,6 +28,7 @@ LOCAL_SRC_FILES := ../src/MediaSwitch.cpp
 LOCAL_SRC_FILES += ../src/RtspPublishBridge.cpp
 LOCAL_SRC_FILES += ../src/StrmInBridgeBase.cpp
 LOCAL_SRC_FILES += ../src/RtspClntBridge.cpp
+LOCAL_SRC_FILES += ../src/UdpClntBridge.cpp
 LOCAL_SRC_FILES += ../src/StrmOutBridgeBase.cpp
 LOCAL_SRC_FILES += ../src/RtspConfigure.cpp
 LOCAL_SRC_FILES += ../src/MpdSrvBridge.cpp

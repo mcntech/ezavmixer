@@ -1,0 +1,67 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <ImageView
+        android:id="@+id/image_header"
+        android:layout_width="fill_parent"
+        android:layout_height="60dp"
+        android:src="@drawable/serverlist_header" />
+
+ 
+    <TextView
+        android:id="@+id/textDescript"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="RTSP Media Player" />
+
+       <Space
+        android:layout_width="match_parent"
+        android:layout_height="30dp" />
+    
+    <Button
+        android:id="@+id/button_startstop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Start Player" />
+
+    
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:text="Detected RTSP Servers" />
+
+    <ListView
+        android:id="@+id/listDetectedRemoteNodes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp" >
+
+    </ListView>
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:text="User Defined RTSP Servers" />
+
+    <ListView
+        android:id="@+id/listUserRemoteNodes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp" >
+
+    </ListView>
+        
+</LinearLayout>
+

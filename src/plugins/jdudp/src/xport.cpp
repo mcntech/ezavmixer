@@ -29,8 +29,8 @@ typedef __int64 int64_t;
 #include "strmclock.h"
 #include "JdDbg.h"
 
-#define DBG_MSG printf
-#define DBG_PRINT printf
+//#define DBG_MSG printf
+#define DBG_MSG(...)
 
 #define TRUE		1
 #define FALSE		0
@@ -45,14 +45,12 @@ typedef __int64 int64_t;
 #define BI			3
 #define SKIPPED		4
 
-
 #define STRM_ID_AUD 1
 #define STRM_ID_VID 2
 
 #define SEQUENCE_HEADER_CODE	0x000001b3
 
 #define OPTION_CHAR	'-'
-
 
 typedef struct	psip
 {
@@ -367,12 +365,12 @@ int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int len
 	if(nStrmId == STRM_ID_VID) {
 		Clock2HMSF(pCtx->crnt_vid_pts * 1000 / 90, szTmp1,127);
 		Clock2HMSF(pCtx->current_pcr / 27, szTmp2,127);
-		DBG_PRINT("Vid: lenth=%d pCtx->pcr=%s pts=%s\n",length, szTmp1, szTmp2);
+		DBG_MSG("Vid: lenth=%d pCtx->pcr=%s pts=%s\n",length, szTmp1, szTmp2);
 		fwrite(pData, item_size, length,pCtx->fpoutvideo);
 	} else {
 		Clock2HMSF(pCtx->crnt_aud_pts* 1000 / 90, szTmp1,127);
 		Clock2HMSF(pCtx->current_pcr / 27, szTmp2,127);
-		DBG_PRINT("Aid: lenth=%d pCtx->pcr=%s pts=%s\n",length, szTmp1, szTmp2);
+		DBG_MSG("Aid: lenth=%d pCtx->pcr=%s pts=%s\n",length, szTmp1, szTmp2);
 		fwrite(pData, item_size, length,pCtx->fpoutaudio);
 	}
 #else
@@ -433,25 +431,27 @@ int WriteStream(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int l
 	int dataLen = item_size * length;
 	JdDbg(CJdDbg::DBGLVL_STRM, ("strmid=%d length=%d",nPid, dataLen));
 
-	ConnCtxT *pConn = pCtx->mConnections[nPid];
-	if(pConn) {
-		unsigned long ulFlags = 0;
-		if(pCtx->fEoS) {
-			ulFlags = OMX_BUFFERFLAG_EOS;
+	if(pCtx->mConnections.find( nPid ) != pCtx->mConnections.end()) {
+		ConnCtxT *pConn = pCtx->mConnections[nPid];
+		if(pConn) {
+			unsigned long ulFlags = 0;
+			if(pCtx->fEoS) {
+				ulFlags = OMX_BUFFERFLAG_EOS;
+			}
+			if(pCtx->fDisCont){
+				ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
+			}
+			while(pConn->IsFull(pCtx->pConnVidOut)){
+				JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"))
+		#ifdef WIN32
+				Sleep(1);
+		#else
+				usleep(1000);
+		#endif
+			}
+			JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
+			pConn->Write(pConn, (char *)pData, dataLen,  ulFlags, pCtx->crnt_vid_pts * 1000 / 90);
 		}
-		if(pCtx->fDisCont){
-			ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
-		}
-		while(pConn->IsFull(pCtx->pConnVidOut)){
-			JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"))
-	#ifdef WIN32
-			Sleep(1);
-	#else
-			usleep(1000);
-	#endif
-		}
-		JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
-		pConn->Write(pConn, (char *)pData, dataLen,  ulFlags, pCtx->crnt_vid_pts * 1000 / 90);
 	}
 	return 0;
 }
@@ -2208,9 +2208,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								if (pCtx->adaptation_field_control & 0x1 && pCtx->pid != 0x1fff)  {
 									if (pCtx->continuity_counter[pCtx->pid] != 0xff)  {
 										pCtx->fDisCont = 1;
-#if 1
 										DBG_MSG("Discontinuity!, pCtx->pid = %d <0x%04x>, received = %2d, expected = %2d, at %d\n", pCtx->pid, pCtx->pid, (temp & 0xf), (pCtx->continuity_counter[pCtx->pid] + 1) & 0xf, pCtx->packet_counter);
-#endif
 									}
 								}
 							}
@@ -2242,9 +2240,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 					pCtx->pcr_bytes++;
 					pCtx->adaptation_field_parse = buffer[i];
 					pCtx->adaptation_field_length = pCtx->adaptation_field_parse;
-#if 0
 					DBG_MSG("Adaptation field length = %d\n", pCtx->adaptation_field_length);
-#endif
 					pCtx->adaptation_field_state = FALSE;
 				}
 				else if (pCtx->adaptation_field_parse != 0)  {
@@ -2255,9 +2251,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						if ((buffer[i] & 0x10) == 0x10)  {
 							pCtx->pcr_parse = 6;
 							pCtx->pcr = 0;
-#if 0
 							DBG_MSG("Adaptation field length = %d\n", pCtx->adaptation_field_length);
-#endif
 						}
 					}
 					else if (pCtx->pcr_parse != 0)  {
@@ -2279,9 +2273,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									if (pCtx->hdmv_mode == TRUE)  {
 										if (((pCtx->pcr & 0x3fffffff) - tp_extra_header) == 0)  {
 											if(pCtx->running_average_bitrate != 0)  {
-#ifdef STAT_DUMP
 												DBG_MSG("ts rate = unspecified, video rate = %9d\r", pCtx->running_average_bitrate);
-#endif
 											}
 											else  {
 												DBG_MSG("ts rate = unspecified\r");
@@ -2290,28 +2282,20 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 										else  {
 											ts_rate = ((((pCtx->pcr_bytes - 2) - tp_extra_header_pcr_bytes) * 27000000) / ((pCtx->pcr & 0x3fffffff) - tp_extra_header));
 											if(pCtx->running_average_bitrate != 0)  {
-#ifdef STAT_DUMP
 												DBG_MSG("ts rate = %9d, video rate = %9d\r", (unsigned int)ts_rate * 8, pCtx->running_average_bitrate);
-#endif
 											}
 											else  {
-#ifdef STAT_DUMP
 												DBG_MSG("ts rate = %9d\r", (unsigned int)ts_rate * 8);
-#endif
 											}
 										}
 									}
 									else  {
 										ts_rate = ((pCtx->pcr_bytes * 27000000) / (pCtx->pcr - pCtx->previous_pcr));
 										if(pCtx->running_average_bitrate != 0)  {
-#ifdef STAT_DUMP
 											DBG_MSG("ts rate = %9d, video rate = %9d\r", (unsigned int)ts_rate * 8, pCtx->running_average_bitrate);
-#endif
 										}
 										else  {
-#ifdef STAT_DUMP
 											DBG_MSG("ts rate = %9d\r", (unsigned int)ts_rate * 8);
-#endif
 										}
 									}
 								}
@@ -2352,14 +2336,10 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								j = pCtx->xport_packet_length;
 							}
 						}
-#if 0
 						DBG_MSG("Burst length = %d\r\n", j);
-#endif
 						for (k = 0; k < j; k++)  {
 							pCtx->program_association_table[pCtx->pat_offset] = buffer[i];
-#if 0
 							DBG_MSG("PAT byte %d = 0x%02x\n", pCtx->pat_offset, buffer[i]);
-#endif
 							pCtx->pat_offset++;
 							i++;
 							--pCtx->pat_section_length;
@@ -2368,9 +2348,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						}
 						--i;	/* adjust because of for loop */
 						if (pCtx->pat_section_length == 0)  {
-#if 0
 							DBG_MSG("End of PSI section = %d\r\n",i);
-#endif
 							pCtx->pat_xfer_state = FALSE;
 							if (pCtx->pat_section_number == pCtx->pat_last_section_number)  {
 								for (k = 0; k < (pCtx->pat_offset - 4); k+=4)  {
@@ -2384,9 +2362,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									if (pCtx->program_number == pCtx->program)  {
 										pCtx->program_map_pid = (pCtx->program_association_table[k + 2] & 0x1f) << 8;
 										pCtx->program_map_pid |= pCtx->program_association_table[k + 3];
-#if 0
 										DBG_MSG("Program Map PID = %d\r\n",pCtx->program_map_pid);
-#endif
 									}
 								}
 								pCtx->first_pat = FALSE;
@@ -2421,9 +2397,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									break;
 								case 0:
 									pCtx->pat_section_length |= buffer[i];
-#if 0
 									DBG_MSG("Section length = %d\r\n", pCtx->pat_section_length);
-#endif
 									if (pCtx->pat_section_length > 1021)  {
 										DBG_MSG("PAT Section length = %d\r\n", pCtx->pat_section_length);
 										pCtx->pat_section_length = 0;
@@ -2477,14 +2451,10 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								j = pCtx->xport_packet_length;
 							}
 						}
-#if 0
 						DBG_MSG("Burst length = %d\r\n", j);
-#endif
 						for (k = 0; k < j; k++)  {
 							pCtx->program_map_table[pCtx->pmt_offset] = buffer[i];
-#if 0
 							DBG_MSG("PMT byte %d = 0x%02x\n", pCtx->pmt_offset, buffer[i]);
-#endif
 							pCtx->pmt_offset++;
 							i++;
 							--pCtx->pmt_section_length;
@@ -2493,9 +2463,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						}
 						--i;	/* adjust because of for loop */
 						if (pCtx->pmt_section_length == 0)  {
-#if 0
 							DBG_MSG("End of PSI section = %d\r\n",i);
-#endif
 							pCtx->pmt_xfer_state = FALSE;
 							if (pCtx->pmt_section_number == pCtx->pmt_last_section_number)  {
 								video_channel_count = 0;
@@ -2601,9 +2569,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									break;
 								case 0:
 									pCtx->pmt_section_length |= buffer[i];
-#if 0
 									DBG_MSG("Section length = %d\r\n", pCtx->pmt_section_length);
-#endif
 									if (pCtx->pmt_section_length > 1021)  {
 										DBG_MSG("PMT Section length = %d\r\n", pCtx->pmt_section_length);
 										pCtx->pmt_section_length = 0;
@@ -2638,9 +2604,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									break;
 								case 2:
 									pCtx->pcr_pid |= buffer[i];
-#if 0
 									DBG_MSG("PCR PID = %d\r\n", pcr_pid);
-#endif
 									break;
 								case 1:
 									pCtx->pmt_program_info_length = (buffer[i] & 0xf) << 8;
@@ -2664,15 +2628,15 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								switch (pCtx->pmt_program_descriptor_length_parse)  {
 									case 1:
 										if (pCtx->first_pmt == TRUE)  {
-											DBG_PRINT("program descriptor = 0x%02x", buffer[i]);
+											DBG_MSG("program descriptor = 0x%02x", buffer[i]);
 										}
 										break;
 									case 0:
 										pCtx->pmt_program_descriptor_length = buffer[i];
 										if (pCtx->first_pmt == TRUE)  {
-											DBG_PRINT(", 0x%02x", buffer[i]);
+											DBG_MSG(", 0x%02x", buffer[i]);
 											if (pCtx->pmt_program_descriptor_length == 0)  {
-												DBG_PRINT("\n");
+												DBG_MSG("\n");
 											}
 										}
 										break;
@@ -2681,11 +2645,11 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							else if (pCtx->pmt_program_descriptor_length != 0)  {
 								--pCtx->pmt_program_descriptor_length;
 								if (pCtx->first_pmt == TRUE)  {
-									DBG_PRINT(", 0x%02x", buffer[i]);
+									DBG_MSG(", 0x%02x", buffer[i]);
 								}
 								if (pCtx->pmt_program_descriptor_length == 0)  {
 									if (pCtx->first_pmt == TRUE)  {
-										DBG_PRINT("\n");
+										DBG_MSG("\n");
 									}
 									if (pCtx->pmt_program_info_length != 0)  {
 										pCtx->pmt_program_descriptor_length_parse = 2;
@@ -2719,9 +2683,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							}
 						}
 						xfer_length = j;
-#if 0
-						DBG_PRINT("Burst length = %d\r\n", j);
-#endif
+						DBG_MSG("Burst length = %d\r\n", j);
 						if(pCtx->video_stream_type == 0x1 || pCtx->video_stream_type == 0x2 || pCtx->video_stream_type == 0x80)  {
 							parse_mpeg2_video(pCtx, &buffer[i], xfer_length, pCtx->video_pts, pCtx->video_dts);
 						}
@@ -2739,9 +2701,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						pCtx->pcr_bytes = pCtx->pcr_bytes + xfer_length;
 						--i;	/* adjust because of for loop */
 						if (pCtx->video_packet_length == 0)  {
-#if 0
-							DBG_PRINT("End of Packet = %d\r\n",i);
-#endif
+							DBG_MSG("End of Packet = %d\r\n",i);
 							pCtx->video_xfer_state = FALSE;
 						}
 					}
@@ -2749,9 +2709,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						--pCtx->xport_packet_length;
 						pCtx->pcr_bytes++;
 						if ((pCtx->video_parse >= 0x000001e0 && pCtx->video_parse <= 0x000001ef) || pCtx->video_parse == 0x000001fd)  {
-#if 0
-							DBG_PRINT("PES start code, Video Stream number = %d.\r\n", (pCtx->video_parse & 0x0f));
-#endif
+							DBG_MSG("PES start code, Video Stream number = %d.\r\n", (pCtx->video_parse & 0x0f));
 							pCtx->video_packet_length_parse = 2;
 							pCtx->video_packet_number++;
 							pCtx->video_pes_header_index = 0;
@@ -2770,9 +2728,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							if (pCtx->video_packet_length == 0)  {
 								pCtx->video_packet_length = 0xffffffff;
 							}
-#if 0
-							DBG_PRINT("Packet length = %d\r\n", pCtx->video_packet_length);
-#endif
+							DBG_MSG("Packet length = %d\r\n", pCtx->video_packet_length);
 							pCtx->video_packet_parse = 3;
 							pCtx->video_pes_header[pCtx->video_pes_header_index++] = pCtx->video_parse & 0xff;
 						}
@@ -2790,9 +2746,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								case 0:
 									pCtx->video_pes_header_length = pCtx->video_parse & 0xff;
 									pCtx->video_pes_header[pCtx->video_pes_header_index++] = pCtx->video_parse & 0xff;
-#if 0
-									DBG_PRINT("Video PES header length = %d\r\n", pCtx->video_pes_header_length);
-#endif
+									DBG_MSG("Video PES header length = %d\r\n", pCtx->video_pes_header_length);
 									if ((pCtx->video_pes_header_flags & 0xc0) == 0x80)  {
 										pCtx->video_pts_parse = 5;
 									}
@@ -2965,9 +2919,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							}
 						}
 						xfer_length = j;
-#if 0
-						DBG_PRINT("Burst length = %d\r\n", j);
-#endif
+						DBG_MSG("Burst length = %d\r\n", j);
 						if (pCtx->demux_audio == TRUE)  {
 							int end_of_frame = (pCtx->audio_packet_length == xfer_length);
 							if(pCtx->audio_stream_type == 0x81 || pCtx->audio_stream_type == 0x6)  {
@@ -2995,9 +2947,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							pCtx->pcr_bytes = pCtx->pcr_bytes + xfer_length;
 							--i;	/* adjust because of for loop */
 							if (pCtx->audio_packet_length == 0)  {
-#if 0
-								DBG_PRINT("End of Packet = %d\r\n",i);
-#endif
+								DBG_MSG("End of Packet = %d\r\n",i);
 								pCtx->audio_xfer_state = FALSE;
 							}
 						}
@@ -3024,9 +2974,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						--pCtx->xport_packet_length;
 						pCtx->pcr_bytes++;
 						if (((pCtx->audio_parse >= 0x000001c0 && pCtx->audio_parse <= 0x000001df) && (pCtx->audio_stream_type == 0x3 || pCtx->audio_stream_type == 0x4 || pCtx->audio_stream_type == 0x6 || pCtx->audio_stream_type == 0x0f)) || pCtx->audio_parse == 0x000001bd || pCtx->audio_parse == 0x000001fd || pCtx->audio_parse == 0x000001fa)  {
-#if 0
-							DBG_PRINT("PES start code = 0x%08x, stream_type = 0x%02x\r\n", pCtx->audio_parse, audio_stream_type);
-#endif
+							DBG_MSG("PES start code = 0x%08x, stream_type = 0x%02x\r\n", pCtx->audio_parse, audio_stream_type);
 							pCtx->audio_packet_length_parse = 2;
 							pCtx->audio_packet_number++;
 							pCtx->audio_pes_header_index = 0;
@@ -3042,9 +2990,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						else if (pCtx->audio_packet_length_parse == 1)  {
 							--pCtx->audio_packet_length_parse;
 							pCtx->audio_packet_length = pCtx->audio_parse & 0xffff;
-#if 0
-							DBG_PRINT("Packet length = %d\r\n", pCtx->audio_packet_length);
-#endif
+							DBG_MSG("Packet length = %d\r\n", pCtx->audio_packet_length);
 							pCtx->audio_packet_parse = 3;
 							pCtx->audio_pes_header[pCtx->audio_pes_header_index++] = pCtx->audio_parse & 0xff;
 						}
@@ -3062,9 +3008,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								case 0:
 									pCtx->audio_pes_header_length = pCtx->audio_parse & 0xff;
 									pCtx->audio_pes_header[pCtx->audio_pes_header_index++] = pCtx->audio_parse & 0xff;
-#if 0
-									DBG_PRINT("Audio PES header length = %d\r\n", pCtx->audio_pes_header_length);
-#endif
+									DBG_MSG("Audio PES header length = %d\r\n", pCtx->audio_pes_header_length);
 									if ((pCtx->audio_pes_header_flags & 0xc0) == 0x80)  {
 										pCtx->audio_pts_parse = 5;
 									}
@@ -3161,9 +3105,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->first_audio_access_unit = TRUE;
 									pCtx->last_audio_pts_diff = pCtx->audio_pts - pCtx->prev_audio_pts;
 									pCtx->prev_audio_pts = pCtx->audio_pts;
-#if 0
-									DBG_PRINT("Audio PTS(DTS) = %d\r\n", pCtx->audio_pts);
-#endif
+									DBG_MSG("Audio PTS(DTS) = %d\r\n", pCtx->audio_pts);
 									break;
 								case 4:
 									pCtx->audio_pes_header[pCtx->audio_pes_header_index++] = pCtx->audio_parse & 0xff;
@@ -3243,14 +3185,11 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								j = pCtx->xport_packet_length;
 							}
 						}
-#if 0
-						DBG_PRINT("Burst length = %d\r\n", j);
-#endif
+
+						DBG_MSG("Burst length = %d\r\n", j);
 						for (k = 0; k < j; k++)  {
 							pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_offset] = buffer[i];
-#if 0
-							DBG_PRINT("PSIP byte %d = 0x%02x\n", pCtx->psip_ptr[pCtx->pid]->psip_offset, buffer[i]);
-#endif
+							DBG_MSG("PSIP byte %d = 0x%02x\n", pCtx->psip_ptr[pCtx->pid]->psip_offset, buffer[i]);
 							pCtx->psip_ptr[pCtx->pid]->psip_offset++;
 							i++;
 							--pCtx->psip_ptr[pCtx->pid]->psip_section_length;
@@ -3259,9 +3198,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						}
 						--i;	/* adjust because of for loop */
 						if (pCtx->psip_ptr[pCtx->pid]->psip_section_length == 0)  {
-#if 0
-							DBG_PRINT("End of PSIP section = %d\r\n",i);
-#endif
+							DBG_MSG("End of PSIP section = %d\r\n",i);
 							pCtx->psip_ptr[pCtx->pid]->psip_xfer_state = FALSE;
 							if (pCtx->psip_ptr[pCtx->pid]->psip_section_number == pCtx->psip_ptr[pCtx->pid]->psip_last_section_number)  {
 								if (pCtx->psip_ptr[pCtx->pid]->psip_table_id == 0xc7 && pCtx->mgt_version_number != pCtx->mgt_last_version_number)  {
@@ -3269,14 +3206,14 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->psip_ptr[pCtx->pid]->psip_index = 0;
 									pCtx->mgt_tables_defined = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 									pCtx->mgt_tables_defined |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-									DBG_PRINT("MGT tables defined = %d\n\n", pCtx->mgt_tables_defined);
+									DBG_MSG("MGT tables defined = %d\n\n", pCtx->mgt_tables_defined);
 									for (k = 0; k < pCtx->mgt_tables_defined; k++)  {
 										pCtx->mgt_table_type = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 										pCtx->mgt_table_type |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("MGT table type = 0x%04x\n", pCtx->mgt_table_type);
+										DBG_MSG("MGT table type = 0x%04x\n", pCtx->mgt_table_type);
 										pCtx->mgt_table_type_pid = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x1f) << 8;
 										pCtx->mgt_table_type_pid |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("MGT table type pCtx->pid = 0x%04x\n", pCtx->mgt_table_type_pid);
+										DBG_MSG("MGT table type pCtx->pid = 0x%04x\n", pCtx->mgt_table_type_pid);
 										if (pCtx->mgt_table_type == 0x4)  {
 											pCtx->ett_pid = pCtx->mgt_table_type_pid;
 											pCtx->psip_pid_table[pCtx->ett_pid] = pCtx->mgt_table_type;
@@ -3368,22 +3305,22 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 											pCtx->psip_ptr[pCtx->ett3_pid]->psip_xfer_state = FALSE;
 										}
 										pCtx->mgt_table_type_version = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x1f;
-										DBG_PRINT("MGT table type version = 0x%02x\n", pCtx->mgt_table_type_version);
+										DBG_MSG("MGT table type version = 0x%02x\n", pCtx->mgt_table_type_version);
 										pCtx->mgt_number_bytes = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 24;
 										pCtx->mgt_number_bytes |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 16;
 										pCtx->mgt_number_bytes |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 										pCtx->mgt_number_bytes |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("MGT table bytes = 0x%08x\n", pCtx->mgt_number_bytes);
+										DBG_MSG("MGT table bytes = 0x%08x\n", pCtx->mgt_number_bytes);
 										pCtx->mgt_table_type_desc_length = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0xf) << 8;
 										pCtx->mgt_table_type_desc_length |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("MGT table desc bytes = 0x%04x\n\n", pCtx->mgt_table_type_desc_length);
+										DBG_MSG("MGT table desc bytes = 0x%04x\n\n", pCtx->mgt_table_type_desc_length);
 										for (m = 0; m < pCtx->mgt_table_type_desc_length; m++)  {
 											pCtx->psip_ptr[pCtx->pid]->psip_index++;
 										}
 									}
 									pCtx->mgt_desc_length = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0xf) << 8;
 									pCtx->mgt_desc_length |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-									DBG_PRINT("MGT desc bytes = 0x%04x\n", pCtx->mgt_desc_length);
+									DBG_MSG("MGT desc bytes = 0x%04x\n", pCtx->mgt_desc_length);
 									for (m = 0; m < pCtx->mgt_desc_length; m++)  {
 										pCtx->psip_ptr[pCtx->pid]->psip_index++;
 									}
@@ -3391,59 +3328,59 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->mgt_crc |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 16;
 									pCtx->mgt_crc |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 									pCtx->mgt_crc |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-									DBG_PRINT("MGT CRC = 0x%08x, %d, %d\n", pCtx->mgt_crc, pCtx->psip_ptr[pCtx->pid]->psip_offset, pCtx->psip_ptr[pCtx->pid]->psip_index);
-									DBG_PRINT("\n");
+									DBG_MSG("MGT CRC = 0x%08x, %d, %d\n", pCtx->mgt_crc, pCtx->psip_ptr[pCtx->pid]->psip_offset, pCtx->psip_ptr[pCtx->pid]->psip_index);
+									DBG_MSG("\n");
 								}
 								else if (pCtx->psip_ptr[pCtx->pid]->psip_table_id == 0xc8 && pCtx->vct_version_number != pCtx->vct_last_version_number)  {
 									pCtx->vct_last_version_number = pCtx->vct_version_number;
 									pCtx->psip_ptr[pCtx->pid]->psip_index = 0;
 									pCtx->vct_num_channels = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-									DBG_PRINT("TVCT number of channels = %d\n\n", pCtx->vct_num_channels);
+									DBG_MSG("TVCT number of channels = %d\n\n", pCtx->vct_num_channels);
 									for (k = 0; k < pCtx->vct_num_channels; k++)  {
-										DBG_PRINT("TVCT short name = ");
+										DBG_MSG("TVCT short name = ");
 										for (m = 0; m < 14; m++)  {
 											if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] != 0)  {
-												DBG_PRINT("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
+												DBG_MSG("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
 											}
 											else  {
 												pCtx->psip_ptr[pCtx->pid]->psip_index++;
 											}
 										}
-										DBG_PRINT("\n");
+										DBG_MSG("\n");
 										pCtx->vct_major_channel_number = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0xf) << 8;
 										pCtx->vct_major_channel_number |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] & 0xfc;
 										pCtx->vct_major_channel_number >>= 2;
 										pCtx->vct_minor_channel_number = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x3) << 8;
 										pCtx->vct_minor_channel_number |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("TVCT channel number = %d.%d\n", pCtx->vct_major_channel_number, pCtx->vct_minor_channel_number);
+										DBG_MSG("TVCT channel number = %d.%d\n", pCtx->vct_major_channel_number, pCtx->vct_minor_channel_number);
 										pCtx->vct_modulation_mode = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("TVCT modulation mode = 0x%02x\n", pCtx->vct_modulation_mode);
+										DBG_MSG("TVCT modulation mode = 0x%02x\n", pCtx->vct_modulation_mode);
 										pCtx->psip_ptr[pCtx->pid]->psip_index += 4;
 										pCtx->vct_channel_tsid = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 										pCtx->vct_channel_tsid |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("TVCT channel TSID = 0x%04x\n", pCtx->vct_channel_tsid);
+										DBG_MSG("TVCT channel TSID = 0x%04x\n", pCtx->vct_channel_tsid);
 										pCtx->vct_program_number = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 										pCtx->vct_program_number |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("TVCT program number = 0x%04x\n", pCtx->vct_program_number);
+										DBG_MSG("TVCT program number = 0x%04x\n", pCtx->vct_program_number);
 										pCtx->psip_ptr[pCtx->pid]->psip_index++;
 										pCtx->vct_service_type = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x3f;
-										DBG_PRINT("TVCT service type = 0x%04x\n", pCtx->vct_service_type);
+										DBG_MSG("TVCT service type = 0x%04x\n", pCtx->vct_service_type);
 										pCtx->vct_source_id = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 										pCtx->vct_source_id |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("TVCT source id = 0x%04x\n", pCtx->vct_source_id);
+										DBG_MSG("TVCT source id = 0x%04x\n", pCtx->vct_source_id);
 										pCtx->vct_desc_length = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x3) << 8;
 										pCtx->vct_desc_length |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("TVCT desc bytes = 0x%04x\n\n", pCtx->vct_desc_length);
+										DBG_MSG("TVCT desc bytes = 0x%04x\n\n", pCtx->vct_desc_length);
 										while (pCtx->vct_desc_length != 0)  {
 											if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] == 0xa0)  {
 												pCtx->psip_ptr[pCtx->pid]->psip_index++;
 												pCtx->ecnd_desc_length = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
 												pCtx->vct_desc_length -= (pCtx->ecnd_desc_length + 2);
-												DBG_PRINT("Extended Channel Name = ");
+												DBG_MSG("Extended Channel Name = ");
 												for (m = 0; m < pCtx->ecnd_desc_length; m++)  {
-													DBG_PRINT("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
+													DBG_MSG("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
 												}
-												DBG_PRINT("\n\n");
+												DBG_MSG("\n\n");
 											}
 											else if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] == 0xa1)  {
 												pCtx->psip_ptr[pCtx->pid]->psip_index++;
@@ -3451,24 +3388,24 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 												pCtx->vct_desc_length -= (pCtx->sld_desc_length + 2);
 												pCtx->sld_pcr_pid = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x1f) << 8;
 												pCtx->sld_pcr_pid |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-												DBG_PRINT("SLD PCR pCtx->pid = 0x%04x\n", pCtx->sld_pcr_pid);
+												DBG_MSG("SLD PCR pCtx->pid = 0x%04x\n", pCtx->sld_pcr_pid);
 												pCtx->sld_num_elements = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
 												for (m = 0; m < pCtx->sld_num_elements; m++)  {
 													pCtx->sld_stream_type = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-													DBG_PRINT("SLD stream type = 0x%02x\n", pCtx->sld_stream_type);
+													DBG_MSG("SLD stream type = 0x%02x\n", pCtx->sld_stream_type);
 													pCtx->sld_elementary_pid = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x1f) << 8;
 													pCtx->sld_elementary_pid |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-													DBG_PRINT("SLD elementary pCtx->pid = 0x%04x\n", pCtx->sld_elementary_pid);
-													DBG_PRINT("SLD language code = ");
+													DBG_MSG("SLD elementary pCtx->pid = 0x%04x\n", pCtx->sld_elementary_pid);
+													DBG_MSG("SLD language code = ");
 													for (n = 0; n < 3; n++)  {
 														if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] != 0)  {
-															DBG_PRINT("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
+															DBG_MSG("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
 														}
 														else  {
 															pCtx->psip_ptr[pCtx->pid]->psip_index++;
 														}
 													}
-													DBG_PRINT("\n\n");
+													DBG_MSG("\n\n");
 												}
 											}
 											else if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] == 0xa2)  {
@@ -3478,7 +3415,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									}
 									pCtx->vct_add_desc_length = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x3) << 8;
 									pCtx->vct_add_desc_length |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-									DBG_PRINT("TVCT additional desc bytes = 0x%04x\n", pCtx->vct_add_desc_length);
+									DBG_MSG("TVCT additional desc bytes = 0x%04x\n", pCtx->vct_add_desc_length);
 									for (m = 0; m < pCtx->vct_add_desc_length; m++)  {
 										pCtx->psip_ptr[pCtx->pid]->psip_index++;
 									}
@@ -3486,8 +3423,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->vct_crc |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 16;
 									pCtx->vct_crc |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 									pCtx->vct_crc |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-									DBG_PRINT("TVCT CRC = 0x%08x, %d, %d\n", pCtx->vct_crc, pCtx->psip_ptr[pCtx->pid]->psip_offset, pCtx->psip_ptr[pCtx->pid]->psip_index);
-									DBG_PRINT("\n");
+									DBG_MSG("TVCT CRC = 0x%08x, %d, %d\n", pCtx->vct_crc, pCtx->psip_ptr[pCtx->pid]->psip_offset, pCtx->psip_ptr[pCtx->pid]->psip_index);
+									DBG_MSG("\n");
 								}
 								else if (pCtx->psip_ptr[pCtx->pid]->psip_table_id == 0xca)  {
 								}
@@ -3495,49 +3432,49 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->eit_last_version_number[pCtx->psip_pid_table[pCtx->pid] & 0x3] = pCtx->eit_version_number;
 									pCtx->psip_ptr[pCtx->pid]->psip_index = 0;
 									pCtx->eit_num_events = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-									DBG_PRINT("EIT%d events defined = %d\n\n", pCtx->psip_pid_table[pCtx->pid] & 0x3, pCtx->eit_num_events);
+									DBG_MSG("EIT%d events defined = %d\n\n", pCtx->psip_pid_table[pCtx->pid] & 0x3, pCtx->eit_num_events);
 									for (k = 0; k < pCtx->eit_num_events; k++)  {
 										pCtx->eit_event_id = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0x3f) << 8;
 										pCtx->eit_event_id |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("EIT event id = 0x%04x\n", pCtx->eit_event_id);
+										DBG_MSG("EIT event id = 0x%04x\n", pCtx->eit_event_id);
 										pCtx->eit_start_time = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 24;
 										pCtx->eit_start_time |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 16;
 										pCtx->eit_start_time |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 										pCtx->eit_start_time |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("EIT start time = 0x%08x\n", pCtx->eit_start_time);
+										DBG_MSG("EIT start time = 0x%08x\n", pCtx->eit_start_time);
 										pCtx->eit_length_secs = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0xf) << 16;
 										pCtx->eit_length_secs |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] << 8;
 										pCtx->eit_length_secs |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("EIT length in seconds = %d\n", pCtx->eit_length_secs);
+										DBG_MSG("EIT length in seconds = %d\n", pCtx->eit_length_secs);
 										pCtx->eit_title_length = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("EIT title length = 0x%02x\n", pCtx->eit_title_length);
+										DBG_MSG("EIT title length = 0x%02x\n", pCtx->eit_title_length);
 										for (m = 0; m < pCtx->eit_title_length; m++)  {
 											if ((pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] >= 0x20) && (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] < 0x7f))  {
-												DBG_PRINT("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index]);
+												DBG_MSG("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index]);
 											}
 											pCtx->psip_ptr[pCtx->pid]->psip_index++;
 										}
-										DBG_PRINT("\n");
+										DBG_MSG("\n");
 										pCtx->eit_desc_length = (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++] & 0xf) << 8;
 										pCtx->eit_desc_length |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
-										DBG_PRINT("EIT desc bytes = 0x%04x\n", pCtx->eit_desc_length);
+										DBG_MSG("EIT desc bytes = 0x%04x\n", pCtx->eit_desc_length);
 										while (pCtx->eit_desc_length != 0)  {
 											if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] == 0x81)  {
-												DBG_PRINT("AC-3 Audio Descriptor\n");
+												DBG_MSG("AC-3 Audio Descriptor\n");
 												pCtx->psip_ptr[pCtx->pid]->psip_index++;
 												pCtx->ac3_desc_length = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
 												pCtx->eit_desc_length -= (pCtx->ac3_desc_length + 2);
 												pCtx->psip_ptr[pCtx->pid]->psip_index += pCtx->ac3_desc_length;
 											}
 											else if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] == 0x86)  {
-												DBG_PRINT("Caption Service Descriptor\n");
+												DBG_MSG("Caption Service Descriptor\n");
 												pCtx->psip_ptr[pCtx->pid]->psip_index++;
 												pCtx->csd_desc_length = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
 												pCtx->eit_desc_length -= (pCtx->csd_desc_length + 2);
 												pCtx->psip_ptr[pCtx->pid]->psip_index += pCtx->csd_desc_length;
 											}
 											else if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] == 0x87)  {
-												DBG_PRINT("Content Advisory Descriptor\n");
+												DBG_MSG("Content Advisory Descriptor\n");
 												pCtx->psip_ptr[pCtx->pid]->psip_index++;
 												pCtx->cad_desc_length = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
 												pCtx->eit_desc_length -= (pCtx->cad_desc_length + 2);
@@ -3547,16 +3484,16 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 												pCtx->psip_ptr[pCtx->pid]->psip_index++;
 												pCtx->rcd_desc_length = pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
 												pCtx->eit_desc_length -= (pCtx->rcd_desc_length + 2);
-												DBG_PRINT("RCD information = ");
+												DBG_MSG("RCD information = ");
 												for (m = 0; m < pCtx->rcd_desc_length; m++)  {
-													DBG_PRINT("0x%02x, ", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
+													DBG_MSG("0x%02x, ", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
 												}
-												DBG_PRINT("\n");
+												DBG_MSG("\n");
 											}
 										}
-										DBG_PRINT("\n");
+										DBG_MSG("\n");
 									}
-									DBG_PRINT("\n");
+									DBG_MSG("\n");
 								}
 								else if (pCtx->psip_ptr[pCtx->pid]->psip_table_id == 0xcd)  {
 								}
@@ -3596,9 +3533,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									break;
 								case 0:
 									pCtx->psip_ptr[pCtx->pid]->psip_section_length |= buffer[i];
-#if 0
-									DBG_PRINT("Section length = %d\r\n", pCtx->psip_ptr[pCtx->pid]->psip_section_length);
-#endif
+
+									DBG_MSG("Section length = %d\r\n", pCtx->psip_ptr[pCtx->pid]->psip_section_length);
 									pCtx->psip_ptr[pCtx->pid]->psip_section_parse = 6;
 									break;
 							}
@@ -3781,7 +3717,7 @@ DisplayStat(MpegTsDemuxCtx *self)
 		clockDiff = (self->current_pcr / 27 - (current_ts - self->start_ts)) / TIME_MILLISEC;
 		snprintf (stat_message, 511, "<%s:xport: pCtx->pcr=%s  pcr_arriv=%s stream=%s t_bytes=%lld ts=%9d  crnt=%9d  avg=%9d",
 				stat_time, stat_pcr, stat_pcr_arrival_time, stat_stream_time, totalbytes, (unsigned int)self->current_tsrate * 8, (int)rr, (int)average_bitrate);
-		DBG_PRINT("StrmId=%d %s\n", self->nInstanceId, stat_message);
+		DBG_MSG("StrmId=%d %s\n", self->nInstanceId, stat_message);
 
 		self->last_totalbytes = totalbytes;
 		self->last_ts = current_ts;
@@ -3794,17 +3730,17 @@ DisplayStat(MpegTsDemuxCtx *self)
 void Demux_DumpStat(MpegTsDemuxCtx *pCtx)
 {
 	char szTmp[128] = {0};
-	DBG_PRINT("\nDemux Statistics:\n");
+	DBG_MSG("\nDemux Statistics:\n");
 
 	Clock2HMSF(pCtx->current_pcr / 27, szTmp,127);
-	DBG_PRINT("Current PCR=%s\n", szTmp);
+	DBG_MSG("Current PCR=%s\n", szTmp);
 
 	Clock2HMSF(pCtx->crnt_vid_pts, szTmp,127);
-	DBG_PRINT("Current Vid PTS=%s",  szTmp);
+	DBG_MSG("Current Vid PTS=%s",  szTmp);
 	Clock2HMSF(pCtx->crnt_aud_pts, szTmp,127);
-	DBG_PRINT("  Current Aud PTS=%s\n",  szTmp);
+	DBG_MSG("  Current Aud PTS=%s\n",  szTmp);
 
-	DBG_PRINT("Sent Pkts Vids=%d Aud=%d\n", pCtx->VidChunkCnt, pCtx->AudChunkCnt);
+	DBG_MSG("Sent Pkts Vids=%d Aud=%d\n", pCtx->VidChunkCnt, pCtx->AudChunkCnt);
 }
 
 
@@ -3992,28 +3928,28 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	DBG_PRINT("xport Transport Stream Demuxer 1.01\n");
-	DBG_PRINT("program = %d, video channel = %d, audio channel = %d\n", pCtx->program, pCtx->video_channel, pCtx->audio_channel);
+	DBG_MSG("xport Transport Stream Demuxer 1.01\n");
+	DBG_MSG("program = %d, video channel = %d, audio channel = %d\n", pCtx->program, pCtx->video_channel, pCtx->audio_channel);
 	demux_mpeg2_transport_init(pCtx);
 
 	while(!feof(fp))  {
 		length = fread(&buffer[0], 1, 16384, fp);
 		demux_mpeg2_transport(pCtx, length, &buffer[0]);
 	}
-	DBG_PRINT("\n");
+	DBG_MSG("\n");
 	for(i = 0; i < 0x2000; i++)  {
 		if(pCtx->pid_counter[i] != 0)  {
-			DBG_PRINT("packets for pCtx->pid %4d <0x%04x> = %d, first = %d, last = %d\n", i, i, pCtx->pid_counter[i], pCtx->pid_first_packet[i], pCtx->pid_last_packet[i]);
+			DBG_MSG("packets for pCtx->pid %4d <0x%04x> = %d, first = %d, last = %d\n", i, i, pCtx->pid_counter[i], pCtx->pid_first_packet[i], pCtx->pid_last_packet[i]);
 		}
 	}
 	if(pCtx->video_progressive == 0)  {
-		DBG_PRINT("coded pictures = %d, video fields = %d\n", pCtx->coded_frames, pCtx->video_fields);
+		DBG_MSG("coded pictures = %d, video fields = %d\n", pCtx->coded_frames, pCtx->video_fields);
 	}
 	else  {
-		DBG_PRINT("coded pictures = %d, video frames = %d\n", pCtx->coded_frames, pCtx->video_fields);
+		DBG_MSG("coded pictures = %d, video frames = %d\n", pCtx->coded_frames, pCtx->video_fields);
 	}
 	temp = (int)((pCtx->last_audio_pts + pCtx->last_audio_pts_diff) - (pCtx->last_video_pts + pCtx->last_video_pts_diff));
-	DBG_PRINT("Ending audio to video PTS difference = %d ticks, %f milliseconds\n", temp, (double)temp / 90.0);
+	DBG_MSG("Ending audio to video PTS difference = %d ticks, %f milliseconds\n", temp, (double)temp / 90.0);
 	fclose(fp);
 	if(pCtx->parse_only == FALSE)  {
 		fclose(pCtx->fpoutvideo);

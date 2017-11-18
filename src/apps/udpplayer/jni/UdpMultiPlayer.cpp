@@ -67,29 +67,21 @@ int CUdpMultiPlayer::startServer(std::string url)
 	return 0;
 }
 
-int CUdpMultiPlayer::getAudioData(std::string url, char *pData, int numBytes)
+int CUdpMultiPlayer::getData(std::string url, int substrmId, char *pData, int numBytes)
 {
 	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
 	if(pNode) {
-		return pNode->getAudioData((char *)pData, numBytes);
+		return pNode->getData(substrmId, (char *)pData, numBytes);
 	}
 	return 0;
 }
 
-int CUdpMultiPlayer::getVideoData(std::string url, char *pData, int numBytes)
-{
-	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
-	if(pNode) {
-		return pNode->getVideoData((char *)pData, numBytes);
-	}
-	return 0;
-}
 
-long long CUdpMultiPlayer::getAudioPts(std::string url)
+long long CUdpMultiPlayer::getPts(std::string url, int substrmId)
 {
 	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
 	if(pNode) {
-		return pNode->getAudioPts();
+		return pNode->getPts(substrmId);
 	}
 	return 0;
 }
@@ -103,29 +95,12 @@ long long CUdpMultiPlayer::getClkUs(std::string url)
 	return 0;
 }
 
-long long CUdpMultiPlayer::getVideoPts(std::string url)
-{
-	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
-	if(pNode) {
-		return pNode->getVideoPts();
-	}
-	return 0;
-}
 
-int  CUdpMultiPlayer::getVideoCodecType(std::string url)
+int  CUdpMultiPlayer::getCodecType(std::string url, int substrmId)
 {
 	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
 	if(pNode) {
-		return pNode->getVideoCodecType();
-	}
-	return 0;
-
-}
-int  CUdpMultiPlayer::getAudioCodecType(std::string url)
-{
-	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
-	if(pNode) {
-		return pNode->getAudioCodecType();
+		return pNode->getCodecType(substrmId);
 	}
 	return 0;
 
@@ -149,21 +124,12 @@ int CUdpMultiPlayer::getStatus(std::string url, std::string &status)
 	}
 }
 
-int  CUdpMultiPlayer::getNumAvailVideoFrames(std::string url)
+int  CUdpMultiPlayer::getNumAvailFrames(std::string url, int substrmId)
 {
 	int res = 0;
 	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
 	if(pNode) {
-		res = pNode->getNumAvailVideoFrames();
-	}
-	return res;
-}
-int  CUdpMultiPlayer::getNumAvailAudioFrames(std::string url)
-{
-	int res = 0;
-	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
-	if(pNode) {
-		res = pNode->getNumAvailAudioFrames();
+		res = pNode->getNumAvailFrames(substrmId);
 	}
 	return res;
 }

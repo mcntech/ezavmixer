@@ -20,9 +20,20 @@ void CUdpServerNode::stop()
 	m_pClntBridge->StopStreaming();
 }
 
-int CUdpServerNode::getVideoData(char *pData, int numBytes)
+int CUdpServerNode::subscribeStream(int nStrmId)
+{
+	return 0;
+}
+
+int CUdpServerNode::unsubscribeStream(int nStrmId)
+{
+	return 0;
+}
+
+int CUdpServerNode::getData(int nStrmId, char *pData, int numBytes)
 {
 	int res = 0;
+	// TODO: Get pConnSrc corresponding to nStrmId
 	ConnCtxT *pConnSrc = (ConnCtxT *)m_pClntBridge->mDataLocatorVideo.pAddress;
 	if(pConnSrc) {
 		res =  pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulVidFlags, &m_llVidPts);
@@ -30,27 +41,12 @@ int CUdpServerNode::getVideoData(char *pData, int numBytes)
 	return res;
 }
 
-long long CUdpServerNode::getVideoPts()
+long long CUdpServerNode::getPts(int nStrmId)
 {
 	return m_llVidPts;
 }
 
-int CUdpServerNode::getAudioData(char *pData, int numBytes)
-{
-	int res = 0;
-	ConnCtxT *pConnSrc = (ConnCtxT *)m_pClntBridge->mDataLocatorAudio.pAddress;
-	if(pConnSrc) {
-		res = pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulAudFlags, &m_llAudPts);
-	}
-	return res;
-}
-
-long long CUdpServerNode::getAudioPts()
-{
-	return m_llAudPts;
-}
-
-int CUdpServerNode::getAudioCodecType()
+int CUdpServerNode::getCodecType(int nStrmId)
 {
 	return 0;
 }
@@ -60,12 +56,8 @@ long long CUdpServerNode::getClkUs()
 	return 0;
 }
 
-int CUdpServerNode::getVideoCodecType()
-{
-	return 0;
-}
 
-int CUdpServerNode::getNumAvailVideoFrames()
+int CUdpServerNode::getNumAvailFrames(int nStrmId)
 {
 	int res = 0;
 	ConnCtxT *pConnSrc = (ConnCtxT *)m_pClntBridge->mDataLocatorVideo.pAddress;
@@ -76,19 +68,6 @@ int CUdpServerNode::getNumAvailVideoFrames()
 			res = 1;
 	}
 	return res;
-}
-int CUdpServerNode::getNumAvailAudioFrames()
-{
-	int res = 0;
-	ConnCtxT *pConnSrc = (ConnCtxT *)m_pClntBridge->mDataLocatorAudio.pAddress;
-	if(pConnSrc) {
-		if(pConnSrc->IsEmpty(pConnSrc))
-			res = 0;
-		else
-			res = 1;
-	}
-	return res;
-
 }
 
 int CUdpServerNode::getStatus(std::string &status)

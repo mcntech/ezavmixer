@@ -1,8 +1,11 @@
-#ifndef __RTSP_CLNT_BRIDGE_H__
-#define __RTSP_CLNT_BRIDGE_H__
+#ifndef __UDP_CLNT_BRIDGE_H__
+#define __UDP_CLNT_BRIDGE_H__
 
 #include "StrmInBridgeBase.h"
 #include "UdpCallback.h"
+#include "strmcomp.h"
+
+#define  UDP_SRC_PREFIX   "udp://"
 
 #define MAX_NAME_SIZE	256
 
@@ -12,20 +15,15 @@ public:
 	CUdpClntBridge(const char *lpszRspServer, int fEnableAud, int fEnableVid, int *pResult , CUdpServerCallback *pCallback=NULL);
 	virtual ~CUdpClntBridge();
 
+	// lpszRspServer : udp://<mcast/unicast address:port>
 	int StartClient(const char *lpszRspServer);
     virtual int StartStreaming(void);
     virtual int StopStreaming(void);
 
-	static void *DoVideoBufferProcessing(void *pObj);
-	static void *DoAudioBufferProcessing(void *pObj);
+	static void *DoBufferProcessing(void *pObj);
 
-	static void *DoAudioRtcpProcessing(void *pArg);
-	static void *DoVideoRtcpProcessing(void *pArg);
-
-	long ProcessVideoFrame();
-	long ProcessAudioFrame();
-	int InitAudioStreaming();
-	int InitVideoStreaming();
+	long ProcessFrame();
+	int InitStreaming();
 	void UpdateJitter(int nPktTime);
 
 	void UpdateStat();
@@ -53,26 +51,11 @@ public:
 	long long			m_lAudPts;
 
 #ifdef WIN32
-	HANDLE              m_thrdHandleVideo;
+	HANDLE              m_thrdHandle;
 #else
-	pthread_t			m_thrdHandleVideo;
-#endif
-#ifdef WIN32
-	HANDLE              m_thrdHandleAudio;
-#else
-	pthread_t			m_thrdHandleAudio;
+	pthread_t			m_thrdHandle;
 #endif
 
-#ifdef WIN32
-	HANDLE              m_thrdHandleVideoRtcp;
-#else
-	pthread_t			m_thrdHandleVideoRtcp;
-#endif
-#ifdef WIN32
-	HANDLE              m_thrdHandleAudioRtcp;
-#else
-	pthread_t			m_thrdHandleAudioRtcp;
-#endif
 public:
 	bool             m_fEnableRtcp;
 	int              fEoS;
@@ -91,5 +74,10 @@ public:
 	UDP_SERVER_STATS m_UdpServerStats;
 	int              mTotalAud;
 	int              mTotalVid;
+	StrmCompIf       *m_srcComp;
+	StrmCompIf       *m_demuxComp;
+
+	ConnCtxT          *m_pConnCtxSrcToDemux;
+	ConnCtxT          *m_pConnVidChainSrc;
 };
-#endif //__RTSP_CLNT_BRIDGE_H__
+#endif //__UDP_CLNT_BRIDGE_H__

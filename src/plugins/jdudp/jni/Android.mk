@@ -16,5 +16,6 @@ MY_SRCS := ../src
 LOCAL_SRC_FILES := $(MY_SRCS)/filesrc.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/udprx.cpp
 LOCAL_SRC_FILES += $(MY_SRCS)/xport.cpp
+LOCAL_SRC_FILES += $(MY_SRCS)/strmclock.cpp
 
 include $(BUILD_STATIC_LIBRARY)

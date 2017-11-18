@@ -33,7 +33,7 @@ LOCAL_C_INCLUDES += $(JD_PLUGIN_FOLDER)/streamif/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../core/include
 
 LOCAL_CFLAGS += -DPLATFORM_ANDROID
-LOCAL_MODULE := OnyxPlayerApi
+LOCAL_MODULE := UdpPlayerApi
 
 LOCAL_SRC_FILES := 	UdpMultiPlayer.cpp
 LOCAL_SRC_FILES +=	ServerNodeBase.cpp

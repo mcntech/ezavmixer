@@ -36,16 +36,14 @@ public:
 	CUdpServerNode(CUdpClntBridge *pUdpClntBridge);
 	void start();
 	void stop();
-	int getVideoData(char *pData, int numBytes);
-	int getAudioData(char *pData, int numBytes);
+	int subscribeStream(int nStrmId);
+	int unsubscribeStream(int nStrmId);
+	int getData(int nStrmId, char *pData, int numBytes);
 
-	long long getVideoPts();
-	long long getAudioPts();
+	long long getPts(int nStrmId);
 	long long getClkUs();
-	int getAudioCodecType();
-	int getVideoCodecType();
-	int getNumAvailVideoFrames();
-	int getNumAvailAudioFrames();
+	int getCodecType(int nStrmId);
+	int getNumAvailFrames(int nStrmId);
 
 	int getStatus(std::string &status);
 

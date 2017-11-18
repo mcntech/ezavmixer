@@ -89,7 +89,7 @@ int Java_com_mcntech_udpplayer_UdpPlayerApi_stopServer(JNIEnv *env, jobject self
 	env->ReleaseStringUTFChars(jurl, szUrl);
 }
 
-jint Java_com_mcntech_udpplayer_UdpPlayerApi_getVideoFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jobject buf, jint numBytes, jint nTimeoutMs)
+jint Java_com_mcntech_udpplayer_UdpPlayerApi_getFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jint strmid, jobject buf, jint numBytes, jint nTimeoutMs)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -99,23 +99,9 @@ jint Java_com_mcntech_udpplayer_UdpPlayerApi_getVideoFrame(JNIEnv *env, jobject 
 	int result = 0;
 
 	uint8_t* rawjBytes = static_cast<uint8_t*>(env->GetDirectBufferAddress(buf));
-	result =  pPlayer->getVideoData(url, (char *)rawjBytes,numBytes);
+	result =  pPlayer->getData(url, strmid, (char *)rawjBytes,numBytes);
 	//pthread_mutex_unlock(&g_mutex);
 	return result;
-}
-
-jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getVideoPts(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
-{
-	const char *szUrl = env->GetStringUTFChars(jurl, 0);
-	std::string url = szUrl;
-
-	//pthread_mutex_lock(&g_mutex);
-	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
-	jlong pts = 0;
-
-	pts = pPlayer->getVideoPts(url);
-	env->ReleaseStringUTFChars(jurl, szUrl);
-	return pts;
 }
 
 jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getClockUs(JNIEnv *env, jobject self, jlong ctx,jstring jurl)
@@ -132,7 +118,7 @@ jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getClockUs(JNIEnv *env, jobject se
 	return clock;
 }
 
-jint Java_com_mcntech_udpplayer_UdpPlayerApi_getVidCodecType(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jint Java_com_mcntech_udpplayer_UdpPlayerApi_getCodecType(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jint strmid)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -141,45 +127,14 @@ jint Java_com_mcntech_udpplayer_UdpPlayerApi_getVidCodecType(JNIEnv *env, jobjec
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	jint nCodecType = 1;
 
-	nCodecType = pPlayer->getVideoCodecType(url);
+	nCodecType = pPlayer->getCodecType(url, strmid);
 
 	env->ReleaseStringUTFChars(jurl, szUrl);
 	return nCodecType;
 }
 
-jint Java_com_mcntech_udpplayer_UdpPlayerApi_getAudCodecType(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
-{
-	const char *szUrl = env->GetStringUTFChars(jurl, 0);
-	std::string url = szUrl;
 
-	//pthread_mutex_lock(&g_mutex);
-	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
-	jint nCodecType = 1;
-
-	nCodecType = pPlayer->getAudioCodecType(url);
-
-	env->ReleaseStringUTFChars(jurl, szUrl);
-	return nCodecType;
-}
-
-jint Java_com_mcntech_udpplayer_UdpPlayerApi_getAudioFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jobject buf, jint numBytes, jint nTimeoutMs)
-{
-	const char *szUrl = env->GetStringUTFChars(jurl, 0);
-	std::string url = szUrl;
-
-	//pthread_mutex_lock(&g_mutex);
-	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
-	int result = 0;
-
-	uint8_t* rawjBytes = static_cast<uint8_t*>(env->GetDirectBufferAddress(buf));
-	result =  pPlayer->getAudioData(url, (char *)rawjBytes,numBytes);
-
-	env->ReleaseStringUTFChars(jurl, szUrl);
-	//pthread_mutex_unlock(&g_mutex);
-	return result;
-}
-
-jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getAudioPts(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getPts(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jint strmid)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -187,13 +142,13 @@ jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getAudioPts(JNIEnv *env, jobject s
 	//pthread_mutex_lock(&g_mutex);
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	jlong pts = 0;
-	pts = pPlayer->getAudioPts(url);
+	pts = pPlayer->getPts(url, strmid);
 
 	env->ReleaseStringUTFChars(jurl, szUrl);
 	return pts;
 }
 
-jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getNumAvailVideoFrames(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getNumAvailFrames(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jint strmid)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
@@ -201,20 +156,7 @@ jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getNumAvailVideoFrames(JNIEnv *env
 	//pthread_mutex_lock(&g_mutex);
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	jlong pts = 0;
-	pts = pPlayer->getNumAvailVideoFrames(url);
-
-	env->ReleaseStringUTFChars(jurl, szUrl);
-	return pts;
-}
-jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getNumAvailAudioFrames(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
-{
-	const char *szUrl = env->GetStringUTFChars(jurl, 0);
-	std::string url = szUrl;
-
-	//pthread_mutex_lock(&g_mutex);
-	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
-	jlong pts = 0;
-	pts = pPlayer->getNumAvailAudioFrames(url);
+	pts = pPlayer->getNumAvailFrames(url, strmid);
 
 	env->ReleaseStringUTFChars(jurl, szUrl);
 	return pts;

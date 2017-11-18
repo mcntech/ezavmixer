@@ -6,15 +6,13 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
-#include "JdRtspSrv.h"
-#include "JdRtspClntRec.h"
-#include "JdRfc3984.h"
 #include "JdDbg.h"
 #include "strmconn.h"
-#include "h264parser.h"
 #include "UdpClntBridge.h"
-#include "JdRfc5391.h"
 #include "JdOsal.h"
+#include "filesrc.h"
+#include "udprx.h"
+#include "xport.h"
 #include <time.h>
 
 static int modDbgLevel = CJdDbg::LVL_TRACE;
@@ -54,8 +52,7 @@ CUdpClntBridge::CUdpClntBridge(
 	m_lAudMaxLen = MAX_AUD_FRAME_SIZE;
 	m_lAudPts = 0;
 
-	m_thrdHandleAudio = 0;
-	m_thrdHandleVideo = 0;
+	m_thrdHandle = 0;
 	m_usVidSeqNum = 0;
 	m_fDisCont = 1;
 
@@ -68,8 +65,6 @@ CUdpClntBridge::CUdpClntBridge(
 
 	m_pCallback = pCallback;
 	mJitterUpdateTime = 0;
-	m_thrdHandleVideoRtcp = NULL;
-	m_thrdHandleAudioRtcp = NULL;
 	m_fEnableRtcp = true;
 	*pResult = StartClient(lpszRspServer);
 
@@ -87,80 +82,56 @@ CUdpClntBridge::~CUdpClntBridge()
 int CUdpClntBridge::StartClient(const char *lpszRspServer)
 {
 	TRACE_ENTER
-#if 0
+
+	int nResult = 0;
 	int nClock;
 	unsigned char ucPlType;
-	int nResult = 0;
-	rtp_port_alloc_t rtp_port;
-	InitRtpPort(rtp_port);
 
-	JDBG_LOG(CJdDbg::LVL_TRACE, ("Open rtsp connection for %s",lpszRspServer));
-	strncpy(m_szRemoteHost, lpszRspServer, MAX_NAME_SIZE - 1);
+	DemuxSelectProgramT m_demuxArgs;
+	DemuxSelectProgramT *pdemuxArgs = &m_demuxArgs;
 
-	int res = m_pRtspClnt->Open(lpszRspServer);
-	if(res < 0){
-		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to open rtsp connection for %s",lpszRspServer));
+	//
+	// Open Source
+	//
+	if (strncmp(lpszRspServer, UDP_SRC_PREFIX, strlen(UDP_SRC_PREFIX)) == 0 ) {
+		JDBG_LOG(CJdDbg::LVL_TRACE, ("Using UDP Source"));
+		m_srcComp = udprxCreate();
+	} else {
+		JDBG_LOG(CJdDbg::LVL_TRACE, ("Using File Source"));
+		m_srcComp = filesrcCreate();
+	}
+	if( m_srcComp->Open(m_srcComp, lpszRspServer) != 0) {
 		nResult = -1;
-		if(m_pCallback) {
-			m_pCallback->NotifyStateChange(m_szRemoteHost, RTSP_SERVER_ERROR);
-		}
 		goto EXIT;
 	}
 
-	m_nVidCodec = m_pRtspClnt->GetVideoCodec(&nClock, &ucPlType);
-	JDBG_LOG(CJdDbg::LVL_ERR, ("Open successful codecs aud=%d vid=%d", m_nAudCodec, m_nVidCodec));
-	if (m_nVidCodec ==  RTP_CODEC_MP2T) {
-		JDBG_LOG(CJdDbg::LVL_ERR, ("Setup:RTP_CODEC_MP2T"));
-		m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
-		//CreateTsOutputPin();
-	} else {
-		if(m_nVidCodec == RTP_CODEC_H264) {
-			int nSpsSize = 256;
-			unsigned char Sps[256];
-			if(m_pRtspClnt->GetVideoCodecConfig(Sps, &nSpsSize)) {
-				H264::cParser Parser;
-				if(Parser.ParseSequenceParameterSetMin(Sps,nSpsSize, &m_lWidth, &m_lHeight) != 0){
-					JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to parse stream nSpsSize=%d",nSpsSize));
-				}
-			}
+	//
+	// Open Demux
+	//
+	// TODO
+	m_pConnCtxSrcToDemux = CreateStrmConn(DMA_READ_SIZE, 64);
+	m_demuxComp = demuxCreate();
+	m_demuxComp->Open(m_demuxComp, NULL);
+	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SELECT_PROGRAM, (char *)pdemuxArgs);
 
-			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_H264"));
-			m_pRtspClnt->SendSetup("video", rtp_port.usVRtpPort, rtp_port.usVRtcpPort);
-			CreateH264OutputPin();
-			m_pVRtcp = new CJdRtcp(false, nClock, ucPlType);
-		}
+	strncpy(m_szRemoteHost, lpszRspServer, MAX_NAME_SIZE - 1);
 
-		m_nAudCodec = m_pRtspClnt->GetAudioCodec(&nClock, &ucPlType);;
-		if(m_nAudCodec == RTP_CODEC_AAC) {
-			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_AAC"));
-			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
-			CreateMP4AOutputPin();
-			m_pARtcp = new CJdRtcp(false, nClock, ucPlType);
-		} else if(m_nAudCodec == RTP_CODEC_PCMU) {
-			JDBG_LOG(CJdDbg::LVL_TRACE, ("Setup:RTP_CODEC_PCMU"));
-			m_pRtspClnt->SendSetup("audio", rtp_port.usARtpPort, rtp_port.usARtcpPort);
-			CreatePCMUOutputPin();
-			m_pARtcp = new CJdRtcp(false, nClock, ucPlType);
-		}
+	// TODO
+	// CreateH264OutputPin();
 
-		if(m_pCallback) {
-			RTSP_SERVER_DESCRIPTION Descript = {0};
-			m_pCallback->NotifyStateChange(m_szRemoteHost, RTSP_SERVER_SETUP);
-		}
+	// CreateMP4AOutputPin();
+	if(m_pCallback) {
+		m_pCallback->NotifyStateChange(m_szRemoteHost, UDP_SERVER_SETUP);
 	}
 
 EXIT:
 	TRACE_LEAVE
 	return nResult;
-#else
-	return 0;
-#endif
 }
 
-long CUdpClntBridge::ProcessVideoFrame()
+long CUdpClntBridge::ProcessFrame()
 {
 	//TRACE_ENTER
-#if 0
 	unsigned ulFlags = 0;
 	unsigned long dwBytesRead = 0;
 	long lQboxBytes = 0;
@@ -169,7 +140,7 @@ long CUdpClntBridge::ProcessVideoFrame()
 	long lStrmType = 0;
 	long fEof = 0;
 	int fDone = 0;
-
+#if 0
 	ConnCtxT   *pConnSink = (ConnCtxT *)mDataLocatorVideo.pAddress;
 	while(pConnSink->IsFull(pConnSink) && m_fRun){
 		JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Buffer Full"));
@@ -221,112 +192,33 @@ long CUdpClntBridge::ProcessVideoFrame()
 	JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Write %d PTS=%lld", m_lUsedLen, m_lPts));
 
 Exit:
-
+#endif
 	//TRACE_LEAVE
 	return lResult;
-#else
-	return 0;
-#endif
 }
 
-long CUdpClntBridge::ProcessAudioFrame()
-{
-	//TRACE_ENTER
-#if 0
-	unsigned ulFlags = 0;
-	long lResult = 0;
-	// Find Stream Type
-	long lStrmType = 0;
-	long fEof = 0;
-	int fDone = 0;
-	RTP_PKT_T *pRtpHdr;
-	ConnCtxT   *pConnSink = (ConnCtxT *)mDataLocatorAudio.pAddress;
-	while(pConnSink->IsFull(pConnSink) && m_fRun){
-		JD_OAL_SLEEP(1)
-	}
 
-	char *pWrite = m_pAudData;
-	long lBytesRead = m_pAudRfcRtp->GetData(m_pRtspClnt->m_pARtp, pWrite, m_lAudMaxLen);
-	if(lBytesRead <= 0){
-		lResult = -1; goto Exit;
-	}
-	pRtpHdr = m_pRfcRtp->GetRtnHdr();
-	fDone = pRtpHdr->m;
-	mTotalAud += lBytesRead;
-	//ChkPktLoss(pRtpHdr);
-	m_usAudSeqNum++;
-	if (m_usAudSeqNum  != pRtpHdr->usSeqNum) {
-		// skip starting pkt
-		if(m_usAudSeqNum != 1)	 {
-			m_UdpServerStats.nAudPktLoss++;
-		}
-		m_usAudSeqNum = pRtpHdr->usSeqNum;
-	}
-
-	pConnSink->Write(pConnSink, m_pAudData, lBytesRead,  ulFlags, m_lPts * 1000 / 90);
-	JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Write %d PTS=%lld", m_lUsedLen, m_lPts));
-Exit:
-	//TRACE_LEAVE
-	return lResult;
-#else
-	return 0;
-#endif
-}
-
-int CUdpClntBridge::InitAudioStreaming()
+int CUdpClntBridge::InitStreaming()
 {
 	TRACE_ENTER
-#if 0
-	if(m_fEnableAud) {
-		m_pRtspClnt->SendPlay("audio");
-	}
-	TRACE_LEAVE
-#endif
-    return 0;
-}
-
-int CUdpClntBridge::InitVideoStreaming()
-{
-	TRACE_ENTER
-#if 0
-	m_fRun = 1;
-	if(m_fEnableVid) {
-		m_pRtspClnt->SendPlay("video");
-	}
-#endif
+	m_srcComp->Start(m_srcComp);
+	m_demuxComp->Start(m_demuxComp);
 	TRACE_LEAVE
     return 0;
 }
 
-void *CUdpClntBridge::DoVideoBufferProcessing(void *pArg)
+void *CUdpClntBridge::DoBufferProcessing(void *pArg)
 {
 	TRACE_ENTER
-#if 0
+
 	CUdpClntBridge *pCtx = (CUdpClntBridge *)pArg;
 	while(pCtx->m_fRun) {
-		if(pCtx->ProcessVideoFrame() != 0){
+		if(pCtx->ProcessFrame() != 0){
 			break;
 		}
 	}
-
 	TRACE_LEAVE
-#endif
-    return NULL;
-}
 
-void *CUdpClntBridge::DoAudioBufferProcessing(void *pArg)
-{
-	TRACE_ENTER
-#if 0
-	CUdpClntBridge *pCtx = (CUdpClntBridge *)pArg;
-	while(pCtx->m_fRun) {
-		if(pCtx->ProcessAudioFrame() != 0){
-			break;
-		}
-	}
-
-	TRACE_LEAVE
-#endif
     return NULL;
 }
 
@@ -334,54 +226,46 @@ void *CUdpClntBridge::DoAudioBufferProcessing(void *pArg)
 int CUdpClntBridge::StartStreaming()
 {
 	TRACE_ENTER
-#if 0
 	m_fRun = 1;
-	if(m_fEnableVid && GetVideoConn() != NULL) {
-		InitVideoStreaming();
-		jdoalThreadCreate((void **)&m_thrdHandleVideo, DoVideoBufferProcessing, this);
-		if(m_fEnableRtcp)
-			jdoalThreadCreate((void **)&m_thrdHandleVideoRtcp, DoVideoRtcpProcessing, this);
-	} else {
-		JDBG_LOG(CJdDbg::LVL_ERR, ("Video not started"));
-	}
-	if(m_fEnableAud && GetAudioConn() != NULL) {
-		InitAudioStreaming();
-		jdoalThreadCreate((void **)&m_thrdHandleAudio, DoAudioBufferProcessing, this);
-		if(m_fEnableRtcp)
-			jdoalThreadCreate((void **)&m_thrdHandleAudioRtcp, DoAudioRtcpProcessing, this);
-	} else {
-		JDBG_LOG(CJdDbg::LVL_ERR, ("Audio not started m_fEnableAud=%d", m_fEnableAud));
-	}
+	InitStreaming();
+	jdoalThreadCreate((void **)&m_thrdHandle, DoBufferProcessing, this);
 
 	TRACE_LEAVE
-#endif
     return 0;
 }
 
 int CUdpClntBridge::StopStreaming()
 {
 	TRACE_ENTER
-#if 0
 	void *res;
 	m_fRun = 0;
-	if(m_pRtspClnt){
-		m_pRtspClnt->Close();
+
+	if(m_srcComp) {
+		m_srcComp->Stop(m_srcComp);
 	}
-	if(m_thrdHandleVideo){
-		jdoalThreadJoin((void *)m_thrdHandleVideo, 3000);
+
+	if(m_demuxComp) {
+		m_demuxComp->Stop(m_demuxComp);
 	}
-	if(m_thrdHandleAudio){
-		jdoalThreadJoin((void *)m_thrdHandleAudio, 3000);
+
+
+	// TODO Dis Conn
+
+	if(m_srcComp) {
+		m_srcComp->Close(m_srcComp);
+		m_srcComp->Delete(m_srcComp);
+		m_srcComp = NULL;
 	}
-	if(m_thrdHandleVideoRtcp){
-		jdoalThreadJoin((void *)m_thrdHandleVideoRtcp, 3000);
+
+	if(m_demuxComp) {
+		m_demuxComp->Delete(m_demuxComp);
+		m_demuxComp = NULL;
 	}
-	if(m_thrdHandleAudioRtcp){
-		jdoalThreadJoin((void *)m_thrdHandleAudioRtcp, 3000);
+	if(m_thrdHandle){
+		jdoalThreadJoin((void *)m_thrdHandle, 3000);
 	}
 
 	TRACE_LEAVE
-#endif
     return 0;
 }
 

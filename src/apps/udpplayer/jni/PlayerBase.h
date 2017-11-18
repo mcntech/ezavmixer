@@ -34,15 +34,11 @@ public:
 
 	virtual int  addServer(std::string url) = 0;
 	virtual int  removeServer(std::string url) = 0;
-	virtual int  getAudioData(std::string url, char *pData, int numBytes) = 0;
-	virtual int  getVideoData(std::string url, char *pData, int numBytes) = 0;
-	virtual long long getAudioPts(std::string url) = 0;
-	virtual long long getVideoPts(std::string url) = 0;
+	virtual int  getData(std::string url,  int substrmId, char *pData, int numBytes) = 0;
+	virtual long long getPts(std::string url, int substrmId) = 0;
 	virtual long long getClkUs(std::string url) = 0;
-	virtual int  getVideoCodecType(std::string url) = 0;
-	virtual int  getAudioCodecType(std::string url) = 0;
-	virtual int  getNumAvailVideoFrames(std::string url) = 0;
-	virtual int  getNumAvailAudioFrames(std::string url) = 0;
+	virtual int  getCodecType(std::string url, int substrmId) = 0;
+	virtual int  getNumAvailFrames(std::string url, int substrmId) = 0;
 
 	virtual int startServer(std::string url) = 0;
 	virtual int stopServer(std::string url) = 0;

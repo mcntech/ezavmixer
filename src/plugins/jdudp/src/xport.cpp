@@ -7,6 +7,7 @@ Transport Stream Demultiplexer
 #include <string.h>
 #include <assert.h>
 #include <sys/stat.h>
+#include <map>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -327,6 +328,7 @@ typedef struct
 	unsigned long long	pcr;
 	int             fDisCont;
 	int             nInstanceId;
+	std::map<int, ConnCtxT *> mConnections;
 } MpegTsDemuxCtx;
 
 typedef void *(*thrdStartFcnPtr) (void *);
@@ -426,6 +428,34 @@ int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int len
 }
 
 
+int WriteStream(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int length, int nPid)
+{
+	int dataLen = item_size * length;
+	JdDbg(CJdDbg::DBGLVL_STRM, ("strmid=%d length=%d",nPid, dataLen));
+
+	ConnCtxT *pConn = pCtx->mConnections[nPid];
+	if(pConn) {
+		unsigned long ulFlags = 0;
+		if(pCtx->fEoS) {
+			ulFlags = OMX_BUFFERFLAG_EOS;
+		}
+		if(pCtx->fDisCont){
+			ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
+		}
+		while(pConn->IsFull(pCtx->pConnVidOut)){
+			JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"))
+	#ifdef WIN32
+			Sleep(1);
+	#else
+			usleep(1000);
+	#endif
+		}
+		JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
+		pConn->Write(pConn, (char *)pData, dataLen,  ulFlags, pCtx->crnt_vid_pts * 1000 / 90);
+	}
+	return 0;
+}
+
 int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 {
 	static int nInstanceId = 1;
@@ -500,11 +530,14 @@ int demuxSetInputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn)
 int demuxSetOutputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn)
 {
 	MpegTsDemuxCtx *pCtx = (MpegTsDemuxCtx*)pComp->pCtx;
+	pCtx->mConnections[nConnNum] = pConn;
+/*
 	if(nConnNum == 0) {
 		pCtx->pConnAudOut = pConn;
 	} else {
 		pCtx->pConnVidOut = pConn;
 	}
+*/
 	return 0;
 }
 

@@ -34,11 +34,11 @@ import android.view.TextureView;
 import android.widget.LinearLayout;
 
 
-import com.mcntech.rtspplayer.CodecInfo;
-import com.mcntech.rtspplayer.Configure;
-import com.mcntech.rtspplayer.OnyxPlayerApi;
 import com.mcntech.rtspplyer.R;
 import com.mcntech.sphereview.VrRenderDb.DecPipeBase;
+import com.mcntech.udpplayer.CodecInfo;
+import com.mcntech.udpplayer.Configure;
+import com.mcntech.udpplayer.UdpPlayerApi;
 
 
 
@@ -137,7 +137,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 					@Override
 					public void run() {
 						//OnyxPlayerApi.initialize();
-						OnyxPlayerApi.addServer(mUrl);
+						UdpPlayerApi.addServer(mUrl);
 		 				mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
 					}
  				}).start();
@@ -152,7 +152,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 			 				mExitPlayerLoop = true;
 			 				waitForVideoStop();
 			 			}
-						OnyxPlayerApi.deinitialize();
+						UdpPlayerApi.deinitialize();
 					}
  				}).start();
 		    }
@@ -227,7 +227,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 		
 		@Override
 		public void run() {
-			mCodecType = OnyxPlayerApi.getVidCodecType(mUrl);
+			mCodecType = UdpPlayerApi.getVidCodecType(mUrl);
 			try {
 				if(mCodecType == 2 ) {
 					Log.d(LOG_TAG, "decoder create video/hevc");
@@ -246,7 +246,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 				return;
 			}
 
-			OnyxPlayerApi.startServer(mUrl);
+			UdpPlayerApi.startServer(mUrl);
 			
 			ByteBuffer[] inputBuffers = null;
 			ByteBuffer[] outputBuffers = null;
@@ -262,9 +262,9 @@ public class VrDecodeToTexture implements DecPipeBase {
 			//long startMs = System.currentTimeMillis();
 			if(mfSendCsd0DuringInit) {
 				while (!Thread.interrupted() && !mExitPlayerLoop) {
-					mFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mUrl);
+					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl);
 					if (!isEOS && mFramesInBuff > 0) {
-						sampleSize = OnyxPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
+						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
 						if (sampleSize > 0) {
 							byte [] arCsd0 = null;
 							mBuff.limit(sampleSize);
@@ -308,7 +308,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 			}
 			
 			while (!Thread.interrupted() && !mExitPlayerLoop) {
-				mFramesInBuff = OnyxPlayerApi.getNumAvailVideoFrames(mUrl);
+				mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl);
 				if (!isEOS && mFramesInBuff > 0) {
 
 					int inIndex;
@@ -334,9 +334,9 @@ public class VrDecodeToTexture implements DecPipeBase {
 						if(fFrameAvail) {
 							fFrameAvail = false;
 						} else {
-							sampleSize = OnyxPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
+							sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
 						}
-						mPts = OnyxPlayerApi.getVideoPts(mUrl);// + 500000; // video pipeline delay
+						mPts = UdpPlayerApi.getVideoPts(mUrl);// + 500000; // video pipeline delay
 						if (sampleSize <= 0) {
 							// We shouldn't stop the playback at this point, just pass the EOS
 							// flag to decoder, we will get it again from the
@@ -373,7 +373,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 					break;
 				}
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:End outIndex=" + outIndex);
-				long sysclk = OnyxPlayerApi.getClockUs(mUrl);
+				long sysclk = UdpPlayerApi.getClockUs(mUrl);
 				switch (outIndex) {
 				case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
 					Log.d(LOG_TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
@@ -400,7 +400,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 									interrupt();
 									break;
 								}
-								sysclk = OnyxPlayerApi.getClockUs(mUrl);
+								sysclk = UdpPlayerApi.getClockUs(mUrl);
 							}
 						}
 						//Log.d(LOG_TAG, "releaseOutputBuffer:Begin surfacevalid=" + surface.isValid());

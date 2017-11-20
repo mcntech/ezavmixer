@@ -29,7 +29,7 @@
 		</receiver>  -->
             
         <activity
-            android:name="com.mcntech.rtspplayer.MainActivity"
+            android:name="com.mcntech.udpplayer.MainActivity"
             android:label="@string/app_name"
             android:screenOrientation="landscape" >
             <intent-filter>
@@ -69,20 +69,20 @@
              
  -->
           <activity
-            android:name="com.mcntech.rtspplayer.SinglePlayerActivity"
+            android:name="com.mcntech.udpplayer.SinglePlayerActivity"
                         android:label="@string/app_name"
             android:screenOrientation="landscape" >
         
         </activity>
         
         <activity
-            android:name="com.mcntech.rtspplayer.MultiPlayerActivity"
+            android:name="com.mcntech.udpplayer.MultiPlayerActivity"
             android:label="@string/app_name"
             android:screenOrientation="landscape" >
         </activity>
                 
         <activity
-            android:name="com.mcntech.rtspplayer.VrPlayerActivity"
+            android:name="com.mcntech.udpplayer.VrPlayerActivity"
             android:label="@string/app_name"
             android:screenOrientation="landscape" >
         </activity>

@@ -325,6 +325,11 @@ struct MPEG2_PAT_SECTION :
 		printf("transport_stream_id = %d\n",transport_stream_id);
 	}
 #endif
+
+   bool IsVesionChanged(unsigned char * pbBuf){
+		int new_version_number              =   PAT_VERSION_NUMBER_VALUE            (pbBuf) ;
+		return new_version_number != version_number;
+	}
     bool Parse(unsigned char * pbBuf // points to first byte of psi section
                         )
     {
@@ -387,6 +392,10 @@ struct MPEG2_PMT_SECTION :
     int number_of_elementary_streams; //derived
     ELEMENTARY_STREAM_INFO elementary_stream_info[MAX_ELEMENTARY_STREAM_NUMBER_IN_PMT_SECTION];
 
+    bool IsVesionChanged(unsigned char * pbBuf){
+    	int new_version_number              =   PMT_VERSION_NUMBER_VALUE            (pbBuf) ;
+    	return new_version_number != version_number;
+    }
     bool Parse(unsigned char * pbBuf) // points to first byte of psi section)
     {
         // common psi fields

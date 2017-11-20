@@ -1,32 +1,36 @@
 #ifndef __UDP_CLNT_BRIDGE_H__
 #define __UDP_CLNT_BRIDGE_H__
 
-#include "StrmInBridgeBase.h"
+//#include "StrmInBridgeBase.h"
+#include <map>
+#include "JdOsal.h"
 #include "UdpCallback.h"
 #include "strmcomp.h"
+#include "TsPsi.h"
 
 #define  UDP_SRC_PREFIX   "udp://"
 
 #define MAX_NAME_SIZE	256
 
-class CUdpClntBridge : public CStrmInBridgeBase
+class CUdpClntBridge //: public CStrmInBridgeBase
 {
 public:
 	CUdpClntBridge(const char *lpszRspServer, int fEnableAud, int fEnableVid, int *pResult , CUdpServerCallback *pCallback=NULL);
 	virtual ~CUdpClntBridge();
 
-	// lpszRspServer : udp://<mcast/unicast address:port>
-	int StartClient(const char *lpszRspServer);
     virtual int StartStreaming(void);
     virtual int StopStreaming(void);
 
 	static void *DoBufferProcessing(void *pObj);
 
 	long ProcessFrame();
-	int InitStreaming();
 	void UpdateJitter(int nPktTime);
 
 	void UpdateStat();
+
+	void UpdatePmt(int nPid, const char *pData, int len );
+	void UpdatePmt(const char *pData, int len);
+	void psiJson();
 public:
 	//CJdRtspClntSession	*m_pRtspClnt;
 	CUdpServerCallback  *m_pCallback;
@@ -57,6 +61,15 @@ public:
 #endif
 
 public:
+	int                   m_nUiCmd;
+	int                   m_fRun;
+	int                   m_fEnableAud;
+	int                   m_fEnableVid;
+
+	long                  m_lWidth;
+	long                  m_lHeight;
+
+public:
 	bool             m_fEnableRtcp;
 	int              fEoS;
 	int              frameCounter;
@@ -79,5 +92,7 @@ public:
 
 	ConnCtxT          *m_pConnCtxSrcToDemux;
 	ConnCtxT          *m_pConnVidChainSrc;
+	struct MPEG2_PAT_SECTION                *m_pat;
+	std::map<int, struct MPEG2_PMT_SECTION *> m_pmts;
 };
 #endif //__UDP_CLNT_BRIDGE_H__

@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include "filesrc.h"
 #include "JdDbg.h"
+#include "JdOsal.h"
 
 typedef void *(*thrdStartFcnPtr) (void *);
 static int modDbgLevel = CJdDbg::LVL_TRACE;
@@ -51,11 +52,7 @@ static void threadFileSrcRead(void *threadsArg)
 		// Wait for buffer availability
 		while(pCtx->pConn->IsFull(pCtx->pConn) && pCtx->nUiCmd != STRM_CMD_STOP){
 			//JdDbg(CJdDbg::DBGLVL_WARN,("start=%d end=%d",pCtx->pConn->pdpCtx->start, pCtx->pConn->pdpCtx->end))
-#ifdef WIN32
-			Sleep(1);
-#else
-			usleep(1000);
-#endif
+			JD_OAL_SLEEP(1)
 		}
 
 		if(pCtx->nUiCmd == STRM_CMD_STOP) {
@@ -82,7 +79,7 @@ static void threadFileSrcRead(void *threadsArg)
 		pCtx->pConn->Write(pCtx->pConn, pData, ret, ulFlags, 0);
 
 		if(ulFlags & OMX_BUFFERFLAG_EOS || pCtx->nUiCmd == STRM_CMD_STOP){
-			JdDbg(CJdDbg::DBGLVL_SETUP, ("Exiting. nFlags=0x%x, nUiCmd=0x%x",ulFlags, pCtx->nUiCmd));
+			JDBG_LOG(CJdDbg::LVL_SETUP, ("Exiting. nFlags=0x%x, nUiCmd=0x%x",ulFlags, pCtx->nUiCmd));
 			pCtx->fStreaming = 0;
 			break;
 		}
@@ -97,7 +94,7 @@ int FileSrcInit(FileSrcCtx *pCtx)
 	pCtx->pipeEmptyBuff = 0;
 	pCtx->pipeFillBuff = 0;
 	pCtx->nBlockSize = (21 * 188);
-	pCtx->fLoop = 1;
+	pCtx->fLoop = 0;
 	return 0;
 }
 

@@ -1,5 +1,5 @@
 /*
-Transport Stream Demultiplexer
+** Transport Stream Demultiplexer
 */
 
 #include <stdio.h>
@@ -18,7 +18,7 @@ typedef __int64 int64_t;
 #include <pthread.h>
 #include <unistd.h>
 #endif
-
+#include "JdOsal.h"
 // Undefining the following falg creates original xport binary
 
 #include "xport.h"
@@ -29,8 +29,10 @@ typedef __int64 int64_t;
 #include "strmclock.h"
 #include "JdDbg.h"
 
-//#define DBG_MSG printf
-#define DBG_MSG(...)
+#define DBG_MSG printf
+//#define DBG_MSG(...)
+
+static int modDbgLevel = CJdDbg::LVL_TRACE;
 
 #define TRUE		1
 #define FALSE		0
@@ -326,10 +328,17 @@ typedef struct
 	unsigned long long	pcr;
 	int             fDisCont;
 	int             nInstanceId;
+
+	pat_callback_t pPatCallback;
+	pmt_callback_t pPmtCallback;
+	void           *pPsiCallbackCtx;
 	std::map<int, ConnCtxT *> mConnections;
+	std::map<int, int> mPrograms;
 } MpegTsDemuxCtx;
 
 typedef void *(*thrdStartFcnPtr) (void *);
+
+
 
 void	demux_mpeg2_transport_init(MpegTsDemuxCtx *pCtx);
 void	demux_mpeg2_transport_deinit(MpegTsDemuxCtx *pCtx);
@@ -357,8 +366,28 @@ void *OpenWriter(int nStrmId)
 #endif
 }
 
-int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int length, int nStrmId)
+int IsSubscribed(MpegTsDemuxCtx *pCtx, int nPid)
 {
+	return (pCtx->mConnections.find( nPid ) != pCtx->mConnections.end());
+}
+
+int IsProgramPid(MpegTsDemuxCtx *pCtx, int nPid)
+{
+
+	return (pCtx->mPrograms.find( nPid ) != pCtx->mPrograms.end());
+}
+
+pmt_callback_t getCallback(MpegTsDemuxCtx *pCtx, int nPid)
+{
+	std::map<int, int>::iterator it = pCtx->mPrograms.find( nPid );
+	if(it != pCtx->mPrograms.end())
+		return pCtx->pPmtCallback;
+	return NULL;
+}
+
+int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int length, int nPid)
+{
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("WriteData: strmid=%d length=%d",nPid, length));
 #ifdef UNIT_TEST_DEMUX
 	char szTmp1[128] = {0};
 	char szTmp2[128] = {0};
@@ -374,66 +403,11 @@ int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int len
 		fwrite(pData, item_size, length,pCtx->fpoutaudio);
 	}
 #else
-	int dataLen = item_size * length;
-	JdDbg(CJdDbg::DBGLVL_STRM, ("strmid=%d length=%d",nStrmId, dataLen));
-	if(nStrmId == STRM_ID_VID) {
-		unsigned long ulFlags = 0;
-		if(pCtx->fEoS) {
-			ulFlags = OMX_BUFFERFLAG_EOS;
-		}
-		if(pCtx->fDisCont){
-			ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
-		}
-		while(pCtx->pConnVidOut->IsFull(pCtx->pConnVidOut)){
-			JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"))
-#ifdef WIN32
-			Sleep(1);
-#else
-			usleep(1000);
-#endif
-		}
-		JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
-		pCtx->pConnVidOut->Write(pCtx->pConnVidOut, (char *)pData, dataLen,  ulFlags, pCtx->crnt_vid_pts * 1000 / 90);
-		pCtx->VidChunkCnt++;
-	} else {
-		if(pCtx->pConnAudOut) {
-			unsigned long ulFlags = 0;
-			if(pCtx->fEoS) {
-				ulFlags |= OMX_BUFFERFLAG_EOS;
-			}
-			if(pCtx->fDisCont){
-				ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
-			}
-			while(pCtx->pConnAudOut->IsFull(pCtx->pConnAudOut)){
-				JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"));
-#ifdef WIN32
-				Sleep(1);
-#else
-				usleep(1000);
-#endif
-			}
-
-			if(pCtx->aud_end_of_frame) {
-				ulFlags  |= OMX_BUFFERFLAG_ENDOFFRAME;
-			}
-			JdDbg(CJdDbg::DBGLVL_STRM, ("Sending Aud ulFlags=0x%x", ulFlags));
-			pCtx->pConnAudOut->Write(pCtx->pConnAudOut, (char *)pData, dataLen,  ulFlags, pCtx->crnt_aud_pts * 1000 / 90);
-		}
-		pCtx->AudChunkCnt++;
-	}
-#endif
-	return 0;
-}
-
-
-int WriteStream(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int length, int nPid)
-{
-	int dataLen = item_size * length;
-	JdDbg(CJdDbg::DBGLVL_STRM, ("strmid=%d length=%d",nPid, dataLen));
-
 	if(pCtx->mConnections.find( nPid ) != pCtx->mConnections.end()) {
 		ConnCtxT *pConn = pCtx->mConnections[nPid];
 		if(pConn) {
+			int dataLen = item_size * length;
+			JdDbg(CJdDbg::DBGLVL_STRM, ("strmid=%d length=%d",nPid, dataLen));
 			unsigned long ulFlags = 0;
 			if(pCtx->fEoS) {
 				ulFlags = OMX_BUFFERFLAG_EOS;
@@ -441,20 +415,18 @@ int WriteStream(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int l
 			if(pCtx->fDisCont){
 				ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
 			}
-			while(pConn->IsFull(pCtx->pConnVidOut)){
+			while(pConn->IsFull(pConn)){
 				JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"))
-		#ifdef WIN32
-				Sleep(1);
-		#else
-				usleep(1000);
-		#endif
+					JD_OAL_SLEEP(1)
 			}
 			JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
 			pConn->Write(pConn, (char *)pData, dataLen,  ulFlags, pCtx->crnt_vid_pts * 1000 / 90);
 		}
 	}
+#endif
 	return 0;
 }
+
 
 int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 {
@@ -480,6 +452,10 @@ int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 	pCtx->audio_stream_type = 0xFFFF;
 	pCtx->video_stream_type = 0xFFFF;
 
+	pCtx->first_pat = TRUE;
+	pCtx->pPatCallback = NULL;
+	pCtx->pPsiCallbackCtx = NULL;
+	pCtx->pPmtCallback = NULL;
 	demux_mpeg2_transport_init(pCtx);
 }
 
@@ -505,8 +481,32 @@ int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
 			JdDbg(CJdDbg::DBGLVL_SETUP, ("pcr_pid=%d aud_pid=%d vid_pid=%d aud_strm_type=0x%x vid_strm_type=0x%x", pCtx->pcr_pid, pCtx->audio_pid, pCtx->video_pid,pCtx->audio_stream_type, pCtx->video_stream_type));
 		}
 		break;
-	}
 
+		case DEMUX_CMD_SET_PAT_CALLBACK:
+		{
+		pCtx->pPatCallback = (pat_callback_t)pOptionData;
+		}
+		break;
+
+		case DEMUX_CMD_SET_PMT_CALLBACK:
+		{
+			pCtx->pPmtCallback = (pmt_callback_t)pOptionData;
+		}
+		break;
+
+		case DEMUX_CMD_SET_PSI_CALLBACK_CTX:
+		{
+			pCtx->pPsiCallbackCtx = (void *)pOptionData;
+		}
+		break;
+		case DEMUX_CMD_SUBSCRIBE_PROGRAM_PID:
+		{
+			DemuxSubscribeProgramPidT *pgm = (DemuxSubscribeProgramPidT *)pOptionData;
+			int nPid = pgm->nPid;
+			pCtx->mPrograms[nPid] =  1;
+		}
+		break;
+	}
 	return -1;
 }
 
@@ -568,8 +568,8 @@ static void threadDemux(void *threadsArg)
 
 		if(ulFlags & OMX_BUFFERFLAG_EOS) {
 			pCtx->fEoS = 1;
-			WriteData(pCtx, NULL, 1, 0, STRM_ID_VID);
-			WriteData(pCtx, NULL, 1, 0, STRM_ID_AUD);
+			//WriteData(pCtx, NULL, 1, 0, STRM_ID_VID);
+			//WriteData(pCtx, NULL, 1, 0, STRM_ID_AUD);
 		} else {
 			demux_mpeg2_transport(pCtx, length, (unsigned char *)pData);
 		}
@@ -693,7 +693,7 @@ void parse_ac3_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int l
 
 	if(pCtx->parse_only == FALSE)  {
 		if(audio_synced == TRUE)  {
-			WriteData(pCtx, es_ptr, 1, length, STRM_ID_AUD);
+			WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 		}
 	}
 	if (audio_synced == FALSE)  {
@@ -889,16 +889,16 @@ void parse_ac3_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int l
 										DBG_MSG("First Audio PTS = 0x%08x, %d\n", (unsigned int)frame_buffer_pts[j], (unsigned int)(frame_buffer_pts[j] - pts_aligned));
 									}
 									if (pCtx->parse_only == FALSE)  {
-										WriteData(pCtx, &frame_buffer_start, 1, 1, STRM_ID_AUD);
+										WriteData(pCtx, &frame_buffer_start, 1, 1, pCtx->pid);
 									}
 								}
 								if (pCtx->parse_only == FALSE)  {
-									WriteData(pCtx, &frame_buffer[j][0], 1, frame_buffer_length[j], STRM_ID_AUD);
+									WriteData(pCtx, &frame_buffer[j][0], 1, frame_buffer_length[j], pCtx->pid);
 								}
 							}
 						}
 						if (pCtx->parse_only == FALSE)  {
-							WriteData(pCtx, es_ptr - 1, 1, length - i, STRM_ID_AUD);
+							WriteData(pCtx, es_ptr - 1, 1, length - i, pCtx->pid);
 						}
 					}
 					else  {
@@ -939,7 +939,7 @@ void parse_ac3_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int l
 			es_ptr[i+1] = tmp;
 		}
 	}
-	WriteData(pCtx, es_ptr, 1, length, STRM_ID_AUD);
+	WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 #endif
 }
 
@@ -976,7 +976,7 @@ void parse_mp2_audio(unsigned char *es_ptr, unsigned int length, unsigned long l
 
 	if(pCtx->parse_only == FALSE)  {
 		if(audio_synced == TRUE)  {
-			WriteData(pCtx, es_ptr, 1, length, STRM_ID_AUD);
+			WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 		}
 	}
 	if (audio_synced == FALSE)  {
@@ -1166,16 +1166,16 @@ void parse_mp2_audio(unsigned char *es_ptr, unsigned int length, unsigned long l
 										DBG_MSG("First Audio PTS = 0x%08x, %d\n", (unsigned int)frame_buffer_pts[j], (unsigned int)(frame_buffer_pts[j] - pCtx->pts_aligned));
 									}
 									if (pCtx->parse_only == FALSE)  {
-										WriteData(pCtx, &frame_buffer_start, 1, 1, STRM_ID_AUD);
+										WriteData(pCtx, &frame_buffer_start, 1, 1, pCtx->pid);
 									}
 								}
 								if (pCtx->parse_only == FALSE)  {
-									WriteData(pCtx, &frame_buffer[j][0], 1, frame_buffer_length[j], STRM_ID_AUD);
+									WriteData(pCtx, &frame_buffer[j][0], 1, frame_buffer_length[j], pCtx->pid);
 								}
 							}
 						}
 						if (pCtx->parse_only == FALSE)  {
-							WriteData(pCtx, es_ptr - 1, 1, length - i, STRM_ID_AUD);
+							WriteData(pCtx, es_ptr - 1, 1, length - i, pCtx->pid);
 						}
 					}
 					else  {
@@ -1345,7 +1345,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 		if (sample != 0)  {
 			DBG_MSG("LPCM sample resync, adding %d samples\n", channels - sample);
 			for (i = 0; i < (channels - sample); i++)  {
-				WriteData(pCtx, &null_bytes[0], 1, sample_bytes, STRM_ID_AUD);
+				WriteData(pCtx, &null_bytes[0], 1, sample_bytes, pCtx->pid);
 			}
 			sample = 0;
 		}
@@ -1358,7 +1358,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 		switch (sample)  {
 			case 0:
 				if(pCtx->parse_only == FALSE)  {
-					WriteData(pCtx, es_ptr, 1, sample_bytes, STRM_ID_AUD);
+					WriteData(pCtx, es_ptr, 1, sample_bytes, pCtx->pid);
 				}
 				es_ptr += sample_bytes;
 				i += sample_bytes;
@@ -1369,7 +1369,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 				break;
 			case 1:
 				if(pCtx->parse_only == FALSE)  {
-					WriteData(pCtx, es_ptr, 1, sample_bytes, STRM_ID_AUD);
+					WriteData(pCtx, es_ptr, 1, sample_bytes, pCtx->pid);
 				}
 				es_ptr += sample_bytes;
 				i += sample_bytes;
@@ -1380,7 +1380,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 				break;
 			case 2:
 				if(pCtx->parse_only == FALSE && pCtx->lpcm_mode == FALSE)  {
-					WriteData(pCtx, es_ptr, 1, sample_bytes, STRM_ID_AUD);
+					WriteData(pCtx, es_ptr, 1, sample_bytes, pCtx->pid);
 				}
 				es_ptr += sample_bytes;
 				i += sample_bytes;
@@ -1391,7 +1391,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 				break;
 			case 3:
 				if(pCtx->parse_only == FALSE && pCtx->lpcm_mode == FALSE)  {
-					WriteData(pCtx, es_ptr, 1, sample_bytes, STRM_ID_AUD);
+					WriteData(pCtx, es_ptr, 1, sample_bytes, pCtx->pid);
 				}
 				es_ptr += sample_bytes;
 				i += sample_bytes;
@@ -1402,7 +1402,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 				break;
 			case 4:
 				if(pCtx->parse_only == FALSE && pCtx->lpcm_mode == FALSE)  {
-					WriteData(pCtx, es_ptr, 1, sample_bytes, STRM_ID_AUD);
+					WriteData(pCtx, es_ptr, 1, sample_bytes, pCtx->pid);
 				}
 				es_ptr += sample_bytes;
 				i += sample_bytes;
@@ -1413,7 +1413,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 				break;
 			case 5:
 				if(pCtx->parse_only == FALSE && pCtx->lpcm_mode == FALSE)  {
-					WriteData(pCtx, es_ptr, 1, sample_bytes, STRM_ID_AUD);
+					WriteData(pCtx, es_ptr, 1, sample_bytes, pCtx->pid);
 				}
 				es_ptr += sample_bytes;
 				i += sample_bytes;
@@ -1424,7 +1424,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 				break;
 			case 6:
 				if(pCtx->parse_only == FALSE && pCtx->lpcm_mode == FALSE)  {
-					WriteData(pCtx, es_ptr, 1, sample_bytes, STRM_ID_AUD);
+					WriteData(pCtx, es_ptr, 1, sample_bytes, pCtx->pid);
 				}
 				es_ptr += sample_bytes;
 				i += sample_bytes;
@@ -1435,7 +1435,7 @@ void parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 				break;
 			case 7:
 				if(pCtx->parse_only == FALSE && pCtx->lpcm_mode == FALSE)  {
-					WriteData(pCtx, es_ptr, 1, sample_bytes, STRM_ID_AUD);
+					WriteData(pCtx, es_ptr, 1, sample_bytes, pCtx->pid);
 				}
 				es_ptr += sample_bytes;
 				i += sample_bytes;
@@ -1458,7 +1458,7 @@ void parse_aac_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int l
 {
 	pCtx->crnt_aud_pts = pts;
 	pCtx->aud_end_of_frame = end_of_frame;
-	WriteData(pCtx, es_ptr, 1, length, STRM_ID_AUD);
+	WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 }
 
 void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int dts)
@@ -1547,12 +1547,12 @@ void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int
 						gop_header[3] |= (pictures >> 1) & 0x1f;
 						gop_header[4] |= (pictures << 7) & 0x80;
 						if(middle_length == 0x55555555)  {
-							WriteData(pCtx, start_es_ptr, 1, i, STRM_ID_VID);
+							WriteData(pCtx, start_es_ptr, 1, i, pCtx->pid);
 						}
 						else  {
-							WriteData(pCtx, middle_es_ptr, 1, middle_length - (length - i), STRM_ID_VID);
+							WriteData(pCtx, middle_es_ptr, 1, middle_length - (length - i), pCtx->pid);
 						}
-						WriteData(pCtx, (unsigned char *)&gop_header, 1, 9, STRM_ID_VID);
+						WriteData(pCtx, (unsigned char *)&gop_header, 1, 9, pCtx->pid);
 						middle_es_ptr = es_ptr;
 						middle_length = length - i - 1;
 						whole_buffer = FALSE;
@@ -1569,7 +1569,7 @@ void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int
 				DBG_MSG("Sequence Header found\n");
 				DBG_MSG("%d frames before first Sequence Header\n", picture_count);
 				if(pCtx->parse_only == FALSE)  {
-					WriteData(pCtx, (unsigned char *)&header, 1, 3, STRM_ID_VID);
+					WriteData(pCtx, (unsigned char *)&header, 1, 3, pCtx->pid);
 					middle_es_ptr = es_ptr - 1;
 					middle_length = length - i;
 					whole_buffer = FALSE;
@@ -1707,7 +1707,7 @@ void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int
 						temp_temporal_reference = (temporal_reference >> 2) & 0xff;
 						if(gop_found == FALSE)  {
 							if(pCtx->parse_only == FALSE)  {
-								WriteData(pCtx, &temp_temporal_reference, 1, 1, STRM_ID_VID);
+								WriteData(pCtx, &temp_temporal_reference, 1, 1, pCtx->pid);
 							}
 							*(es_ptr - 1) = (unsigned char)(((temporal_reference & 0x3) << 6) | (parse & 0x3f));
 						}
@@ -1891,7 +1891,7 @@ void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int
 					middle_length = length - (i + 1);
 				}
 				else  {
-					WriteData(pCtx, start_es_ptr, 1, i - 3, STRM_ID_VID);
+					WriteData(pCtx, start_es_ptr, 1, i - 3, pCtx->pid);
 					whole_buffer = FALSE;
 					middle_es_ptr = es_ptr;
 					middle_length = length - i - 1;
@@ -1903,10 +1903,10 @@ void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int
 	if(pCtx->parse_only == FALSE)  {
 		if(first_sequence == TRUE)  {
 			if(whole_buffer == TRUE)  {
-				WriteData(pCtx, start_es_ptr, 1, length, STRM_ID_VID);
+				WriteData(pCtx, start_es_ptr, 1, length, pCtx->pid);
 			}
 			else  {
-				WriteData(pCtx, middle_es_ptr, 1, middle_length, STRM_ID_VID);
+				WriteData(pCtx, middle_es_ptr, 1, middle_length, pCtx->pid);
 			}
 		}
 	}
@@ -1914,7 +1914,7 @@ void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int
 	pCtx->crnt_vid_pts = pts;
 	pCtx->crnt_vid_dts = dts;
 
-	WriteData(pCtx, es_ptr, 1, length, STRM_ID_VID);
+	WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 #endif
 }
 
@@ -1963,7 +1963,7 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 			if (first_sequence == FALSE && primary_pic_type == 0)  {
 				DBG_MSG("%d frames before first I-frame\n", picture_count);
 				if(pCtx->parse_only == FALSE)  {
-					WriteData(pCtx, (unsigned char *)&header, 1, 5, STRM_ID_VID);
+					WriteData(pCtx, (unsigned char *)&header, 1, 5, pCtx->pid);
 					middle_es_ptr = es_ptr - 1;
 					middle_length = length - i;
 					whole_buffer = FALSE;
@@ -2049,10 +2049,10 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 	if(pCtx->parse_only == FALSE)  {
 		if(first_sequence == TRUE)  {
 			if(whole_buffer == TRUE)  {
-				WriteData(pCtx, start_es_ptr, 1, length, STRM_ID_VID);
+				WriteData(pCtx, start_es_ptr, 1, length, pCtx->pid);
 			}
 			else  {
-				WriteData(pCtx, middle_es_ptr, 1, middle_length, STRM_ID_VID);
+				WriteData(pCtx, middle_es_ptr, 1, middle_length, pCtx->pid);
 			}
 		}
 	}
@@ -2060,7 +2060,7 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 	pCtx->crnt_vid_pts = pts;
 	pCtx->crnt_vid_dts = dts;
 
-	WriteData(pCtx, es_ptr, 1, length, STRM_ID_VID);
+	WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 #endif
 }
 
@@ -2221,7 +2221,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							if (pCtx->pid == 0 && pCtx->payload_unit_start_indicator == 1)  {
 								pCtx->pat_section_start = TRUE;
 							}
-							if (pCtx->pid == pCtx->program_map_pid && pCtx->payload_unit_start_indicator == 1)  {
+							if (/* pCtx->pid == pCtx->program_map_pid*/ IsProgramPid(pCtx, pCtx->pid) && pCtx->payload_unit_start_indicator == 1)  {
 								pCtx->pmt_section_start = TRUE;
 							}
 							if(pCtx->dump_psip == TRUE)  {
@@ -2391,6 +2391,9 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							--pCtx->pat_section_length_parse;
 							switch (pCtx->pat_section_length_parse)  {
 								case 2:
+									if(pCtx->pPatCallback) {
+										pCtx->pPatCallback(pCtx->pPsiCallbackCtx, (char *)(&buffer[i]), pCtx->xport_packet_length);
+									}
 									break;
 								case 1:
 									pCtx->pat_section_length = (buffer[i] & 0xf) << 8;
@@ -2437,7 +2440,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						pCtx->sync_state = FALSE;
 					}
 				}
-				else if (pCtx->pid == pCtx->program_map_pid && pCtx->detect_program_pids)  {
+				else if (/*pCtx->pid == pCtx->program_map_pid*/ IsProgramPid(pCtx, pCtx->pid) && pCtx->detect_program_pids)  {
 					if (pCtx->pmt_xfer_state == TRUE)  {
 						if ((length - i) >= pCtx->pmt_section_length)  {
 							j = pCtx->pmt_section_length;
@@ -2562,6 +2565,10 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								case 2:
 									if (buffer[i] != 0x2)  {
 										pCtx->pmt_section_length_parse = 0;
+									} else {
+										pmt_callback_t pPmtCallback = getCallback(pCtx, pCtx->pid);
+										if(pCtx->pPmtCallback)
+											pPmtCallback(pCtx->pPsiCallbackCtx, pCtx->pid, (char *)(&buffer[i]), pCtx->xport_packet_length);
 									}
 									break;
 								case 1:
@@ -2604,7 +2611,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									break;
 								case 2:
 									pCtx->pcr_pid |= buffer[i];
-									DBG_MSG("PCR PID = %d\r\n", pcr_pid);
+									DBG_MSG("PCR PID = %d\r\n", pCtx->pcr_pid);
 									break;
 								case 1:
 									pCtx->pmt_program_info_length = (buffer[i] & 0xf) << 8;
@@ -2667,7 +2674,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						pCtx->sync_state = FALSE;
 					}
 				}
-				else if (pCtx->pid == pCtx->video_pid && pCtx->transport_scrambling_control == 0) {
+				else if (/*pCtx->pid == pCtx->video_pid &&*/ IsSubscribed(pCtx, pCtx->pid) && pCtx->transport_scrambling_control == 0) {
 					pCtx->video_parse = (pCtx->video_parse << 8) + buffer[i];
 					if (pCtx->video_xfer_state == TRUE)  {
 						if ((length - i) >= pCtx->video_packet_length)  {
@@ -2692,7 +2699,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						}
 						else  {
 							if(pCtx->parse_only == FALSE)  {
-								WriteData(pCtx, &buffer[i], 1, xfer_length, STRM_ID_VID);
+								WriteData(pCtx, &buffer[i], 1, xfer_length, pCtx->pid);
 							}
 						}
 						i = i + xfer_length;
@@ -2756,7 +2763,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									if (pCtx->video_pes_header_length == 0)  {
 										pCtx->video_xfer_state = TRUE;
 										if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-											WriteData(pCtx, &pCtx->video_pes_header[0], 1, pCtx->video_pes_header_index, STRM_ID_VID);
+											WriteData(pCtx, &pCtx->video_pes_header[0], 1, pCtx->video_pes_header_index, pCtx->pid);
 										}
 									}
 									break;
@@ -2808,7 +2815,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									if (pCtx->video_pes_header_length == 0)  {
 										pCtx->video_xfer_state = TRUE;
 										if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-											WriteData(pCtx, &pCtx->video_pes_header[0], 1, pCtx->video_pes_header_index, STRM_ID_VID);
+											WriteData(pCtx, &pCtx->video_pes_header[0], 1, pCtx->video_pes_header_index, pCtx->pid);
 										}
 									}
 									break;
@@ -2879,7 +2886,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									if (pCtx->video_pes_header_length == 0)  {
 										pCtx->video_xfer_state = TRUE;
 										if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-											WriteData(pCtx, &pCtx->video_pes_header[0], 1, pCtx->video_pes_header_index, STRM_ID_VID);
+											WriteData(pCtx, &pCtx->video_pes_header[0], 1, pCtx->video_pes_header_index, pCtx->pid);
 										}
 									}
 									break;
@@ -2893,7 +2900,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								case 0:
 									pCtx->video_xfer_state = TRUE;
 									if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-										WriteData(pCtx, &pCtx->video_pes_header[0], 1, pCtx->video_pes_header_index, STRM_ID_VID);
+										WriteData(pCtx, &pCtx->video_pes_header[0], 1, pCtx->video_pes_header_index, pCtx->pid);
 									}
 									break;
 							}
@@ -2903,7 +2910,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						pCtx->sync_state = FALSE;
 					}
 				}
-				else if (pCtx->pid == pCtx->audio_pid && pCtx->transport_scrambling_control == 0) {
+				else if (/*pCtx->pid == pCtx->audio_pid &&*/ IsSubscribed(pCtx, pCtx->pid) && pCtx->transport_scrambling_control == 0) {
 					pCtx->audio_parse = (pCtx->audio_parse << 8) + buffer[i];
 					if (pCtx->audio_xfer_state == TRUE)  {
 						if ((length - i) >= pCtx->audio_packet_length)  {
@@ -2936,7 +2943,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							}
 							else  {
 								if(pCtx->parse_only == FALSE)  {
-									WriteData(pCtx, &buffer[i], 1, xfer_length, STRM_ID_AUD);
+									WriteData(pCtx, &buffer[i], 1, xfer_length, pCtx->pid);
 								}
 							}
 
@@ -2974,7 +2981,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						--pCtx->xport_packet_length;
 						pCtx->pcr_bytes++;
 						if (((pCtx->audio_parse >= 0x000001c0 && pCtx->audio_parse <= 0x000001df) && (pCtx->audio_stream_type == 0x3 || pCtx->audio_stream_type == 0x4 || pCtx->audio_stream_type == 0x6 || pCtx->audio_stream_type == 0x0f)) || pCtx->audio_parse == 0x000001bd || pCtx->audio_parse == 0x000001fd || pCtx->audio_parse == 0x000001fa)  {
-							DBG_MSG("PES start code = 0x%08x, stream_type = 0x%02x\r\n", pCtx->audio_parse, audio_stream_type);
+							DBG_MSG("PES start code = 0x%08x, stream_type = 0x%02x\r\n", pCtx->audio_parse, pCtx->audio_stream_type);
 							pCtx->audio_packet_length_parse = 2;
 							pCtx->audio_packet_number++;
 							pCtx->audio_pes_header_index = 0;
@@ -3018,7 +3025,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									if (pCtx->audio_pes_header_length == 0)  {
 										pCtx->audio_xfer_state = TRUE;
 										if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-											WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, STRM_ID_AUD);
+											WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 										}
 									}
 									break;
@@ -3066,7 +3073,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 										else  {
 											pCtx->audio_xfer_state = TRUE;
 											if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-												WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, STRM_ID_AUD);
+												WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 											}
 										}
 									}
@@ -3124,7 +3131,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									if (pCtx->audio_pes_header_length == 0)  {
 										pCtx->audio_xfer_state = TRUE;
 										if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-											WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, STRM_ID_AUD);
+											WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 										}
 									}
 									break;
@@ -3144,7 +3151,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->audio_lpcm_header_flags = pCtx->audio_parse & 0xffff;
 									pCtx->audio_xfer_state = TRUE;
 									if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-										WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, STRM_ID_AUD);
+										WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 									}
 									break;
 							}
@@ -3161,7 +3168,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								case 0:
 									pCtx->audio_xfer_state = TRUE;
 									if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
-										WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, STRM_ID_AUD);
+										WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 									}
 									break;
 							}
@@ -3753,14 +3760,13 @@ void demuxDelete(StrmCompIf *pComp)
 	//return 0;
 }
 
-StrmCompIf *
-demuxCreate()
+StrmCompIf *demuxCreate()
 {
 	StrmCompIf *pComp = (StrmCompIf *)malloc(sizeof(StrmCompIf));
 	pComp->pCtx = malloc(sizeof(MpegTsDemuxCtx));
-	memset(pComp->pCtx, 0x00, sizeof(MpegTsDemuxCtx));
-
-	pComp->Open=demuxOpen;
+	//memset(pComp->pCtx, 0x00, sizeof(MpegTsDemuxCtx));
+	pComp->pCtx = new MpegTsDemuxCtx();
+	pComp->Open = demuxOpen;
 	pComp->SetOption = demuxSetOption;
 	pComp->SetInputConn= demuxSetInputConn;
 	pComp->SetOutputConn= demuxSetOutputConn;
@@ -3773,7 +3779,6 @@ demuxCreate()
 
 	return pComp;
 }
-
 
 #ifdef UNIT_TEST_DEMUX
 //int gDbgLevel = 3;

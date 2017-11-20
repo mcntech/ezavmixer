@@ -36,6 +36,7 @@ class CUdpServerCallback
 public:
 	virtual void NotifyStateChange(const char *url, int nState) = 0;
 	virtual void UpdateStats(const char *url, _UDP_SERVER_STATS *) = 0;
+	virtual void NotifyPsiChange(const char *url, const char *pPsiData) = 0;
 };
 
 #endif //__RTSP_CALLBACK_H__

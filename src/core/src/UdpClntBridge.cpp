@@ -6,6 +6,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
+#include <string.h>
+#include <memory.h>
+#include <stdlib.h>
+#include <sys/time.h>
+
 #include "JdDbg.h"
 #include "strmconn.h"
 #include "UdpClntBridge.h"
@@ -14,6 +19,7 @@
 #include "udprx.h"
 #include "xport.h"
 #include <time.h>
+#include "json.hpp"
 
 static int modDbgLevel = CJdDbg::LVL_TRACE;
 #define TRACE_ENTER 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
@@ -26,6 +32,7 @@ static int modDbgLevel = CJdDbg::LVL_TRACE;
 #define MAX_VID_FRAME_SIZE      (1920 * 1080)
 #define MAX_AUD_FRAME_SIZE      (8 * 1024)
 
+using json = nlohmann::json;
 
 CUdpClntBridge::CUdpClntBridge(
 		const char *lpszRspServer,
@@ -33,7 +40,7 @@ CUdpClntBridge::CUdpClntBridge(
 		int fEnableVid,
 		int *pResult,
 		CUdpServerCallback *pCallback)
-		: CStrmInBridgeBase(fEnableAud, fEnableVid)
+		//: CStrmInBridgeBase(fEnableAud, fEnableVid)
 {
 	TRACE_ENTER
 
@@ -66,8 +73,9 @@ CUdpClntBridge::CUdpClntBridge(
 	m_pCallback = pCallback;
 	mJitterUpdateTime = 0;
 	m_fEnableRtcp = true;
-	*pResult = StartClient(lpszRspServer);
-
+	*pResult = 0;
+	strncpy(m_szRemoteHost, lpszRspServer, MAX_NAME_SIZE - 1);
+	m_pat = NULL;
 	TRACE_LEAVE
 }
 
@@ -79,7 +87,88 @@ CUdpClntBridge::~CUdpClntBridge()
 	//}
 }
 
-int CUdpClntBridge::StartClient(const char *lpszRspServer)
+void pmtCallback(void *ctx, int nPid, const char *pData, int len)
+{
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("Received PMT len=%d", len));
+	CUdpClntBridge *pObj = (CUdpClntBridge *)ctx;
+	pObj->UpdatePmt(nPid, pData, len);
+}
+
+void CUdpClntBridge::UpdatePmt(int nPid, const char *pData, int len )
+{
+	std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.find(nPid);
+
+	if(it != m_pmts.end()) {
+		// PMT Exists
+		struct MPEG2_PMT_SECTION *pmt =  it->second;
+		// Check if version change
+		if(!pmt->IsVesionChanged((unsigned char *)pData)) {
+			return;
+		} else {
+			m_pmts.erase(nPid);
+			delete pmt;
+		}
+	}
+
+	MPEG2_PMT_SECTION *pmt = new MPEG2_PMT_SECTION;
+	pmt->Parse((unsigned char *)pData);
+
+	//for(int i=0; i < pmt->number_of_elementary_streams ; i++) {
+	//int nPid = pmt->elementary_stream_info[i].elementary_PID;
+	//pObj->m_demuxComp->SetOutputConn(pObj->m_demuxComp, nPid, (char *)&pgm);
+	m_pmts[nPid] = pmt;
+
+	// Notify
+	if(m_pCallback) {
+		m_pCallback->NotifyPsiChange(m_szRemoteHost, "PMT Changed");
+		psiJson();
+	}
+}
+
+void patCallback(void *ctx, const char *pData, int len)
+{
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("Received PSI len=%d", len));
+	CUdpClntBridge *pObj = (CUdpClntBridge *)ctx;
+	pObj->UpdatePmt(pData, len);
+
+}
+
+void CUdpClntBridge::psiJson()
+{
+	json j;
+	j["program"] = 1;
+	j["pid"] = 1;
+	j["video"] = 3;
+	std::string s = j.dump();
+}
+
+void CUdpClntBridge::UpdatePmt(const char *pData, int len)
+{
+	if(m_pat != NULL) {
+		if(!m_pat->IsVesionChanged((unsigned char *)pData)) {
+			return;
+		} else {
+			delete m_pat;
+			m_pat = NULL;
+		}
+	}
+	m_pat = new MPEG2_PAT_SECTION;
+	m_pat->Parse((unsigned char *)pData);
+	for(int i=0; i< m_pat->number_of_programs ; i++) {
+		//pat.program_descriptor[i].program_number;
+		DemuxSubscribeProgramPidT pgm;
+		pgm.nPid = m_pat->program_descriptor[i].network_or_program_map_PID;
+		pgm.pmt_callback = pmtCallback;
+		m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SUBSCRIBE_PROGRAM_PID, (char *)&pgm);
+	}
+	// Notify
+	if(m_pCallback) {
+		m_pCallback->NotifyPsiChange(m_szRemoteHost, "PMT Changed");
+	}
+	psiJson();
+}
+
+int CUdpClntBridge::StartStreaming()
 {
 	TRACE_ENTER
 
@@ -93,14 +182,14 @@ int CUdpClntBridge::StartClient(const char *lpszRspServer)
 	//
 	// Open Source
 	//
-	if (strncmp(lpszRspServer, UDP_SRC_PREFIX, strlen(UDP_SRC_PREFIX)) == 0 ) {
+	if (strncmp(m_szRemoteHost, UDP_SRC_PREFIX, strlen(UDP_SRC_PREFIX)) == 0 ) {
 		JDBG_LOG(CJdDbg::LVL_TRACE, ("Using UDP Source"));
 		m_srcComp = udprxCreate();
 	} else {
 		JDBG_LOG(CJdDbg::LVL_TRACE, ("Using File Source"));
 		m_srcComp = filesrcCreate();
 	}
-	if( m_srcComp->Open(m_srcComp, lpszRspServer) != 0) {
+	if( m_srcComp->Open(m_srcComp, m_szRemoteHost) != 0) {
 		nResult = -1;
 		goto EXIT;
 	}
@@ -112,9 +201,21 @@ int CUdpClntBridge::StartClient(const char *lpszRspServer)
 	m_pConnCtxSrcToDemux = CreateStrmConn(DMA_READ_SIZE, 64);
 	m_demuxComp = demuxCreate();
 	m_demuxComp->Open(m_demuxComp, NULL);
+	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PAT_CALLBACK, (char *)patCallback);
+	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PMT_CALLBACK, (char *)pmtCallback);
+	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PSI_CALLBACK_CTX, (char *) this);
+
 	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SELECT_PROGRAM, (char *)pdemuxArgs);
 
-	strncpy(m_szRemoteHost, lpszRspServer, MAX_NAME_SIZE - 1);
+	m_srcComp->SetOutputConn(m_srcComp, 0, m_pConnCtxSrcToDemux);
+	m_demuxComp->SetInputConn(m_demuxComp, 0, m_pConnCtxSrcToDemux);
+
+
+	//
+	// Start
+	//
+	m_srcComp->Start(m_srcComp);
+	m_demuxComp->Start(m_demuxComp);
 
 	// TODO
 	// CreateH264OutputPin();
@@ -123,6 +224,9 @@ int CUdpClntBridge::StartClient(const char *lpszRspServer)
 	if(m_pCallback) {
 		m_pCallback->NotifyStateChange(m_szRemoteHost, UDP_SERVER_SETUP);
 	}
+
+	m_fRun = 1;
+	jdoalThreadCreate((void **)&m_thrdHandle, DoBufferProcessing, this);
 
 EXIT:
 	TRACE_LEAVE
@@ -198,15 +302,6 @@ Exit:
 }
 
 
-int CUdpClntBridge::InitStreaming()
-{
-	TRACE_ENTER
-	m_srcComp->Start(m_srcComp);
-	m_demuxComp->Start(m_demuxComp);
-	TRACE_LEAVE
-    return 0;
-}
-
 void *CUdpClntBridge::DoBufferProcessing(void *pArg)
 {
 	TRACE_ENTER
@@ -223,16 +318,6 @@ void *CUdpClntBridge::DoBufferProcessing(void *pArg)
 }
 
 
-int CUdpClntBridge::StartStreaming()
-{
-	TRACE_ENTER
-	m_fRun = 1;
-	InitStreaming();
-	jdoalThreadCreate((void **)&m_thrdHandle, DoBufferProcessing, this);
-
-	TRACE_LEAVE
-    return 0;
-}
 
 int CUdpClntBridge::StopStreaming()
 {

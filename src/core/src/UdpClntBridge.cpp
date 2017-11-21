@@ -135,11 +135,27 @@ void patCallback(void *ctx, const char *pData, int len)
 
 void CUdpClntBridge::psiJson()
 {
-	json j;
-	j["program"] = 1;
-	j["pid"] = 1;
-	j["video"] = 3;
-	std::string s = j.dump();
+	json jPsi = {};
+	for(int j=0; j< m_pat->number_of_programs; j++) {
+		int progNo;
+		struct MPEG2_PMT_SECTION *pmt;
+
+		std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.find(progNo);
+		if(it != m_pmts.end()) {
+			struct MPEG2_PMT_SECTION *pmt = it->second;
+			json jPmt = {};
+			for(int i=0; i < pmt-> number_of_elementary_streams; i++) {
+				json jEs = {};
+				ELEMENTARY_STREAM_INFO *es = &pmt->elementary_stream_info[i];
+				jEs.emplace("pid", es->elementary_PID);
+				jEs.emplace("pid", es->stream_type);
+				// TODO es info other attributes
+				jPmt["streams"][i] = jEs;
+			}
+			jPmt["program", progNo];
+			jPsi[j] = jPmt;
+		}
+	}
 }
 
 void CUdpClntBridge::UpdatePmt(const char *pData, int len)

@@ -29,8 +29,8 @@ typedef __int64 int64_t;
 #include "strmclock.h"
 #include "JdDbg.h"
 
-#define DBG_MSG printf
-//#define DBG_MSG(...)
+//#define DBG_MSG printf
+#define DBG_MSG(...)
 
 static int modDbgLevel = CJdDbg::LVL_TRACE;
 

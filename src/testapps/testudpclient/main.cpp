@@ -16,7 +16,7 @@ public:
 	}
 	void NotifyPsiChange(const char *url, const char *pPsiData)
 	{
-		fprintf(stderr, "NotifyPsiChange:%s", pPsiData);
+		fprintf(stderr, "NotifyPsiChange:%s\n\n", pPsiData);
 	}
 };
 

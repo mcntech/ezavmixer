@@ -21,7 +21,7 @@
 #include <time.h>
 #include "json.hpp"
 
-static int modDbgLevel = CJdDbg::LVL_TRACE;
+static int modDbgLevel = CJdDbg::LVL_SETUP;
 #define TRACE_ENTER 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
 #define TRACE_LEAVE 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Leave", __FUNCTION__));
 
@@ -137,26 +137,24 @@ void patCallback(void *ctx, const char *pData, int len)
 void CUdpClntBridge::psiJson(std::string &psiString)
 {
 	json jPsi = {};
-	for(int j=0; j< m_pat->number_of_programs; j++) {
-		int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
-		struct MPEG2_PMT_SECTION *pmt;
 
-		std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.find(nPid);
-		if(it != m_pmts.end()) {
-			struct MPEG2_PMT_SECTION *pmt = it->second;
-			if(pmt != NULL) {
-				json jPmt = {};
-				for(int i=0; i < pmt-> number_of_elementary_streams; i++) {
-					json jEs = {};
-					ELEMENTARY_STREAM_INFO *es = &pmt->elementary_stream_info[i];
-					jEs.emplace("pid", es->elementary_PID);
-					jEs.emplace("type", es->stream_type);
-					// TODO es info other attributes
-					jPmt["streams"][i] = jEs;
-				}
-				jPmt["program"] = nPid;
-				jPsi[j] = jPmt;
+	int j = 0;
+	for (std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.begin(); it != m_pmts.end(); ++it) {
+		int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
+		struct MPEG2_PMT_SECTION *pmt = it->second;
+		if(pmt != NULL) {
+			json jPmt = {};
+			for(int i=0; i < pmt-> number_of_elementary_streams; i++) {
+				json jEs = {};
+				ELEMENTARY_STREAM_INFO *es = &pmt->elementary_stream_info[i];
+				jEs.emplace("pid", es->elementary_PID);
+				jEs.emplace("type", es->stream_type);
+				// TODO es info other attributes
+				jPmt["streams"][i] = jEs;
 			}
+			jPmt["pid"] = nPid;
+			jPmt["program"] = m_pat->program_descriptor[j].program_number;
+			jPsi[j++] = jPmt;
 		}
 	}
 	psiString = jPsi.dump();

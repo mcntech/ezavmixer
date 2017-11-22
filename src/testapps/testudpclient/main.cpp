@@ -2,14 +2,38 @@
 #include <unistd.h>
 #include "UdpClntBridge.h"
 
+
+class MyCallback : public  CUdpServerCallback
+{
+public:
+	void NotifyStateChange(const char *url, int nState)
+	{
+
+	}
+	void UpdateStats(const char *url, _UDP_SERVER_STATS *stats)
+	{
+
+	}
+	void NotifyPsiChange(const char *url, const char *pPsiData)
+	{
+		fprintf(stderr, "NotifyPsiChange:%s", pPsiData);
+	}
+};
+
+char szServer[256];
 int main(int argc, char **argv)
 {
-	const char *lpszRspServer = "/home/ramp/teststreams/hbo-mpeg2sd-dish307.ts";
+	if(argc > 1) {
+		strncpy(szServer, argv[1], 256-1);
+
+	} else {
+		strcpy(szServer, "./teststreams/20130218_SVN_MUX_A.ts");
+	}
 	int fEnableAud = 1;
 	int fEnableVid = 1;
 	int Result = 0;
-	CUdpServerCallback *pCallback=NULL;
-	CUdpClntBridge *pUdpClnt = new CUdpClntBridge(lpszRspServer, fEnableAud, fEnableVid, &Result, pCallback);
+	CUdpServerCallback *pCallback = new MyCallback;
+	CUdpClntBridge *pUdpClnt = new CUdpClntBridge(szServer, fEnableAud, fEnableVid, &Result, pCallback);
 
 	pUdpClnt->StartStreaming();
 
@@ -17,5 +41,6 @@ int main(int argc, char **argv)
 		usleep(1000*1000);
 
 	pUdpClnt->StopStreaming();
+	delete pCallback;
 	return 0;
 }

@@ -29,8 +29,8 @@ public:
 	void UpdateStat();
 
 	void UpdatePmt(int nPid, const char *pData, int len );
-	void UpdatePmt(const char *pData, int len);
-	void psiJson();
+	void UpdatePat(const char *pData, int len);
+	void psiJson(std::string &psiString);
 public:
 	//CJdRtspClntSession	*m_pRtspClnt;
 	CUdpServerCallback  *m_pCallback;

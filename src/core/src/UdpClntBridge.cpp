@@ -120,8 +120,9 @@ void CUdpClntBridge::UpdatePmt(int nPid, const char *pData, int len )
 
 	// Notify
 	if(m_pCallback) {
-		m_pCallback->NotifyPsiChange(m_szRemoteHost, "PMT Changed");
-		psiJson();
+		std::string psiString;
+		psiJson(psiString);
+		m_pCallback->NotifyPsiChange(m_szRemoteHost, psiString.c_str());
 	}
 }
 
@@ -129,36 +130,39 @@ void patCallback(void *ctx, const char *pData, int len)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("Received PSI len=%d", len));
 	CUdpClntBridge *pObj = (CUdpClntBridge *)ctx;
-	pObj->UpdatePmt(pData, len);
+	pObj->UpdatePat(pData, len);
 
 }
 
-void CUdpClntBridge::psiJson()
+void CUdpClntBridge::psiJson(std::string &psiString)
 {
 	json jPsi = {};
 	for(int j=0; j< m_pat->number_of_programs; j++) {
-		int progNo;
+		int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
 		struct MPEG2_PMT_SECTION *pmt;
 
-		std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.find(progNo);
+		std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.find(nPid);
 		if(it != m_pmts.end()) {
 			struct MPEG2_PMT_SECTION *pmt = it->second;
-			json jPmt = {};
-			for(int i=0; i < pmt-> number_of_elementary_streams; i++) {
-				json jEs = {};
-				ELEMENTARY_STREAM_INFO *es = &pmt->elementary_stream_info[i];
-				jEs.emplace("pid", es->elementary_PID);
-				jEs.emplace("pid", es->stream_type);
-				// TODO es info other attributes
-				jPmt["streams"][i] = jEs;
+			if(pmt != NULL) {
+				json jPmt = {};
+				for(int i=0; i < pmt-> number_of_elementary_streams; i++) {
+					json jEs = {};
+					ELEMENTARY_STREAM_INFO *es = &pmt->elementary_stream_info[i];
+					jEs.emplace("pid", es->elementary_PID);
+					jEs.emplace("type", es->stream_type);
+					// TODO es info other attributes
+					jPmt["streams"][i] = jEs;
+				}
+				jPmt["program"] = nPid;
+				jPsi[j] = jPmt;
 			}
-			jPmt["program", progNo];
-			jPsi[j] = jPmt;
 		}
 	}
+	psiString = jPsi.dump();
 }
 
-void CUdpClntBridge::UpdatePmt(const char *pData, int len)
+void CUdpClntBridge::UpdatePat(const char *pData, int len)
 {
 	if(m_pat != NULL) {
 		if(!m_pat->IsVesionChanged((unsigned char *)pData)) {
@@ -179,9 +183,10 @@ void CUdpClntBridge::UpdatePmt(const char *pData, int len)
 	}
 	// Notify
 	if(m_pCallback) {
-		m_pCallback->NotifyPsiChange(m_szRemoteHost, "PMT Changed");
+		std::string psiString;
+		psiJson(psiString);
+		m_pCallback->NotifyPsiChange(m_szRemoteHost, psiString.c_str());
 	}
-	psiJson();
 }
 
 int CUdpClntBridge::StartStreaming()

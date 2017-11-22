@@ -134,6 +134,35 @@ void patCallback(void *ctx, const char *pData, int len)
 
 }
 
+std::string StrmTypeToString(int strmType)
+{
+	std::string str;
+
+	if(strmType == 0x81 || strmType == 0x6)  {
+		str = "AC3";
+	}
+	else if(strmType == 0x3 || strmType == 0x4)  {
+		str = "MP2";
+	}
+	else if(strmType == 0x80)  {
+		str = "LPCM";
+	}
+	else if(strmType == 0x0f)  {
+		str = "AAC";
+	}
+	else if(strmType == 0x1 || strmType == 0x2 || strmType == 0x80)  {
+		str = "MPEG2";
+	}
+	else if(strmType == 0x1b)  {
+		str = "H264";
+	}
+	else  {
+		str = "UNKNOWN";
+	}
+
+	return str;
+}
+
 void CUdpClntBridge::psiJson(std::string &psiString)
 {
 	json jPsi = {};
@@ -149,6 +178,7 @@ void CUdpClntBridge::psiJson(std::string &psiString)
 				ELEMENTARY_STREAM_INFO *es = &pmt->elementary_stream_info[i];
 				jEs.emplace("pid", es->elementary_PID);
 				jEs.emplace("type", es->stream_type);
+				jEs.emplace("codec",StrmTypeToString(es->stream_type));
 				// TODO es info other attributes
 				jPmt["streams"][i] = jEs;
 			}

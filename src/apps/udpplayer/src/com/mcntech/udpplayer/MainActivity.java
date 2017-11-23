@@ -1,5 +1,6 @@
 package com.mcntech.udpplayer;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import com.mcntech.rtspplyer.R;
@@ -11,7 +12,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -28,9 +31,16 @@ import android.widget.Toast;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
+import org.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONException;
+
 
 public class MainActivity extends Activity implements OnItemSelectedListener {
+	public static final String LOG_TAG = "udpplayer";
 	
+	final int PICKFILE_RESULT_CODE = 1;
+	Uri mUri = null;
 	CheckBox mEnLogoCheckBox;
 	CheckBox mEnStatsCheckBox;
 	//EditText mRtspUrl1;
@@ -46,7 +56,8 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
     	int i;
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
+       
+/*        
         mRemoteNodeList = new ArrayList<RemoteNode>(); //CodecModel.mOnyxRemoteNodeList;
 		mRemoteNodeListView =  (ListView)findViewById(R.id.listRemoteNodes);
 		
@@ -65,72 +76,61 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		    }
 		});
 	
-			
+*/		
+        getServer();	
 		mNodeHandler = new RemoteNodeHandler(){
 			@Override
-			public void onDiscoverRemoteNode(String url) {
-				// TODO Auto-generated method stub
-				Log.d("rtspplayer", "MainActivity::onDiscoverRemoteNode");
-				RemoteNode node = new RemoteNode(url);
-				mRemoteNodeList.add(node);
-				        //mListAdapter.notifyDataSetChanged();
+			public void onPsiChange(String url, String message) {
+				Log.d(LOG_TAG, "MainActivity::onPsiChange");
+				JSONArray psi = null;
+				try {
+					psi = new JSONArray(message);
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if(psi != null) {
+					for (int i = 0; i < psi.length(); i++) {
+						try {
+							int vidPid = 0;
+							JSONObject pgm = psi.getJSONObject(i);
+
+							if(pgm != null){
+								JSONArray esList = pgm.getJSONArray("streams");
+								for (int j = 0; j < esList.length(); j++) {
+									JSONObject es = esList.getJSONObject(j);
+									String codec = es.getString("codec");
+									String pid = es.getString("pid");
+									if(codec.compareToIgnoreCase("mpeg2") == 0 ||
+											codec.compareToIgnoreCase("h264") == 0 || 
+											codec.compareToIgnoreCase("h265") == 0){
+
+										RemoteNode node = new RemoteNode(url, vidPid);
+										mRemoteNodeList.add(node);
+									}
+								}
+							}
+						} catch (JSONException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}	
+				}
+
+				
 				runOnUiThread(new Runnable() {
 					@Override
                     public void run() {
+						// TODO: update webview
 						((BaseAdapter)((ListView)findViewById(R.id.listRemoteNodes)).getAdapter()).notifyDataSetChanged();
 					}
 				});
-			}
-			@Override
-			public void onConnectRemoteNode(String url) {
-/*
-				Log.d(LOG_TAG, "transition:onStartPlay");
-	 			mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
-	 			if(Configure.mEnableVideo)
-	 				waitForVideoPlay();
-*/	 			
-			}
-
-			@Override
-			public void onDisconnectRemoteNode(String url) {
-/*
-				Log.d(LOG_TAG, "transition:onStopPlay:Begin");
-	 			mHandler.sendEmptyMessage(PLAYER_CMD_STOP);
-	 			if(Configure.mEnableVideo)
-	 				waitForVideoStop();
-	 			Log.d(LOG_TAG, "transition:onStopPlay:End");
-*/				
-			}
-
-			@Override
-			public void onStatusRemoteNode(String url, String message) {
-				// TODO Auto-generated method stub
 				
 			}
 
 			@Override
 			public void onRemoteNodeError(String url, String message) {
 				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onNetworkDisconnected() {
-				// TODO Auto-generated method stub
-				
-			}
-			@Override
-			public void onPsiChange(String url, String message) {
-				Log.d("udpplayer", "MainActivity::onPsiChange");
-				RemoteNode node = new RemoteNode(url);
-				mRemoteNodeList.add(node);
-				runOnUiThread(new Runnable() {
-					@Override
-                    public void run() {
-						// TODO: update webview
-						//((BaseAdapter)((ListView)findViewById(R.id.listRemoteNodes)).getAdapter()).notifyDataSetChanged();
-					}
-				});
 				
 			}
 
@@ -370,4 +370,20 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	    public void onBackPressed() {
 		   System.exit(2);
 	   }
+	   
+	   void getServer()
+	   {
+	       Intent intent = new Intent()
+	        .setType("*/*")
+	        .setAction(Intent.ACTION_GET_CONTENT);
+
+	        startActivityForResult(Intent.createChooser(intent, "Select a file"), PICKFILE_RESULT_CODE);
+	   }
+	   @Override
+	    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+	        super.onActivityResult(requestCode, resultCode, data);
+	        if(requestCode==PICKFILE_RESULT_CODE && resultCode==RESULT_OK) {
+	            mUri = data.getData();
+	        }
+	    }
 }

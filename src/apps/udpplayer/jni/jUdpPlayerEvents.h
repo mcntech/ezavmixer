@@ -17,17 +17,11 @@ public:
 	bool safeAttach(JNIEnv** env);
 	void safeDetach();
 
- 	bool onDiscoverRemoteNode(char *host);
-
   	bool onNativeMessage(char *szTitle, char *szMsg);
-  	bool onRemoteNodeError(char *url, char *szErr);
-  	bool onConnectRemoteNode(char *url);
-  	bool onDisconnectRemoteNode(char *url);
-  	bool onStatusRemoteNode(char *url, char *szMsg);
   	bool onServerStatus(const char *szPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime);
   	bool onServerStatistics(const char *szPublishId, UDP_SERVER_STATS *pStat);
   	bool onPsiChange(const char *szPublishId, const char *pPsiData);
-
+  	bool onStatusRemoteNode(char *url, char *szErr);
   	jclass m_deviceClass;
 
 private:

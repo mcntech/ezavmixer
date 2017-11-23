@@ -40,22 +40,6 @@ bool CUdpPlayerEvents::onNativeMessage(char *szTitle, char *szMsg)
 	env->DeleteLocalRef(jmessage);
 }
 
-bool CUdpPlayerEvents::onRemoteNodeError(char *url, char *szErr)
-{
-	JNIEnv* env;
-	safeAttach(&env);//must always call safeDetach() before returning
-	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
-	jstring jurl = env->NewStringUTF(url);
-	jstring jmsg = env->NewStringUTF(szErr);
-
-	jmethodID callback = env->GetStaticMethodID(onyxApi, "onRemoteNodeError", "(Ljava/lang/Object;Ljava/lang/Object;)V");
-	env->CallStaticVoidMethod(onyxApi, callback,jurl,jmsg);
-	env->DeleteLocalRef(jurl);
-	env->DeleteLocalRef(jmsg);
-
-	safeDetach();
-	return true;
-}
 
 bool CUdpPlayerEvents::onServerStatus(const char *szUrl, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime)
 {
@@ -85,7 +69,7 @@ bool CUdpPlayerEvents::onServerStatistics(const char *szPublishId, UDP_SERVER_ST
 	return true;
 }
 
-bool CUdpPlayerEvents::onPsiChange(const char *szPublishId, const char *pPsiData)
+bool CUdpPlayerEvents::onPsiChange(const char *url, const char *pPsiData)
 {
 	JNIEnv* env;
 	safeAttach(&env);
@@ -105,60 +89,6 @@ bool CUdpPlayerEvents::onPsiChange(const char *szPublishId, const char *pPsiData
 
 	safeDetach();
 
-	return true;
-}
-bool CUdpPlayerEvents::onDiscoverRemoteNode(char *url)
-{
-	JNIEnv* env;
-	safeAttach(&env);//must always call safeDetach() before returning
-	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
-	if(onyxApi != NULL) {
-		jmethodID callback = env->GetStaticMethodID(onyxApi, "onDiscoverRemoteNode", "(Ljava/lang/String;)V");
-		if(callback != NULL) {
-			jstring jurl = env->NewStringUTF(url);
-			jstring jpsi = env->NewStringUTF(url);
-			env->CallStaticVoidMethod(onyxApi, callback, jurl, jpsi);
-			env->DeleteLocalRef(jurl);
-			env->DeleteLocalRef(jpsi);
-		}else {
-			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onDiscoverRemoteNode on com/mcntech/rtspplayer/OnyxPlayerApi"));
-		}
-	} else {
-		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find com/mcntech/rtspplayer/OnyxPlayerApi"));
-	}
-
-	safeDetach();
-	return true;
-}
-
-bool CUdpPlayerEvents::onConnectRemoteNode(char *url)
-{
-	JNIEnv* env;
-	safeAttach(&env);//must always call safeDetach() before returning
-	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
-	jstring jurl = env->NewStringUTF(url);
-
-	jmethodID callback = env->GetStaticMethodID(onyxApi, "onConnectRemoteNode", "(Ljava/lang/Object;)V");
-	env->CallStaticVoidMethod(onyxApi, callback, jurl);
-	env->DeleteLocalRef(jurl);
-
-
-	safeDetach();
-	return true;
-}
-
-bool CUdpPlayerEvents::onDisconnectRemoteNode(char *url)
-{
-	JNIEnv* env;
-	safeAttach(&env);//must always call safeDetach() before returning
-	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
-	jstring jurl = env->NewStringUTF(url);
-
-	jmethodID callback = env->GetStaticMethodID(onyxApi, "onDisconnectRemoteNode", "(Ljava/lang/Object;)V");
-	env->CallStaticVoidMethod(onyxApi, callback,jurl);
-	env->DeleteLocalRef(jurl);
-
-	safeDetach();
 	return true;
 }
 

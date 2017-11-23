@@ -17,13 +17,8 @@ import android.widget.TabHost;
 public class UdpPlayerApi {	
 	
 	public interface RemoteNodeHandler {
-		void onDiscoverRemoteNode(String url);
 		void onPsiChange(String url, String message);
-		void onConnectRemoteNode(String url);
-		void onDisconnectRemoteNode(String url);
-		void onStatusRemoteNode(String url, final String message);		
 		void onRemoteNodeError(final String url,final String message);
-		void onNetworkDisconnected();		
 	}
 	
 	private static long mHandle = 0;
@@ -74,61 +69,19 @@ public class UdpPlayerApi {
 		System.out.println("java onNativeMessage:" + title + " message:" + message);
 	}
 
-	public static void onDiscoverRemoteNode(final String url ) 
-	{		
-		if(m_nodeHandler != null) {
-			Log.d("OnyxPlayerApi", "onDiscoverRemoteNode:" + url);
-			m_nodeHandler.onDiscoverRemoteNode(url);
-			if(!mActiveRemoteNodes.contains(url)) {
-				mActiveRemoteNodes.add(url);
-			}
-		}
-	}
-
 	public static void onPsiChange(final String url, String psi) 
 	{		
 		if(m_nodeHandler != null)
 			m_nodeHandler.onPsiChange(url, psi);
 	}
 
-	public static void onConnectRemoteNode(final String url ) 
-	{		
-		if(m_nodeHandler != null)
-			m_nodeHandler.onConnectRemoteNode(url);
-	}
 
-	public static void onDisconnectRemoteNode(final String url ) 
-	{		
-		if(m_nodeHandler != null)
-			m_nodeHandler.onDisconnectRemoteNode(url);
-	}
 	public static void onStatusRemoteNode(final String url, String Msg) 
 	{		
 		if(m_nodeHandler != null)
 			m_nodeHandler.onStatusRemoteNode(url, Msg);
 	}
 		
-	public static void onRemoteNodeError(final String url, final Object message ) 
-	{		
-		if(m_nodeHandler != null)
-			m_nodeHandler.onRemoteNodeError(url,(String)message);
-	}
-	public static void onStatusRemoteNode(final String url, final Object message ) 
-	{		
-		if(m_nodeHandler != null)
-			m_nodeHandler.onStatusRemoteNode(url,(String)message);
-	}	
-	public static void onRemoteNodePlayStarted(final long nodeid ) {		
-		System.out.println("java onRemoteNodePlayStarted:" + " id:" + nodeid);
-		return;
-	}
-		
-	private static void onNetworkDisconnected() {
-		System.out.println("java onNetworkDisconnected");
-		if(m_nodeHandler != null)
-			m_nodeHandler.onNetworkDisconnected();
-	}
-	
 			
 	public static String getVersion() {
 		if(mHandle==0)
@@ -137,7 +90,7 @@ public class UdpPlayerApi {
 	}
 
 	static {
-		System.loadLibrary("OnyxPlayerApi");
+		System.loadLibrary("UdpPlayerApi");
 	}
 
 	public static long addServer(String url)

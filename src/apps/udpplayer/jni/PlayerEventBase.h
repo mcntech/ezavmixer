@@ -10,9 +10,8 @@ class CPlayerEventBase
 {
 public:	
   	virtual bool onNativeMessage(char *szTitle, char *szMsg) = 0;
-  	virtual bool onRemoteNodeError(char *url, char *szErr)  = 0;
-  	virtual bool onConnectRemoteNode(char *url)  = 0;
-  	virtual bool onDisconnectRemoteNode(char *url)  = 0;
-  	virtual bool onStatusRemoteNode(char *url, char *szMsg)  = 0;
+  	virtual bool onServerStatus(const char *szPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime) = 0;
+  	virtual bool onPsiChange(const char *szPublishId, const char *pPsiData) = 0;
+  	virtual bool onStatusRemoteNode(char *url, char *szErr) = 0;
 };
 #endif

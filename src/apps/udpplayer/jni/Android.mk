@@ -42,7 +42,7 @@ LOCAL_SRC_FILES +=	ServerNodeUdp.cpp
 LOCAL_SRC_FILES +=	jUdpPlayerApi.cpp 
 LOCAL_SRC_FILES +=	jUdpPlayerEvents.cpp
 
-LOCAL_SHARED_LIBRARIES := liblog libcutils
-LOCAL_LDLIBS := -llog
+#LOCAL_SHARED_LIBRARIES := liblog libcutils
+LOCAL_LDLIBS := -llog -lcutils
 LOCAL_STATIC_LIBRARIES := onyxcore jdudp jdnet parseutil streamif tinyxml configdb jdosal
 include $(BUILD_SHARED_LIBRARY)

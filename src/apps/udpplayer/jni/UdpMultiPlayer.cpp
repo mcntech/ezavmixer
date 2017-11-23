@@ -150,7 +150,7 @@ void CUdpMultiPlayer::UpdateStats(const char *url, UDP_SERVER_STATS *pStats)
 void CUdpMultiPlayer::NotifyPsiChange(const char *url, const char *pPsiData)
 {
 	if(m_EventCallback)
-		((CUdpPlayerEvents *)m_EventCallback)->onPsiCHange(url, pPsiData);
+		((CUdpPlayerEvents *)m_EventCallback)->onPsiChange(url, pPsiData);
 
 }
 void CUdpMultiPlayer::NotifyStateChange(const char *url, int nState)

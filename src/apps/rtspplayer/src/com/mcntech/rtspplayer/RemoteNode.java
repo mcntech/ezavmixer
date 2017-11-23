@@ -45,7 +45,7 @@ public class RemoteNode {
 					path = "v02";
 				
 		}
-		String stream = "rtsp://" + mUrl + "/" + path;
+		String stream = "rtsp://" + mUrl + ":8554/" + path;
 		return stream; 
 	}
 	public String getRtspStream(){

@@ -4,7 +4,6 @@
 CUdpServerNode::CUdpServerNode(CUdpClntBridge *pClntBridge)
 {
 	m_pClntBridge = pClntBridge;
-	m_llAudPts = 0;
 	m_ulFlags = 0;
 	m_llPts = 0;
 }
@@ -31,9 +30,9 @@ int CUdpServerNode::subscribeStream(int nStrmId)
 int CUdpServerNode::unsubscribeStream(int nStrmId)
 {
 	std::map<int, ConnCtxT *>::iterator it = m_Connections.find( nStrmId );
-	if(it != pCtx->m_Connections.end()) {
+	if(it != m_Connections.end()) {
 		ConnCtxT *pConnSrc = it->second;
-		DeleteStrmConn(m_pConnSrc);
+		DeleteStrmConn(pConnSrc);
 		// Todo Erase map entry
 	}
 	return 0;
@@ -43,19 +42,19 @@ int CUdpServerNode::getData(int nStrmId, char *pData, int numBytes)
 {
 	int res = 0;
 	std::map<int, ConnCtxT *>::iterator it = m_Connections.find( nStrmId );
-	if(it != pCtx->m_Connections.end()) {
+	if(it != m_Connections.end()) {
 
 		ConnCtxT *pConnSrc = it->second;
 		if(pConnSrc) {
 			res =  pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulFlags, &m_llPts);
 		}
+	}
 	return res;
 }
 
 long long CUdpServerNode::getPts(int nStrmId)
 {
 	// TODO
-}
 	return m_llPts;
 }
 
@@ -74,7 +73,7 @@ int CUdpServerNode::getNumAvailFrames(int nStrmId)
 {
 	int res = 0;
 	std::map<int, ConnCtxT *>::iterator it = m_Connections.find( nStrmId );
-	if(it != pCtx->m_Connections.end()) {
+	if(it != m_Connections.end()) {
 		ConnCtxT *pConnSrc = it->second;
 		if(pConnSrc) {
 			if(pConnSrc->IsEmpty(pConnSrc))

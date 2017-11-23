@@ -18,7 +18,10 @@ public class RemoteNode {
 	public RemoteNode(String url){
 		mUrl = url;
 	}
-	
+	public RemoteNode(String url, int vidPid){
+		mUrl = url;
+		mVidPID =  vidPid;
+	}
 	public RemoteNode(RemoteNode dev){
 	
 	}

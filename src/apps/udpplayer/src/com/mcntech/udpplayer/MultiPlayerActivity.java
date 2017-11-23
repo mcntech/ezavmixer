@@ -31,7 +31,7 @@ import com.mcntech.udpplayer.UdpPlayerApi.RemoteNodeHandler;
 
 public class MultiPlayerActivity  extends Activity implements View.OnDragListener, View.OnLongClickListener  {
 	
-	public final String LOG_TAG = "rtsp";
+	public final String LOG_TAG = MainActivity.LOG_TAG;
 	RemoteNodeHandler             mNodeHandler;
 	Handler                       mHandler;
 	ImageView                     img;
@@ -115,49 +115,10 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 		
 		mNodeHandler = new RemoteNodeHandler(){
 
-			@Override
-			public void onConnectRemoteNode(String url) {
-/*
-				Log.d(LOG_TAG, "transition:onStartPlay");
-	 			mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
-	 			if(Configure.mEnableVideo)
-	 				waitForVideoPlay();
-*/	 			
-			}
-
-			@Override
-			public void onDisconnectRemoteNode(String url) {
-/*
-				Log.d(LOG_TAG, "transition:onStopPlay:Begin");
-	 			mHandler.sendEmptyMessage(PLAYER_CMD_STOP);
-	 			if(Configure.mEnableVideo)
-	 				waitForVideoStop();
-	 			Log.d(LOG_TAG, "transition:onStopPlay:End");
-*/				
-			}
-
-			@Override
-			public void onStatusRemoteNode(String url, String message) {
-				// TODO Auto-generated method stub
-				
-			}
 
 			@Override
 			public void onRemoteNodeError(String url, String message) {
 				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onNetworkDisconnected() {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onDiscoverRemoteNode(String url) {
-				// TODO Auto-generated method stub
-				Log.d(LOG_TAG, "transition:onStartPlay");
 				
 			}
 

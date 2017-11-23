@@ -119,6 +119,20 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 				// TODO Auto-generated method stub
 				
 			}
+			@Override
+			public void onPsiChange(String url, String message) {
+				Log.d("udpplayer", "MainActivity::onPsiChange");
+				RemoteNode node = new RemoteNode(url);
+				mRemoteNodeList.add(node);
+				runOnUiThread(new Runnable() {
+					@Override
+                    public void run() {
+						// TODO: update webview
+						//((BaseAdapter)((ListView)findViewById(R.id.listRemoteNodes)).getAdapter()).notifyDataSetChanged();
+					}
+				});
+				
+			}
 
 
 	 	}; 

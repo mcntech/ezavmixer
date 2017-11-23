@@ -274,98 +274,18 @@ int CUdpClntBridge::StartStreaming()
 		m_pCallback->NotifyStateChange(m_szRemoteHost, UDP_SERVER_SETUP);
 	}
 
-	m_fRun = 1;
-	jdoalThreadCreate((void **)&m_thrdHandle, DoBufferProcessing, this);
-
 EXIT:
 	TRACE_LEAVE
 	return nResult;
 }
 
-long CUdpClntBridge::ProcessFrame()
+int CUdpClntBridge::ConnectStreamForPid(int nPid, ConnCtxT *pConn)
 {
-	//TRACE_ENTER
-	unsigned ulFlags = 0;
-	unsigned long dwBytesRead = 0;
-	long lQboxBytes = 0;
-	long lResult = 0;
-	// Find Stream Type
-	long lStrmType = 0;
-	long fEof = 0;
-	int fDone = 0;
-#if 0
-	ConnCtxT   *pConnSink = (ConnCtxT *)mDataLocatorVideo.pAddress;
-	while(pConnSink->IsFull(pConnSink) && m_fRun){
-		JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Buffer Full"));
-		JD_OAL_SLEEP(1)
+	if(m_demuxComp) {
+		m_demuxComp->SetOutputConn(m_demuxComp, nPid, pConn);
 	}
-
-	m_lUsedLen = 0; 
-
-	while(!fDone && m_fRun) {
-		long lAvailEmpty = m_lMaxLen - m_lUsedLen;
-		if(lAvailEmpty <= 0) {
-			JDBG_LOG(CJdDbg::LVL_TRACE, ("ProcessVideoFrame:Buffer Empty"));
-			lResult = -1;
-			goto Exit;
-		}
-		char *pWrite = m_pData + m_lUsedLen;
-		long lBytesRead = m_pRfcRtp->GetData(m_pRtspClnt->m_pVRtp, pWrite, lAvailEmpty);
-		if(lBytesRead <= 0){
-			lResult = -1;
-			JDBG_LOG(CJdDbg::LVL_ERR, ("ProcessVideoFrame:Failed to GetData"));
-			goto Exit;
-		}
-		mTotalVid += lBytesRead;
-		RTP_PKT_T *pRtpHdr = m_pRfcRtp->GetRtnHdr();
-		if(m_pVRtcp) {
-			m_pVRtcp->UpdateStatForRtpPkt(pRtpHdr, lBytesRead);
-		}
-		m_lUsedLen += lBytesRead;
-		fDone = pRtpHdr->m;
-		m_lPts = pRtpHdr->ulTimeStamp;
-
-		UpdateJitter(m_lPts);
-		//ChkPktLoss(pRtpHdr);
-		m_usVidSeqNum++;
-		if (m_usVidSeqNum  != pRtpHdr->usSeqNum) {
-			// skip starting pkt
-			if(m_usVidSeqNum != 1)	 {
-				m_UdpServerStats.nVidPktLoss++;
-			}
-			m_usVidSeqNum = pRtpHdr->usSeqNum;
-		}
-		UpdateStat();
-	}
-	if(m_fDisCont) {
-		m_fDisCont = 0;
-		ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
-	}
-	pConnSink->Write(pConnSink, m_pData, m_lUsedLen,  ulFlags, m_lPts * 1000 / 90);
-	JDBG_LOG(CJdDbg::LVL_STRM, ("ProcessVideoFrame:Write %d PTS=%lld", m_lUsedLen, m_lPts));
-
-Exit:
-#endif
-	//TRACE_LEAVE
-	return lResult;
+	return 0;
 }
-
-
-void *CUdpClntBridge::DoBufferProcessing(void *pArg)
-{
-	TRACE_ENTER
-
-	CUdpClntBridge *pCtx = (CUdpClntBridge *)pArg;
-	while(pCtx->m_fRun) {
-		if(pCtx->ProcessFrame() != 0){
-			break;
-		}
-	}
-	TRACE_LEAVE
-
-    return NULL;
-}
-
 
 
 int CUdpClntBridge::StopStreaming()

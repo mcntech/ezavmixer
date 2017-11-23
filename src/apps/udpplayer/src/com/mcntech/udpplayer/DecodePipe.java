@@ -28,7 +28,8 @@ import com.mcntech.udpplayer.UdpPlayerApi;
 public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListener {
 	
 	public final String LOG_TAG = "DecodePipe";
-	String                        mUrl;                   
+	String                        mUrl;
+	int                           mStrmId;
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler = null;
 	TextureView                   mVideoTexView = null;
@@ -65,13 +66,14 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
     LinearLayout                     mStatsLayout;
     boolean mfHevcSupported = false;
     
-	public DecodePipe(Activity activity, String url, TextureView textureView, int maxVidWidth, int maxVidHeight) {
+	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView, int maxVidWidth, int maxVidHeight) {
 
 		mHandler = new LocalHandler();
 		mVideoTexView = textureView;
 		Context context = activity.getApplicationContext();
 		Configure.loadSavedPreferences(context, false);
 		mUrl = url;//Configure.mRtspUrl1;
+		mStrmId = strmId;
 		mMaxVidWidth = maxVidWidth;
 		mMaxVidHeight = maxVidHeight;
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
@@ -198,7 +200,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 		
 		@Override
 		public void run() {
-			mCodecType = UdpPlayerApi.getVidCodecType(mUrl);
+			mCodecType = UdpPlayerApi.getVidCodecType(mUrl, mStrmId);
 			try {
 				if(mCodecType == 2 ) {
 					Log.d(LOG_TAG, "decoder create video/hevc");
@@ -233,9 +235,9 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 			//long startMs = System.currentTimeMillis();
 			if(mfSendCsd0DuringInit) {
 				while (!Thread.interrupted() && !mExitPlayerLoop) {
-					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl);
+					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mStrmId);
 					if (!isEOS && mFramesInBuff > 0) {
-						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
+						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mStrmId, mBuff, mBuff.capacity(),  100 * 1000);
 						if (sampleSize > 0) {
 							byte [] arCsd0 = null;
 							mBuff.limit(sampleSize);
@@ -279,7 +281,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 			}
 			
 			while (!Thread.interrupted() && !mExitPlayerLoop) {
-				mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl);
+				mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mStrmId);
 				if (!isEOS && mFramesInBuff > 0) {
 
 					int inIndex;
@@ -305,9 +307,9 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 						if(fFrameAvail) {
 							fFrameAvail = false;
 						} else {
-							sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
+							sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mStrmId,  mBuff, mBuff.capacity(),  100 * 1000);
 						}
-						mPts = UdpPlayerApi.getVideoPts(mUrl);// + 500000; // video pipeline delay
+						mPts = UdpPlayerApi.getVideoPts(mUrl, mStrmId);// + 500000; // video pipeline delay
 						if (sampleSize <= 0) {
 							// We shouldn't stop the playback at this point, just pass the EOS
 							// flag to decoder, we will get it again from the
@@ -344,7 +346,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 					break;
 				}
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:End outIndex=" + outIndex);
-				long sysclk = UdpPlayerApi.getClockUs(mUrl);
+				long sysclk = UdpPlayerApi.getClockUs(mUrl, mStrmId);
 				switch (outIndex) {
 				case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
 					Log.d(LOG_TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
@@ -371,7 +373,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 									interrupt();
 									break;
 								}
-								sysclk = UdpPlayerApi.getClockUs(mUrl);
+								sysclk = UdpPlayerApi.getClockUs(mUrl, mStrmId);
 							}
 						}
 						//Log.d(LOG_TAG, "releaseOutputBuffer:Begin surfacevalid=" + surface.isValid());

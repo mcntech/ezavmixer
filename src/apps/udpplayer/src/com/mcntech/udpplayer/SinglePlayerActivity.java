@@ -48,6 +48,7 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 	
 	public final String LOG_TAG = "rtsp";
 	String                        mUrl;
+	int                           mStrmId;
 	String                        mNewUrl = null;
 	private PlayerThread          mVidPlayer = null;
 	RemoteNodeHandler             mNodeHandler;
@@ -283,6 +284,12 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 				// TODO Auto-generated method stub
 				
 			}
+
+			@Override
+			public void onPsiChange(String url, String message) {
+				// TODO Auto-generated method stub
+				
+			}
 	 	}; 
 	 	
 	 	View.OnTouchListener  onTouchListner = new View.OnTouchListener() {
@@ -507,9 +514,9 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 			int nWaitTime = 3000;
 			
 			UdpPlayerApi.startServer(mSwitchUrl);
-			int nFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mSwitchUrl);
+			int nFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mSwitchUrl, mStrmId);
 			while(nFramesInBuff == 0 && nWaitTime > 0) {
-				nFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mSwitchUrl);
+				nFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mSwitchUrl, mStrmId);
 				if(nFramesInBuff > 0){
 					mCrntState = SERVER_STATE.RUNNING;
 				} else {
@@ -568,7 +575,7 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 		
 		@Override
 		public void run() {
-			mCodecType = UdpPlayerApi.getVidCodecType(mUrl);
+			mCodecType = UdpPlayerApi.getVidCodecType(mUrl, mStrmId);
 			try {
 				if(mCodecType == 2 ) {
 					Log.d(LOG_TAG, "decoder create video/hevc");
@@ -603,9 +610,9 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 			//long startMs = System.currentTimeMillis();
 			if(mfSendCsd0DuringInit) {
 				while (!Thread.interrupted() && !mExitPlayerLoop) {
-					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl);
+					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mStrmId);
 					if (!isEOS && mFramesInBuff > 0) {
-						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
+						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mStrmId, mBuff, mBuff.capacity(),  100 * 1000);
 						if (sampleSize > 0) {
 							byte [] arCsd0 = null;
 							mBuff.limit(sampleSize);
@@ -657,7 +664,7 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 					mUrl = url;
 				}
 
-				mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl);
+				mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mStrmId);
 				if (!isEOS && mFramesInBuff > 0) {
 
 					int inIndex;
@@ -683,9 +690,9 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 						if(fFrameAvail) {
 							fFrameAvail = false;
 						} else {
-							sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mBuff, mBuff.capacity(),  100 * 1000);
+							sampleSize = UdpPlayerApi.getVideoFrame(mUrl,mStrmId, mBuff, mBuff.capacity(),  100 * 1000);
 						}
-						mPts = UdpPlayerApi.getVideoPts(mUrl);// + 500000; // video pipeline delay
+						mPts = UdpPlayerApi.getVideoPts(mUrl, mStrmId);// + 500000; // video pipeline delay
 						if (sampleSize <= 0) {
 							// We shouldn't stop the playback at this point, just pass the EOS
 							// flag to decoder, we will get it again from the
@@ -724,7 +731,7 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 					break;
 				}
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:End outIndex=" + outIndex);
-				long sysclk = UdpPlayerApi.getClockUs(mUrl);
+				long sysclk = UdpPlayerApi.getClockUs(mUrl, mStrmId);
 				switch (outIndex) {
 				case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
 					Log.d(LOG_TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
@@ -751,7 +758,7 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 									interrupt();
 									break;
 								}
-								sysclk = UdpPlayerApi.getClockUs(mUrl);
+								sysclk = UdpPlayerApi.getClockUs(mUrl, mStrmId);
 							}
 						}
 						//Log.d(LOG_TAG, "releaseOutputBuffer:Begin surfacevalid=" + surface.isValid());

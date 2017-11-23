@@ -91,8 +91,6 @@ typedef struct
 	pthread_t  threadidDemux;
 #endif
 	ConnCtxT   *pConnSrc;
-	ConnCtxT   *pConnAudOut;
-	ConnCtxT   *pConnVidOut;
 
 	int64_t read_position;	
 	int64_t last_totalbytes;
@@ -531,13 +529,7 @@ int demuxSetOutputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn)
 {
 	MpegTsDemuxCtx *pCtx = (MpegTsDemuxCtx*)pComp->pCtx;
 	pCtx->mConnections[nConnNum] = pConn;
-/*
-	if(nConnNum == 0) {
-		pCtx->pConnAudOut = pConn;
-	} else {
-		pCtx->pConnVidOut = pConn;
-	}
-*/
+
 	return 0;
 }
 

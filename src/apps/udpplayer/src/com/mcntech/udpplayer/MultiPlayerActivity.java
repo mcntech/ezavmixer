@@ -95,7 +95,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
 				VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
 				TextureView textureView = getTexture(mLayoutId, i);
-				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mUrl, textureView, maxDecWidth, maxDecHeight);
+				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mUrl, videoFeed.mStrmId, textureView, maxDecWidth, maxDecHeight);
 				videoFeed.textureId = i;
 				textureView.setOnLongClickListener(this);
 				textureView.setOnDragListener(this);
@@ -158,6 +158,12 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			public void onDiscoverRemoteNode(String url) {
 				// TODO Auto-generated method stub
 				Log.d(LOG_TAG, "transition:onStartPlay");
+				
+			}
+
+			@Override
+			public void onPsiChange(String url, String message) {
+				// TODO Auto-generated method stub
 				
 			}
 	 	}; 

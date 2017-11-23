@@ -20,10 +20,8 @@ public:
 
     virtual int StartStreaming(void);
     virtual int StopStreaming(void);
+    virtual int ConnectStreamForPid(int nPid, ConnCtxT *pConn);
 
-	static void *DoBufferProcessing(void *pObj);
-
-	long ProcessFrame();
 	void UpdateJitter(int nPktTime);
 
 	void UpdateStat();

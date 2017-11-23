@@ -49,10 +49,10 @@ public:
 
 public:
 	CUdpClntBridge *m_pClntBridge;
-	long long       m_llAudPts;
-	unsigned long   m_ulAudFlags;
-	long long       m_llVidPts;
-	unsigned long   m_ulVidFlags;
+	unsigned long   m_ulFlags;
+	long long       m_llPts;
+
+	std::map<int, ConnCtxT *> m_Connections;
 };
 
 

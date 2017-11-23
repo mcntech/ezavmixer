@@ -5,9 +5,8 @@ CUdpServerNode::CUdpServerNode(CUdpClntBridge *pClntBridge)
 {
 	m_pClntBridge = pClntBridge;
 	m_llAudPts = 0;
-	m_ulAudFlags = 0;
-	m_llVidPts = 0;
-	m_ulVidFlags = 0;
+	m_ulFlags = 0;
+	m_llPts = 0;
 }
 
 void CUdpServerNode::start()
@@ -22,28 +21,42 @@ void CUdpServerNode::stop()
 
 int CUdpServerNode::subscribeStream(int nStrmId)
 {
+	// TODO video vs audio vs other
+	ConnCtxT *pConn = CreateStrmConn(8, 1024*1024);
+	m_pClntBridge->ConnectStreamForPid(nStrmId, pConn);
+	m_Connections[nStrmId] = pConn;
 	return 0;
 }
 
 int CUdpServerNode::unsubscribeStream(int nStrmId)
 {
+	std::map<int, ConnCtxT *>::iterator it = m_Connections.find( nStrmId );
+	if(it != pCtx->m_Connections.end()) {
+		ConnCtxT *pConnSrc = it->second;
+		DeleteStrmConn(m_pConnSrc);
+		// Todo Erase map entry
+	}
 	return 0;
 }
 
 int CUdpServerNode::getData(int nStrmId, char *pData, int numBytes)
 {
 	int res = 0;
-	// TODO: Get pConnSrc corresponding to nStrmId
-	ConnCtxT *pConnSrc = (ConnCtxT *)m_pClntBridge->mDataLocatorVideo.pAddress;
-	if(pConnSrc) {
-		res =  pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulVidFlags, &m_llVidPts);
-	}
+	std::map<int, ConnCtxT *>::iterator it = m_Connections.find( nStrmId );
+	if(it != pCtx->m_Connections.end()) {
+
+		ConnCtxT *pConnSrc = it->second;
+		if(pConnSrc) {
+			res =  pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulFlags, &m_llPts);
+		}
 	return res;
 }
 
 long long CUdpServerNode::getPts(int nStrmId)
 {
-	return m_llVidPts;
+	// TODO
+}
+	return m_llPts;
 }
 
 int CUdpServerNode::getCodecType(int nStrmId)
@@ -60,12 +73,15 @@ long long CUdpServerNode::getClkUs()
 int CUdpServerNode::getNumAvailFrames(int nStrmId)
 {
 	int res = 0;
-	ConnCtxT *pConnSrc = (ConnCtxT *)m_pClntBridge->mDataLocatorVideo.pAddress;
-	if(pConnSrc) {
-		if(pConnSrc->IsEmpty(pConnSrc))
-			res = 0;
-		else
-			res = 1;
+	std::map<int, ConnCtxT *>::iterator it = m_Connections.find( nStrmId );
+	if(it != pCtx->m_Connections.end()) {
+		ConnCtxT *pConnSrc = it->second;
+		if(pConnSrc) {
+			if(pConnSrc->IsEmpty(pConnSrc))
+				res = 0;
+			else
+				res = 1;
+		}
 	}
 	return res;
 }

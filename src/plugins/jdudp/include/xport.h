@@ -35,7 +35,6 @@ typedef struct _DemuxSubscribeProgramPidT
 	pmt_callback_t pmt_callback;
 } DemuxSubscribeProgramPidT;
 
-
 #define DEMUX_CMD_SELECT_PROGRAM	     1
 #define DEMUX_CMD_SET_PAT_CALLBACK       2
 #define DEMUX_CMD_SET_PMT_CALLBACK       3

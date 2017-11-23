@@ -15,7 +15,7 @@ CUdpPlayerEvents::CUdpPlayerEvents(JNIEnv* env,jobject javaReceiver)
 {
 	env->GetJavaVM(&g_vm);
 	g_jniGlobalSelf = env->NewGlobalRef(javaReceiver);
-	g_deviceClass = env->FindClass("com/mcntech/rtspplayer/OnyxPlayerApi");
+	g_deviceClass = env->FindClass("com/mcntech/udpplayer/UdpPlayerApi");
 	g_deviceClass = (jclass)env->NewGlobalRef(g_deviceClass);
 	pthread_mutex_init(&m_eventMutex, NULL);
 }
@@ -85,6 +85,28 @@ bool CUdpPlayerEvents::onServerStatistics(const char *szPublishId, UDP_SERVER_ST
 	return true;
 }
 
+bool CUdpPlayerEvents::onPsiChange(const char *szPublishId, const char *pPsiData)
+{
+	JNIEnv* env;
+	safeAttach(&env);
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	if(onyxApi != NULL) {
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiChange", "(Ljava/lang/Object;Ljava/lang/Object;)V");
+		if(callback != NULL) {
+			jstring jurl = env->NewStringUTF(url);
+			env->CallStaticVoidMethod(onyxApi, callback, jurl);
+			env->DeleteLocalRef(jurl);
+		}else {
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onDiscoverRemoteNode on com/mcntech/udpplayer/UdpPlayerApi"));
+		}
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find com/mcntech/udpplayer/UdpPlayerApi"));
+	}
+
+	safeDetach();
+
+	return true;
+}
 bool CUdpPlayerEvents::onDiscoverRemoteNode(char *url)
 {
 	JNIEnv* env;
@@ -94,8 +116,10 @@ bool CUdpPlayerEvents::onDiscoverRemoteNode(char *url)
 		jmethodID callback = env->GetStaticMethodID(onyxApi, "onDiscoverRemoteNode", "(Ljava/lang/String;)V");
 		if(callback != NULL) {
 			jstring jurl = env->NewStringUTF(url);
-			env->CallStaticVoidMethod(onyxApi, callback, jurl);
+			jstring jpsi = env->NewStringUTF(url);
+			env->CallStaticVoidMethod(onyxApi, callback, jurl, jpsi);
 			env->DeleteLocalRef(jurl);
+			env->DeleteLocalRef(jpsi);
 		}else {
 			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onDiscoverRemoteNode on com/mcntech/rtspplayer/OnyxPlayerApi"));
 		}

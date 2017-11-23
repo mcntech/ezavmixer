@@ -19,6 +19,7 @@ public class VrRenderDb  {
     public static class VideoFeed
     {
 		public String mUrl;
+		public int    mStrmId;
     	public int    mIdEye;
     	public int    mPosition;
     	// TODO: Add Camera location, direction and projection map

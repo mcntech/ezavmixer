@@ -26,6 +26,7 @@ public:
   	bool onStatusRemoteNode(char *url, char *szMsg);
   	bool onServerStatus(const char *szPublishId, int nState, int nStrmInTime, int nStrmOutTime, int nLostBufferTime);
   	bool onServerStatistics(const char *szPublishId, UDP_SERVER_STATS *pStat);
+  	bool onPsiChange(const char *szPublishId, const char *pPsiData);
 
   	jclass m_deviceClass;
 

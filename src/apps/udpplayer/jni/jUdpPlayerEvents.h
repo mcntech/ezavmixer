@@ -4,7 +4,7 @@
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG  , "[app]", __VA_ARGS__)
 
 #include <pthread.h>
-#include <PlayerEventBase.h>
+#include "PlayerEventBase.h"
 #include <jni.h>
 #include "UdpCallback.h"
 

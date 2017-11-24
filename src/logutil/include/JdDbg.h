@@ -6,7 +6,7 @@
  */
 #ifndef __JD_DBG_H__
 #define __JD_DBG_H__
-
+#include <string.h>
 #include <string>
 #include <vector>
 #ifdef PLATFORM_ANDROID

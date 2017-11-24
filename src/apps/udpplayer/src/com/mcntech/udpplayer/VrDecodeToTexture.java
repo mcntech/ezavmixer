@@ -1,4 +1,4 @@
-package com.mcntech.sphereview;
+package com.mcntech.udpplayer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,18 +34,18 @@ import android.view.TextureView;
 import android.widget.LinearLayout;
 
 
-import com.mcntech.rtspplyer.R;
-import com.mcntech.sphereview.VrRenderDb.DecPipeBase;
 import com.mcntech.udpplayer.CodecInfo;
 import com.mcntech.udpplayer.Configure;
 import com.mcntech.udpplayer.UdpPlayerApi;
+import com.mcntech.udpplayer.R;
+import com.mcntech.udpplayer.VrRenderDb.DecPipeBase;
 
 
 
 public class VrDecodeToTexture implements DecPipeBase {
 	public static final String TAG = "VrDecodeToTexture";
 	public final String LOG_TAG = "VrDecodeToTexture";
-	String                        mUrl;   
+	String                        mUrl;
 	int                           mStrmId;
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler;
@@ -265,7 +265,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 				while (!Thread.interrupted() && !mExitPlayerLoop) {
 					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mStrmId);
 					if (!isEOS && mFramesInBuff > 0) {
-						sampleSize = UdpPlayerApi.getVideoFrame(mUrl,mStrmId,  mBuff, mBuff.capacity(),  100 * 1000);
+						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mStrmId, mBuff, mBuff.capacity(),  100 * 1000);
 						if (sampleSize > 0) {
 							byte [] arCsd0 = null;
 							mBuff.limit(sampleSize);

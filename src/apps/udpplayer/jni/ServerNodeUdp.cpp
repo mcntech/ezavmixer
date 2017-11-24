@@ -1,5 +1,5 @@
 #include "ServerNodeUdp.h"
-
+#include <strmconn.h>
 
 CUdpServerNode::CUdpServerNode(CUdpClntBridge *pClntBridge)
 {

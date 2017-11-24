@@ -1,5 +1,5 @@
 package com.mcntech.udpplayer;
-
+import com.mcntech.udpplayer.VrRenderDb.VideoFeed;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,13 +20,6 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.mcntech.rtspplyer.R;
-import com.mcntech.sphereview.VideoFeedPosDb;
-import com.mcntech.sphereview.VrDecodeToTexture;
-import com.mcntech.sphereview.VrRenderDb;
-import com.mcntech.sphereview.VrRenderDb.VideoFeed;
-import com.mcntech.udpplayer.Configure;
-import com.mcntech.udpplayer.UdpPlayerApi;
 import com.mcntech.udpplayer.UdpPlayerApi.RemoteNodeHandler;
 
 public class MultiPlayerActivity  extends Activity implements View.OnDragListener, View.OnLongClickListener  {

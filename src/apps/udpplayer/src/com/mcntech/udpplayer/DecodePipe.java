@@ -20,7 +20,7 @@ import android.view.TextureView;
 import android.widget.LinearLayout;
 
 
-import com.mcntech.sphereview.VrRenderDb.DecPipeBase;
+import com.mcntech.udpplayer.VrRenderDb.DecPipeBase;
 import com.mcntech.udpplayer.Configure;
 import com.mcntech.udpplayer.UdpPlayerApi;
 

@@ -78,8 +78,8 @@ public class UdpPlayerApi {
 
 	public static void onStatusRemoteNode(final String url, String Msg) 
 	{		
-		if(m_nodeHandler != null)
-			m_nodeHandler.onStatusRemoteNode(url, Msg);
+		//if(m_nodeHandler != null)
+		//	m_nodeHandler.onStatusRemoteNode(url, Msg);
 	}
 		
 			

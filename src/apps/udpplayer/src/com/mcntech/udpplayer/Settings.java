@@ -1,6 +1,5 @@
 package com.mcntech.udpplayer;
 
-import com.mcntech.rtspplyer.R;
 
 import android.app.Activity;
 import android.content.Context;

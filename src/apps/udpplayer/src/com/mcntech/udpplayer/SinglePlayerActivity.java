@@ -35,7 +35,6 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 
-import com.mcntech.rtspplyer.R;
 import com.mcntech.udpplayer.Configure;
 import com.mcntech.udpplayer.UdpPlayerApi;
 import com.mcntech.udpplayer.Settings;
@@ -240,55 +239,15 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 		
 		mNodeHandler = new RemoteNodeHandler(){
 
-			@Override
-			public void onConnectRemoteNode(String url) {
-/*
-				Log.d(LOG_TAG, "transition:onStartPlay");
-	 			mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
-	 			if(Configure.mEnableVideo)
-	 				waitForVideoPlay();
-*/	 			
-			}
-
-			@Override
-			public void onDisconnectRemoteNode(String url) {
-/*
-				Log.d(LOG_TAG, "transition:onStopPlay:Begin");
-	 			mHandler.sendEmptyMessage(PLAYER_CMD_STOP);
-	 			if(Configure.mEnableVideo)
-	 				waitForVideoStop();
-	 			Log.d(LOG_TAG, "transition:onStopPlay:End");
-*/				
-			}
-
-			@Override
-			public void onStatusRemoteNode(String url, String message) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onRemoteNodeError(String url, String message) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onNetworkDisconnected() {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onDiscoverRemoteNode(String url) {
-				// TODO Auto-generated method stub
-				
-			}
 
 			@Override
 			public void onPsiChange(String url, String message) {
 				// TODO Auto-generated method stub
 				
+			}
+			public void onRemoteNodeError(final String url,final String message)
+			{
+
 			}
 	 	}; 
 	 	

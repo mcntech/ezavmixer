@@ -1,7 +1,7 @@
 package com.mcntech.udpplayer;
 
 
-import com.mcntech.rtspplyer.R;
+import com.mcntech.udpplayer.R;
 import com.mcntech.udpplayer.StatsGraphView.SamplesBuffer;
 
 import android.app.Activity;

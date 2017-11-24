@@ -1,4 +1,4 @@
-package com.mcntech.sphereview;
+package com.mcntech.udpplayer;
 
 import java.util.ArrayList;
 

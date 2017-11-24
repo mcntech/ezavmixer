@@ -3,9 +3,6 @@ package com.mcntech.udpplayer;
 import java.io.File;
 import java.util.ArrayList;
 
-import com.mcntech.rtspplyer.R;
-import com.mcntech.sphereview.VideoFeedPosDb;
-import com.mcntech.sphereview.VrRenderDb;
 import com.mcntech.udpplayer.UdpPlayerApi.RemoteNodeHandler;
 
 import android.app.Activity;
@@ -304,21 +301,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		   Intent intent = new Intent(this, MultiPlayerActivity.class);
 	       startActivity(intent);
 	   }
-	   
-	   public void startVrPlayerMono(int numWindows, int res){
 
-		   initVrRenderDb(numWindows, res, false);
-		   Intent intent = new Intent(this, VrPlayerActivity.class);
-	       startActivity(intent);
-	   }
-
-	   public void startVrPlayerMonoArranged(){
-
-		   restoreVideoFeedPos(false);
-		   Intent intent = new Intent(this, VrPlayerActivity.class);
-	       startActivity(intent);
-	   }
-	   
 	   public void startPlayerMonoForArrangement(int numWindows, int res){
 
 		   initVrRenderDb(numWindows, res, false);
@@ -326,15 +309,6 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	       startActivity(intent);
 	   }
 
-	   
-	   public void startVrPlayerStereo(int numWindows, int res){
-
-		   initVrRenderDb(numWindows, res, true);
-		   Intent intent = new Intent(this, VrPlayerActivity.class);
-	       startActivity(intent);
-	   }
-
-	   
 	   public void start_1_1(View v){
 		   startMultiPlayer(1, 0);
 	   }
@@ -347,21 +321,8 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	   public void start_4_4(View v){
 		   startMultiPlayer(16, 0);
 	   }
-	   public void start_multi_mono(View v){
-		   startVrPlayerMono(6, 0);
-	   }
 
-	   public void start_multi_stereo(View v){
-		   startVrPlayerStereo(6, 0);
-	   }
-	   
-	   public void start_2_stereo(View v){
-		   startVrPlayerStereo(2, 0);
-	   }
 
-	   public void multi_mono_use_arranged(View v){
-		   startVrPlayerMonoArranged();
-	   }
 	   public void multi_mono_tile_arrange(View v){
 		   startPlayerMonoForArrangement(6, 0);
 	   }

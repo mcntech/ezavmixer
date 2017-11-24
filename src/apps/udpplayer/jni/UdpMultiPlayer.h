@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #ifndef PLATFORM_ANDROID
-#include <execinfo.h>
+//#include <execinfo.h>
 #endif
 
 #endif

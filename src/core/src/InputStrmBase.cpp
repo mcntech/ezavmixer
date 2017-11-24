@@ -1,6 +1,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <memory.h>
 #include "OmxIf.h"
 
 CInputStrmBase::CInputStrmBase()

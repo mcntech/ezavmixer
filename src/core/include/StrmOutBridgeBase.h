@@ -11,7 +11,7 @@
 #endif
 #include <vector>
 #include <string>
-
+#include <string.h>
 #include "strmconn.h"
 
 #define MAX_NAME_SIZE	256

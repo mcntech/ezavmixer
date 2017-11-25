@@ -50,7 +50,6 @@ public:
 	int startServer(std::string url);
 	int stopServer(std::string url);
 
-	void NotifyStateChange(const char *url, int nState);
 	void UpdateStats(const char *url, UDP_SERVER_STATS *);
 	void NotifyPsiChange(const char *url, const char *pPsiData);
 

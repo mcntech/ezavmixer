@@ -69,24 +69,19 @@ public class UdpPlayerApi {
 		System.out.println("java onNativeMessage:" + title + " message:" + message);
 	}
 
-	public static void onPsiChange(final String url, String psi) 
+	public static void onPsiChange(String url, String psi)
 	{		
 		if(m_nodeHandler != null)
 			m_nodeHandler.onPsiChange(url, psi);
 	}
 
-
-	public static void onStatusRemoteNode(final String url, String Msg) 
-	{		
-		//if(m_nodeHandler != null)
-		//	m_nodeHandler.onStatusRemoteNode(url, Msg);
-	}
-		
 			
 	public static String getVersion() {
 		if(mHandle==0)
 			return null;
-		return getVersion(mHandle);
+		//return getVersion(mHandle);
+		// TODO
+		return "1.0";
 	}
 
 	static {
@@ -115,12 +110,12 @@ public class UdpPlayerApi {
 	
 	public static int getVideoFrame (String url, int strmId, ByteBuffer data, int size, int nTimeoutMs )
 	{
-		return getVideoFrame(mHandle, url, strmId, data, size);
+		return getFrame(mHandle, url, strmId, data, size);
 	}
 
 	public static int getAudioFrame(String url, int strmId, ByteBuffer data, int size, int nTimeoutMs)
 	{
-		return getAudioFrame(mHandle, url, data, size, strmId);
+		return getFrame(mHandle, url, strmId, data, size);
 	}
 	
 
@@ -131,37 +126,35 @@ public class UdpPlayerApi {
 	
 	public static long getVideoPts(String url, int strmId)
 	{
-		return getVideoPts(mHandle, url, strmId);
+		return getPts(mHandle, url, strmId);
 	}
 
 	public static long getAudioPts(String url, int strmId)
 	{
-		return getAudioPts(mHandle, url, strmId);
+		return getPts(mHandle, url, strmId);
 	}
 	
 	public static int getAudCodecType(String url, int strmId)
 	{
-		return getAudCodecType(mHandle, url, strmId);
+		return getCodecType(mHandle, url, strmId);
 	}		
 	public static int getVidCodecType(String url, int strmId)
 	{
-		return getVidCodecType(mHandle, url, strmId);
+		return getCodecType(mHandle, url, strmId);
 	}		
 
 	public static int getNumAvailVideoFrames(String url, int strmId)
 	{
-		return getNumAvailVideoFrames(mHandle, url, strmId);
+		return getNumAvailFrames(mHandle, url, strmId);
 	}		
 
 	public static int getNumAvailAudioFrames(String url, int strmId)
 	{
-		return getNumAvailAudioFrames(mHandle, url, strmId);
+		return getNumAvailFrames(mHandle, url, strmId);
 	}		
 
 	private native long init();
 	private native boolean deinit(long handle);
-
-	public native static String getVersion(long handle);
 
 	public native static long addServer(long handle, String url);	
 	public native static long removeServer(long handle, String url);
@@ -169,14 +162,9 @@ public class UdpPlayerApi {
 	public native static long startServer(long handle, String url);	
 	public native static long stopServer(long handle, String url);	
 	
-	public native static int getVideoFrame(long handle, String inputId, int strmId, ByteBuffer vidData, int numBytes);
-	public native static int getAudioFrame(long handle, String inputId, ByteBuffer vidData, int strmId, int numBytes);	
+	public native static int getFrame(long handle, String inputId, int strmId, ByteBuffer vidData, int numBytes);
 	public native static long getClockUs(long handle, String inputId, int strmId);
-	public native static long getVideoPts(long handle, String inputId, int strmId);
-	public native static long getAudioPts(long handle, String inputId, int strmId);	
-	public native static int getVidCodecType(long handle, String inputId, int strmId);
-	public native static int getAudCodecType(long handle, String inputId, int strmId);	
-	public native static int getNumAvailVideoFrames(long handle, String inputId, int strmId);
-	public native static int getNumAvailAudioFrames(long handle, String inputId, int strmId);
-		
+	public native static long getPts(long handle, String inputId, int strmId);
+	public native static int getCodecType(long handle, String inputId, int strmId);
+	public native static int getNumAvailFrames(long handle, String inputId, int strmId);
 }

@@ -18,8 +18,7 @@ public class VrRenderDb  {
 
     public static class VideoFeed
     {
-		public String mUrl;
-		public int    mStrmId;
+		RemoteNode    mRemoteNode;
     	public int    mIdEye;
     	public int    mPosition;
     	// TODO: Add Camera location, direction and projection map
@@ -27,8 +26,8 @@ public class VrRenderDb  {
     	//VrDecodeToTexture decodePipe = null;
     	public DecPipeBase decodePipe = null;
     	public int               textureId = 0;
-    	public VideoFeed(String url, int feedType){
-    		mUrl = url;
+    	public VideoFeed(RemoteNode remoteNode, int feedType){
+			mRemoteNode = remoteNode;
     		mIdEye = feedType;
     		mPosition = 0;
     	}    	
@@ -47,12 +46,12 @@ public class VrRenderDb  {
     {
     	return VrRenderDb.mVideoFeeds;
     }
-    
-    public static void addFeed(String url, int eyeId){
-    	VideoFeed videoFeed = new VideoFeed(url, eyeId);
+
+    public static void addFeed(RemoteNode remoteNode, int eyeId){
+    	VideoFeed videoFeed = new VideoFeed(remoteNode, eyeId);
     	mVideoFeeds.add(videoFeed);
     }
-    
+
     public static int getFeedCountForEye(int nIdEye){
     	int numFeeds = 0;
     	for(VideoFeed videoFeed : mVideoFeeds){
@@ -67,10 +66,10 @@ public class VrRenderDb  {
     	VideoFeed feedSrc = null;
     	int        pos = -1;
     	for(VideoFeed videoFeed : mVideoFeeds){
-    		if ((videoFeed.mUrl.equals(posUrl))) {
+    		if ((videoFeed.mRemoteNode.mUrl.equals(posUrl))) {
     			pos = mVideoFeeds.indexOf(videoFeed);
     		}
-    		if ((videoFeed.mUrl.equals(url))) {
+    		if ((videoFeed.mRemoteNode.equals(url))) {
     			feedSrc = videoFeed;
     		}
     	}

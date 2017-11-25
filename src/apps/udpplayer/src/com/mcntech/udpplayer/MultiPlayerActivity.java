@@ -88,7 +88,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
 				VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
 				TextureView textureView = getTexture(mLayoutId, i);
-				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mUrl, videoFeed.mStrmId, textureView, maxDecWidth, maxDecHeight);
+				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mVidPID, textureView, maxDecWidth, maxDecHeight);
 				videoFeed.textureId = i;
 				textureView.setOnLongClickListener(this);
 				textureView.setOnDragListener(this);
@@ -141,7 +141,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 	{
 		for(VideoFeed videoFeed: VrRenderDb.mVideoFeeds){
 			if(getTexture(mLayoutId, videoFeed.textureId) == textureView)
-				return videoFeed.mUrl;
+				return videoFeed.mRemoteNode.mUrl;
 		}
 		return null;
 	}
@@ -228,7 +228,6 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
   
    @Override
    public void onBackPressed() {
-	   saveVideoFeedPos();
 	   System.exit(2);
   }
 
@@ -281,18 +280,5 @@ public boolean onDrag(View v, DragEvent event) {
       
       v.startDrag(clipData,myShadow,null,0);
       return true;
-   }
-  
-   public void saveVideoFeedPos() {
-	   VideoFeedPosDb videoFeedPosDb = new VideoFeedPosDb(this);
-	   videoFeedPosDb.clear();
-	   ArrayList<VrRenderDb.VideoFeed> feedRenderList = VrRenderDb.getVideoFeeds();
-	   if(feedRenderList != null) {
-		   int i = 1;
-	       for(VrRenderDb.VideoFeed feed : feedRenderList) {
-	    	   videoFeedPosDb.insertFeed(feed.mUrl, i);
-	    	   i++;
-	       }
-	   }
    }
 }

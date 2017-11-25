@@ -455,6 +455,7 @@ int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 	pCtx->pPsiCallbackCtx = NULL;
 	pCtx->pPmtCallback = NULL;
 	demux_mpeg2_transport_init(pCtx);
+	return 0;
 }
 
 int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
@@ -603,6 +604,7 @@ int demuxStart(StrmCompIf *pComp)
 	}
 #endif
 	JdDbg(CJdDbg::DBGLVL_TRACE, ("Leave"));
+    return 0;
 }
 
 int demuxStop(StrmCompIf *pComp)
@@ -638,6 +640,7 @@ int demuxStop(StrmCompIf *pComp)
 #endif
 	}
 	JdDbg(CJdDbg::DBGLVL_TRACE, ("Leave"));
+    return 0;
 }
 
 int demuxSetClkSrc(StrmCompIf *pComp, void *pClkSrc)

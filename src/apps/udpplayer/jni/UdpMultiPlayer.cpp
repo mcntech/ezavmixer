@@ -153,10 +153,7 @@ void CUdpMultiPlayer::NotifyPsiChange(const char *url, const char *pPsiData)
 		((CUdpPlayerEvents *)m_EventCallback)->onPsiChange(url, pPsiData);
 
 }
-void CUdpMultiPlayer::NotifyStateChange(const char *url, int nState)
-{
 
-}
 
 CPlayerBase *CUdpMultiPlayer::openInstance(CPlayerEventBase *pEventBase)
 {

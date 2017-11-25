@@ -266,14 +266,6 @@ int CUdpClntBridge::StartStreaming()
 	m_srcComp->Start(m_srcComp);
 	m_demuxComp->Start(m_demuxComp);
 
-	// TODO
-	// CreateH264OutputPin();
-
-	// CreateMP4AOutputPin();
-	if(m_pCallback) {
-		m_pCallback->NotifyStateChange(m_szRemoteHost, UDP_SERVER_SETUP);
-	}
-
 EXIT:
 	TRACE_LEAVE
 	return nResult;

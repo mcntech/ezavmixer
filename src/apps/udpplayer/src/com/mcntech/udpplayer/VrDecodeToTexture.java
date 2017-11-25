@@ -47,6 +47,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 	public final String LOG_TAG = "VrDecodeToTexture";
 	String                        mUrl;
 	int                           mStrmId;
+	String 						  mCodec;
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler;
 	Surface                       mVideoSurface = null;
@@ -72,7 +73,6 @@ public class VrDecodeToTexture implements DecPipeBase {
     
     private final Object             mPlayLock = new Object();
     private boolean                  mExitPlayerLoop = false;
-    private int                      mCodecType = 1;
     int                              mMaxVidWidth =  1920;
     int                              mMaxVidHeight = 1080;
     int                              currentapiVersion = android.os.Build.VERSION.SDK_INT;
@@ -84,11 +84,13 @@ public class VrDecodeToTexture implements DecPipeBase {
     
     
     
-	public VrDecodeToTexture(Activity activity, String url, int maxVidWidth, int maxVidHeight) {
+	public VrDecodeToTexture(Activity activity, String url, int strmId, String codec, int maxVidWidth, int maxVidHeight) {
 
 		mHandler = new LocalHandler();
 
 		mUrl = url;
+		mStrmId = strmId;
+		mCodec = codec;
 		mMaxVidWidth = maxVidWidth;
 		mMaxVidHeight = maxVidHeight;
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
@@ -203,20 +205,26 @@ public class VrDecodeToTexture implements DecPipeBase {
 		
 		boolean InitDecoder( MediaCodec decoder, Surface surface)
 		{
-			MediaFormat format;
-			if(mCodecType == 2 ) // HEVC
+			MediaFormat format = null;
+			if(mCodec.compareTo("H265") == 0) // HEVC
 				format =  MediaFormat.createVideoFormat("video/hevc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
-			else
+			else  if(mCodec.compareTo("H264") == 0)
 				format =  MediaFormat.createVideoFormat("video/avc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);				
+			else  if(mCodec.compareTo("MPEG2") == 0)
+				format =  MediaFormat.createVideoFormat("video/mpeg2", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
 			Log.d(LOG_TAG, "decoder configure");
-			decoder.configure(format, surface, null, 0);
-			return true;
+			if(format != null) {
+				decoder.configure(format, surface, null, 0);
+				return true;
+			} else {
+				return false;
+			}
 		}
 		
 		boolean InitDecoder( MediaCodec decoder, Surface surface, ByteBuffer csd0)
 		{
 			MediaFormat format;
-			if(mCodecType == 2 ) // HEVC
+			if(mCodec.compareTo("H265") == 0) // HEVC
 				format =  MediaFormat.createVideoFormat("video/hevc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
 			else
 				format =  MediaFormat.createVideoFormat("video/avc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);				
@@ -228,9 +236,8 @@ public class VrDecodeToTexture implements DecPipeBase {
 		
 		@Override
 		public void run() {
-			mCodecType = UdpPlayerApi.getVidCodecType(mUrl, mStrmId);
 			try {
-				if(mCodecType == 2 ) {
+				if(mCodec.compareTo("H265") == 0) {
 					Log.d(LOG_TAG, "decoder create video/hevc");
 					mDecoder = MediaCodec.createDecoderByType("video/hevc");
 					mfSendCsd0DuringInit = false;

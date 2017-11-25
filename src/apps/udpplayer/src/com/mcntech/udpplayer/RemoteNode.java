@@ -9,6 +9,7 @@ public class RemoteNode {
 	String mUrl;
 	int mProgram;
 	int mVidPID;
+	String mCodec;
 	AudioStream mAudPID[] = new AudioStream[MAX_AUD_PIDS];
 	int mVidWidth;
 	int mVidHeight;
@@ -18,9 +19,10 @@ public class RemoteNode {
 	public RemoteNode(String url){
 		mUrl = url;
 	}
-	public RemoteNode(String url, int vidPid){
+	public RemoteNode(String url, String codec, int vidPid){
 		mUrl = url;
 		mVidPID =  vidPid;
+		mCodec = codec;
 	}
 	public RemoteNode(RemoteNode dev){
 	
@@ -28,7 +30,7 @@ public class RemoteNode {
 
 	@Override 
 	public String toString(){
-		return mUrl; 
+		return mUrl+":" + Integer.toString(mVidPID) + ":" + mCodec;
 	}
 
 	public String getRtspStream(){

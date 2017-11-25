@@ -9,9 +9,12 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -25,12 +28,15 @@ import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 
+
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import static android.os.Environment.getExternalStorageDirectory;
 
 
 public class MainActivity extends Activity implements OnItemSelectedListener {
@@ -54,7 +60,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
        
-/*        
+
         mRemoteNodeList = new ArrayList<RemoteNode>(); //CodecModel.mOnyxRemoteNodeList;
 		mRemoteNodeListView =  (ListView)findViewById(R.id.listRemoteNodes);
 		
@@ -72,8 +78,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 			//doEditRemoteNode(node);
 		    }
 		});
-	
-*/		
+
         getServer();	
 		mNodeHandler = new RemoteNodeHandler(){
 			@Override
@@ -85,6 +90,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 				} catch (JSONException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return;
 				}
 				if(psi != null) {
 					for (int i = 0; i < psi.length(); i++) {
@@ -97,12 +103,12 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 								for (int j = 0; j < esList.length(); j++) {
 									JSONObject es = esList.getJSONObject(j);
 									String codec = es.getString("codec");
-									String pid = es.getString("pid");
+									vidPid = es.getInt("pid");
 									if(codec.compareToIgnoreCase("mpeg2") == 0 ||
 											codec.compareToIgnoreCase("h264") == 0 || 
 											codec.compareToIgnoreCase("h265") == 0){
 
-										RemoteNode node = new RemoteNode(url, vidPid);
+										RemoteNode node = new RemoteNode(url, codec, vidPid);
 										mRemoteNodeList.add(node);
 									}
 								}
@@ -239,7 +245,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		       RemoteNode node  = mRemoteNodeList.get(i);
 		       if(node != null) {
 		    	   String url = node.getRtspStream();
-		    	   VrRenderDb.addFeed(url, 0);
+		    	   VrRenderDb.addFeed(node, 0);
 		       }
 	       }
 	       initEyeIds(stereo);
@@ -263,35 +269,6 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 			    	   else
 			    		   eyeId = VrRenderDb.ID_EYE_LEFT;
 		    	   }
-		       }
-		   }
-	   }
-	   
-	   public void restoreVideoFeedPos(boolean stereo) {
-		   VideoFeedPosDb videoFeedPosDb = new VideoFeedPosDb(this);
-		   VrRenderDb.init();
-	       long numUrls = videoFeedPosDb.getNumFeeds();
-	       
-	       for(int i=0; i < numUrls; i++) {
-	    	   String url = videoFeedPosDb.getUrl(i+1);
-	    	   if(url != null) {
-	    		   VrRenderDb.mVideoFeeds.add(new VrRenderDb.VideoFeed(url, 0));
-	    	   } else {
-	    		   // Show missing url
-	    	   }
-	       }
-	       initEyeIds(stereo);
-	   }
-
-	   public void saveVideoFeedPos() {
-		   VideoFeedPosDb videoFeedPosDb = new VideoFeedPosDb(this);
-		   videoFeedPosDb.clear();
-		   ArrayList<VrRenderDb.VideoFeed> feedRenderList = VrRenderDb.getVideoFeeds();
-		   if(feedRenderList != null) {
-			   int i = 1;
-		       for(VrRenderDb.VideoFeed feed : feedRenderList) {
-		    	   videoFeedPosDb.insertFeed(feed.mUrl, i);
-		    	   i++;
 		       }
 		   }
 	   }
@@ -334,17 +311,56 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	   
 	   void getServer()
 	   {
-	       Intent intent = new Intent()
-	        .setType("*/*")
-	        .setAction(Intent.ACTION_GET_CONTENT);
+	       Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+		   intent.addCategory(Intent.CATEGORY_OPENABLE);
+		   intent.setType("video/*");
 
-	        startActivityForResult(Intent.createChooser(intent, "Select a file"), PICKFILE_RESULT_CODE);
+		   startActivityForResult(Intent.createChooser(intent, "Select a TS file"), PICKFILE_RESULT_CODE);
 	   }
+
+		public String getPath(Uri uri) {
+			Cursor cursor = null;
+			try {
+				cursor = getContentResolver().query(uri, null, null, null, null);
+				if (cursor != null && cursor.moveToFirst()) {
+					String displayName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+					//int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+
+					//int column_index = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA);
+					//return cursor.getString(column_index);
+					File storage = getExternalStorageDirectory();
+					if(storage != null) {
+						//String path = storage.getAbsolutePath() + "/" + displayName;
+						String path = "/mnt/sdcard/movies/" + displayName;
+						return path;
+					}
+				} else
+					return null;
+			} finally {
+				if (cursor != null) {
+					cursor.close();
+				}
+			}
+			return null;
+		}
+
 	   @Override
 	    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 	        super.onActivityResult(requestCode, resultCode, data);
 	        if(requestCode==PICKFILE_RESULT_CODE && resultCode==RESULT_OK) {
 	            mUri = data.getData();
+				//UdpPlayerApi.addServer(mUri.getPath());
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						String filemanagerstring = mUri.getPath();
+						String selectedFilePath = getPath(mUri);
+						if(selectedFilePath != null) {
+							UdpPlayerApi.addServer(selectedFilePath);
+							UdpPlayerApi.startServer(selectedFilePath);
+						}
+					}
+				}).start();
 	        }
 	    }
 }

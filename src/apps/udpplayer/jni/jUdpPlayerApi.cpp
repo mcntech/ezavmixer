@@ -22,7 +22,6 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 jlong Java_com_mcntech_udpplayer_UdpPlayerApi_init(JNIEnv *env, jobject self)
 {
 	pthread_mutex_lock(&g_mutex);
-	CUdpPlayerEvents *pEventHandler;
 	CPlayerBase *pPlayer = NULL;
 
 	CUdpPlayerEvents *pEventCallback = new CUdpPlayerEvents(env, self);
@@ -44,49 +43,54 @@ jboolean Java_com_mcntech_udpplayer_UdpPlayerApi_deinit(JNIEnv *env, jobject sel
 	return true;
 }
 
-int Java_com_mcntech_udpplayer_UdpPlayerApi_addServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jlong Java_com_mcntech_udpplayer_UdpPlayerApi_addServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	pPlayer->addServer(url);
 	env->ReleaseStringUTFChars(jurl, szUrl);
+    return 0;
 }
 
-int Java_com_mcntech_udpplayer_UdpPlayerApi_removeServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jlong Java_com_mcntech_udpplayer_UdpPlayerApi_removeServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	pPlayer->removeServer(url);
 	env->ReleaseStringUTFChars(jurl, szUrl);
+    return 0;
 }
 
-int Java_com_mcntech_udpplayer_UdpPlayerApi_getStatus(JNIEnv *env, jobject self, jlong ctx, jstring jurl, std::string &status)
+jint Java_com_mcntech_udpplayer_UdpPlayerApi_getStatus(JNIEnv *env, jobject self, jlong ctx, jstring jurl, std::string &status)
 {
 
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
 
 	env->ReleaseStringUTFChars(jurl, szUrl);
+    return 0;
 }
 
-int Java_com_mcntech_udpplayer_UdpPlayerApi_startServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jint Java_com_mcntech_udpplayer_UdpPlayerApi_startServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	pPlayer->startServer(url);
 	env->ReleaseStringUTFChars(jurl, szUrl);
+    return 0;
 }
 
-int Java_com_mcntech_udpplayer_UdpPlayerApi_stopServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
+jint Java_com_mcntech_udpplayer_UdpPlayerApi_stopServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);
 	std::string url = szUrl;
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	pPlayer->stopServer(url);
 	env->ReleaseStringUTFChars(jurl, szUrl);
+    return 0;
 }
 
 jint Java_com_mcntech_udpplayer_UdpPlayerApi_getFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jint strmid, jobject buf, jint numBytes, jint nTimeoutMs)

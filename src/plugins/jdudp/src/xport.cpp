@@ -70,6 +70,35 @@ typedef struct	psip
 	unsigned char	psip_table[4096];
 }psip_t;
 
+class CParseCtx
+{
+public:
+	CParseCtx(){
+		pBuffer = (char *)malloc(1024*1024);
+	}
+	~CParseCtx()
+	{
+		free(pBuffer);
+	}
+	
+ 	int		first = TRUE;
+	int		first_sequence = FALSE;
+	int		first_sequence_dump = FALSE;
+	unsigned int	parse = 0;
+	unsigned int	access_unit_delimiter_parse = 0;
+	unsigned int	sequence_parameter_set_parse = 0;
+	unsigned int	picture_count = 0;
+	unsigned char	header[5] = {0x0, 0x0, 0x0, 0x1, 0x9};
+	unsigned long long	first_pts;
+	unsigned int	first_pts_count = 0;
+	unsigned char	constraint_set3_flag;
+	char            *pBuffer;
+    int              nBuffLen = 0;
+    ConnCtxT        *pConn;
+    FILE	        *fpout;
+    int             streamType = 0;
+} ;
+
 
 typedef struct
 {
@@ -117,13 +146,9 @@ typedef struct
 	unsigned int	        audio_channel;
 
 	unsigned short	        pcr_pid;
-	unsigned short	        video_pid;
-	unsigned short	        audio_pid;
 	unsigned char	        audio_stream_type;
 	unsigned char	        video_stream_type;
 	
-	FILE	*fpoutvideo, *fpoutaudio;
-
 	unsigned int	pid_counter[0x2000];
 	unsigned int	packet_counter;
 	unsigned int	pid_first_packet[0x2000];
@@ -330,11 +355,39 @@ typedef struct
 	pat_callback_t pPatCallback;
 	pmt_callback_t pPmtCallback;
 	void           *pPsiCallbackCtx;
-	std::map<int, ConnCtxT *> mConnections;
+	std::map<int, CParseCtx *> mParsers;
 	std::map<int, int> mPrograms;
 } MpegTsDemuxCtx;
 
-typedef void *(*thrdStartFcnPtr) (void *);
+int getStreamType(MpegTsDemuxCtx *pCtx, int nPid) {
+    int strmType = 0;
+    CParseCtx *pX = NULL;
+    if (pCtx->mParsers.find(nPid) != pCtx->mParsers.end()) {
+        pX = pCtx->mParsers[nPid];
+        if (pX != NULL)
+            return pX->streamType;
+        return strmType;
+    }
+}
+void setStreamType(MpegTsDemuxCtx *pCtx, int nPid, int strmType) {
+
+    CParseCtx *pX = NULL;
+    if (pCtx->mParsers.find(nPid) != pCtx->mParsers.end()) {
+        pX = pCtx->mParsers[nPid];
+        if (pX != NULL)
+            pX->streamType = strmType;
+    }
+}
+
+int isVideoPid(MpegTsDemuxCtx *pCtx, int nPid) {
+    int streamType = getStreamType(pCtx, nPid);
+    if (streamType == 0x1 || streamType == 0x2 || streamType == 0x80 || streamType == 0x1b) {
+       return 1;
+    }
+    return 0;
+}
+
+    typedef void *(*thrdStartFcnPtr)(void *);
 
 
 
@@ -347,26 +400,9 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int, unsigned char *);
 static int DisplayStat(MpegTsDemuxCtx *self);
 
 
-void *OpenWriter(int nStrmId)
-{
-#ifdef UNIT_TEST_DEMUX
-	FILE	*fp;
-	char	videofilename[] = {"bits0001.mpv"};
-	char	audiofilename[] = {"bits0001.mpa"};
-	if(nStrmId == STRM_ID_VID) {
-		fp = fopen(&videofilename[0], "wb");
-	} else {
-		fp = fopen(&audiofilename[0], "wb");
-	}
-	return fp;
-#else
-	return (void *)nStrmId;
-#endif
-}
-
 int IsSubscribed(MpegTsDemuxCtx *pCtx, int nPid)
 {
-	return (pCtx->mConnections.find( nPid ) != pCtx->mConnections.end());
+	return (pCtx->mParsers.find( nPid ) != pCtx->mParsers.end());
 }
 
 int IsProgramPid(MpegTsDemuxCtx *pCtx, int nPid)
@@ -386,23 +422,12 @@ pmt_callback_t getCallback(MpegTsDemuxCtx *pCtx, int nPid)
 int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int length, int nPid)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("WriteData: strmid=%d length=%d",nPid, length));
-#ifdef UNIT_TEST_DEMUX
-	char szTmp1[128] = {0};
-	char szTmp2[128] = {0};
-	if(nStrmId == STRM_ID_VID) {
-		Clock2HMSF(pCtx->crnt_vid_pts * 1000 / 90, szTmp1,127);
-		Clock2HMSF(pCtx->current_pcr / 27, szTmp2,127);
-		DBG_MSG("Vid: lenth=%d pCtx->pcr=%s pts=%s\n",length, szTmp1, szTmp2);
-		fwrite(pData, item_size, length,pCtx->fpoutvideo);
-	} else {
-		Clock2HMSF(pCtx->crnt_aud_pts* 1000 / 90, szTmp1,127);
-		Clock2HMSF(pCtx->current_pcr / 27, szTmp2,127);
-		DBG_MSG("Aid: lenth=%d pCtx->pcr=%s pts=%s\n",length, szTmp1, szTmp2);
-		fwrite(pData, item_size, length,pCtx->fpoutaudio);
-	}
+    if(pCtx->mParsers.find( nPid ) != pCtx->mParsers.end()) {
+        CParseCtx *pX = pCtx->mParsers[nPid];
+#ifdef DEMUX_DUMP_OUTPUT
+    fwrite(pData, item_size, length,pX->fpout);
 #else
-	if(pCtx->mConnections.find( nPid ) != pCtx->mConnections.end()) {
-		ConnCtxT *pConn = pCtx->mConnections[nPid];
+		ConnCtxT *pConn = pX->pConn;
 		if(pConn) {
 			int dataLen = item_size * length;
 			JdDbg(CJdDbg::DBGLVL_STRM, ("strmid=%d length=%d",nPid, dataLen));
@@ -420,8 +445,9 @@ int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int len
 			JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
 			pConn->Write(pConn, (char *)pData, dataLen,  ulFlags, pCtx->crnt_vid_pts * 1000 / 90);
 		}
-	}
 #endif
+	}
+
 	return 0;
 }
 
@@ -445,8 +471,6 @@ int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 	pCtx->video_channel = 1;
 	pCtx->audio_channel = 1;
 	pCtx->pcr_pid = 0xFFFF;
-	pCtx->video_pid = 0xFFFF;
-	pCtx->audio_pid = 0xFFFF;
 	pCtx->audio_stream_type = 0xFFFF;
 	pCtx->video_stream_type = 0xFFFF;
 
@@ -463,24 +487,7 @@ int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
 	MpegTsDemuxCtx *pCtx = (MpegTsDemuxCtx *)pComp->pCtx;
 
 	switch(nCmd)
-	{ 
-		case DEMUX_CMD_SELECT_PROGRAM:
-		{
-			DemuxSelectProgramT *pProg = (DemuxSelectProgramT *)pOptionData;
-			pCtx->detect_program_pids = pProg->detect_program_pids;
-			pCtx->program             = pProg->program;
-			pCtx->audio_channel       = pProg->audio_channel;
-			pCtx->video_channel       = pProg->video_channel;
-			pCtx->pcr_pid             = pProg->pcr_pid;
-			pCtx->audio_pid           = pProg->audio_pid;
-			pCtx->video_pid           = pProg->video_pid;
-			pCtx->audio_stream_type   = pProg->audio_stream_type;
-			pCtx->video_stream_type   = pProg->video_stream_type;
-			JdDbg(CJdDbg::DBGLVL_SETUP, ("detectpids=%d prog=%d vhan=%d achan=%d", pCtx->detect_program_pids, pCtx->program, pCtx->video_channel, pCtx->audio_channel));
-			JdDbg(CJdDbg::DBGLVL_SETUP, ("pcr_pid=%d aud_pid=%d vid_pid=%d aud_strm_type=0x%x vid_strm_type=0x%x", pCtx->pcr_pid, pCtx->audio_pid, pCtx->video_pid,pCtx->audio_stream_type, pCtx->video_stream_type));
-		}
-		break;
-
+	{
 		case DEMUX_CMD_SET_PAT_CALLBACK:
 		{
 		pCtx->pPatCallback = (pat_callback_t)pOptionData;
@@ -529,7 +536,14 @@ int demuxSetInputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn)
 int demuxSetOutputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn)
 {
 	MpegTsDemuxCtx *pCtx = (MpegTsDemuxCtx*)pComp->pCtx;
-	pCtx->mConnections[nConnNum] = pConn;
+    CParseCtx *pX = new CParseCtx();
+    pX->pConn = pConn;
+#ifdef DEMUX_DUMP_OUTPUT
+    char outputName[256];
+    sprintf(outputName, "stream_pid_%d.h264", nConnNum);
+    pX->fpout = fopen(outputName, "wb");
+#endif
+    pCtx->mParsers[nConnNum] = pX;
 
 	return 0;
 }
@@ -1915,9 +1929,11 @@ void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int
 
 void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned long long dts)
 {
-#if UNIT_TEST_DEMUX
+#if 1
+    CParseCtx *pX = pCtx->mParsers[pCtx->pid];
 	unsigned int	i;
-	static int		first = TRUE;
+/*
+ 	static int		first = TRUE;
 	static int		first_sequence = FALSE;
 	static int		first_sequence_dump = FALSE;
 	static unsigned int	parse = 0;
@@ -1928,6 +1944,7 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 	static unsigned long long	first_pts;
 	static unsigned int	first_pts_count = 0;
 	static unsigned char	constraint_set3_flag;
+ */
 	unsigned char	primary_pic_type;
 	unsigned int	whole_buffer = TRUE;
 	unsigned char	*start_es_ptr;
@@ -1939,60 +1956,64 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 
 	start_es_ptr = es_ptr;
 	for(i = 0; i < length; i++)  {
-		parse = (parse << 8) + *es_ptr++;
-		if ((parse & 0xffffff00) == 0x00000100)  {
+		pX->parse = (pX->parse << 8) + *es_ptr++;
+		if ((pX->parse & 0xffffff00) == 0x00000100)  {
 #if 0
 			DBG_MSG("parse = 0x%08x\n", parse);
 #endif
 		}
-		if (parse == 0x00000109)  {
-			access_unit_delimiter_parse = 1;
+		if (pX->parse == 0x00000109)  {
+			pX->access_unit_delimiter_parse = 1;
 			pCtx->coded_frames++;
+            JDBG_LOG(CJdDbg::LVL_TRACE, ("Flushing: strmid=%d length=%d",pCtx->pid, pX->nBuffLen));
+            WriteData(pCtx, (unsigned char *)pX->pBuffer, 1, pX->nBuffLen, pCtx->pid);
+            pX->nBuffLen = 0;
+            pX->parse = 0;
 		}
-		else if (access_unit_delimiter_parse != 0)  {
-			--access_unit_delimiter_parse;
-			primary_pic_type = (unsigned char)(parse & 0xff) >> 5;
+		else if (pX->access_unit_delimiter_parse != 0)  {
+			--pX->access_unit_delimiter_parse;
+			primary_pic_type = (unsigned char)(pX->parse & 0xff) >> 5;
 #if 0
 			DBG_MSG("primary_pic_type = %d\n", primary_pic_type);
 #endif
-			if (first_sequence == FALSE && primary_pic_type == 0)  {
+			if (pX->first_sequence == FALSE && primary_pic_type == 0)  {
 				DBG_MSG("%d frames before first I-frame\n", picture_count);
 				if(pCtx->parse_only == FALSE)  {
-					WriteData(pCtx, (unsigned char *)&header, 1, 5, pCtx->pid);
+					WriteData(pCtx, (unsigned char *)&pX->header, 1, 5, pCtx->pid);
 					middle_es_ptr = es_ptr - 1;
 					middle_length = length - i;
 					whole_buffer = FALSE;
 				}
-				first_sequence = TRUE;
-				first_pts_count = 2;
+				pX->first_sequence = TRUE;
+				pX->first_pts_count = 2;
 			}
-			if(first_pts_count != 0)  {
-				if(first_pts_count == 2)  {
-					first_pts = pts;
+			if(pX->first_pts_count != 0)  {
+				if(pX->first_pts_count == 2)  {
+					pX->first_pts = pts;
 				}
-				--first_pts_count;
-				if(first_pts_count == 0)  {
-					if(first_pts > pts)  {
-						first_pts = pts;
-						pCtx->pts_aligned = first_pts;
+				--pX->first_pts_count;
+				if(pX->first_pts_count == 0)  {
+					if(pX->first_pts > pts)  {
+						pX->first_pts = pts;
+						pCtx->pts_aligned = pX->first_pts;
 					}
 					else  {
-						pCtx->pts_aligned = first_pts;
+						pCtx->pts_aligned = pX->first_pts;
 					}
 					DBG_MSG("First Video PTS = 0x%08x\n", (unsigned int)pCtx->pts_aligned);
 				}
 			}
-			picture_count++;
+			pX->picture_count++;
 		}
-		else if (parse == 0x00000127 ||  parse == 0x00000167)  {
-			sequence_parameter_set_parse = 3;
+		else if (pX->parse == 0x00000127 ||  pX->parse == 0x00000167)  {
+			pX->sequence_parameter_set_parse = 3;
 		}
-		else if (sequence_parameter_set_parse != 0)  {
-			--sequence_parameter_set_parse;
-			if (first_sequence_dump == FALSE)  {
-				switch (sequence_parameter_set_parse)  {
+		else if (pX->sequence_parameter_set_parse != 0)  {
+			--pX->sequence_parameter_set_parse;
+			if (pX->first_sequence_dump == FALSE)  {
+				switch (pX->sequence_parameter_set_parse)  {
 					case 2:
-						switch (parse & 0xff)  {
+						switch (pX->parse & 0xff)  {
 							case 66:
 								DBG_MSG("Baseline Profile\n");
 								break;
@@ -2020,21 +2041,21 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 						}
 						break;
 					case 1:
-						constraint_set3_flag = (unsigned char)(parse & 0x10) >> 4;
+						pX->constraint_set3_flag = (unsigned char)(pX->parse & 0x10) >> 4;
 						break;
 					case 0:
-						if (((parse & 0xff) == 11) && (constraint_set3_flag == 1))  {
+						if (((pX->parse & 0xff) == 11) && (pX->constraint_set3_flag == 1))  {
 							DBG_MSG("Level = 1b\n");
 						}
 						else  {
 							DBG_MSG("Level = %d.%d\n", (parse & 0xff) / 10, ((parse & 0xff) - (((parse & 0xff) / 10) * 10)));
 						}
-						first_sequence_dump = TRUE;
+						pX->first_sequence_dump = TRUE;
 						break;
 				}
 			}
 		}
-		else if (parse == 0x0000010a ||  parse == 0x0000010b)  {
+		else if (pX->parse == 0x0000010a ||  pX->parse == 0x0000010b)  {
 			if(pCtx->parse_only == FALSE)  {
 				middle_es_ptr = es_ptr - 1;
 				*middle_es_ptr = 0xc;
@@ -2042,12 +2063,17 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 		}
 	}
 	if(pCtx->parse_only == FALSE)  {
-		if(first_sequence == TRUE)  {
+		if(pX->first_sequence == TRUE)  {
 			if(whole_buffer == TRUE)  {
-				WriteData(pCtx, start_es_ptr, 1, length, pCtx->pid);
+				//WriteData(pCtx, start_es_ptr, 1, length, pCtx->pid);
+                memcpy(pX->pBuffer + pX->nBuffLen, start_es_ptr, length);
+                pX->nBuffLen += length;
+
 			}
 			else  {
-				WriteData(pCtx, middle_es_ptr, 1, middle_length, pCtx->pid);
+				//WriteData(pCtx, middle_es_ptr, 1, middle_length, pCtx->pid);
+                memcpy(pX->pBuffer + pX->nBuffLen, middle_es_ptr, middle_length);
+                pX->nBuffLen += middle_length;
 			}
 		}
 	}
@@ -2224,7 +2250,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->psip_ptr[pCtx->pid]->psip_section_start = TRUE;
 								}
 							}
-							if (pCtx->pid == pCtx->video_pid && pCtx->payload_unit_start_indicator == 1)  {
+							if (isVideoPid(pCtx, pCtx->pid) && pCtx->payload_unit_start_indicator == 1)  {
 								pCtx->video_xfer_state = FALSE;
 							}
 							break;
@@ -2471,24 +2497,19 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->pmt_elementary_pid = (pCtx->program_map_table[k+1] & 0x1f) << 8;
 									pCtx->pmt_elementary_pid |= pCtx->program_map_table[k+2];
 									if (pCtx->pmt_stream_type == 0x1 || pCtx->pmt_stream_type == 0x2 || (pCtx->pmt_stream_type == 0x80 && pCtx->hdmv_mode == FALSE) || pCtx->pmt_stream_type == 0x1b || pCtx->pmt_stream_type == 0xea)  {
-										video_channel_count++;
-										if (video_channel_count == pCtx->video_channel)  {
-											pCtx->video_pid = pCtx->pmt_elementary_pid;
-											if (pCtx->first_pmt == TRUE)  {
-												DBG_MSG("Video PID = %4d <0x%04x>, type = 0x%02x\r\n", pCtx->video_pid, pCtx->video_pid, pCtx->pmt_stream_type);
-											}
-											pCtx->video_stream_type = pCtx->pmt_stream_type;
-										}
+										//video_channel_count++;
+										//if (video_channel_count == pCtx->video_channel)
+                                        //{
+										//	pCtx->video_stream_type = pCtx->pmt_stream_type;
+										//}
+                                        setStreamType(pCtx, pCtx->pmt_elementary_pid, pCtx->pmt_stream_type);
 									}
 									else if (pCtx->pmt_stream_type == 0x3 || pCtx->pmt_stream_type == 0x4 || pCtx->pmt_stream_type == 0x80 || pCtx->pmt_stream_type == 0x81 || pCtx->pmt_stream_type == 0x6 || pCtx->pmt_stream_type == 0x82 || pCtx->pmt_stream_type == 0x83 || pCtx->pmt_stream_type == 0x84 || pCtx->pmt_stream_type == 0x85 || pCtx->pmt_stream_type == 0x86 || pCtx->pmt_stream_type == 0xa1 || pCtx->pmt_stream_type == 0xa2 || pCtx->pmt_stream_type == 0x11 ||  pCtx->pmt_stream_type == 0x0F)  {
 										audio_channel_count++;
-										if (audio_channel_count == pCtx->audio_channel)  {
-											pCtx->audio_pid = pCtx->pmt_elementary_pid;
-											if (pCtx->first_pmt == TRUE)  {
-												DBG_MSG("Audio PID = %4d <0x%04x>, type = 0x%02x\r\n", pCtx->audio_pid, pCtx->audio_pid, pCtx->pmt_stream_type);
-											}
-											pCtx->audio_stream_type = pCtx->pmt_stream_type;
-										}
+										//if (audio_channel_count == pCtx->audio_channel)  {
+										//	pCtx->audio_stream_type = pCtx->pmt_stream_type;
+										//}
+                                        setStreamType(pCtx,  pCtx->pmt_elementary_pid, pCtx->pmt_stream_type);
 									}
 									pCtx->pmt_ES_info_length = (pCtx->program_map_table[k+3] & 0xf) << 8;
 									pCtx->pmt_ES_info_length |= pCtx->program_map_table[k+4];
@@ -2686,10 +2707,11 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						}
 						xfer_length = j;
 						DBG_MSG("Burst length = %d\r\n", j);
-						if(pCtx->video_stream_type == 0x1 || pCtx->video_stream_type == 0x2 || pCtx->video_stream_type == 0x80)  {
+                        int streamType = getStreamType(pCtx, pCtx->pid);
+						if(streamType == 0x1 || streamType == 0x2 || streamType == 0x80)  {
 							parse_mpeg2_video(pCtx, &buffer[i], xfer_length, pCtx->video_pts, pCtx->video_dts);
 						}
-						else if(pCtx->video_stream_type == 0x1b)  {
+						else if(streamType == 0x1b)  {
 							parse_h264_video(pCtx, &buffer[i], xfer_length, pCtx->video_pts, pCtx->video_dts);
 						}
 						else  {
@@ -2924,16 +2946,17 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						DBG_MSG("Burst length = %d\r\n", j);
 						if (pCtx->demux_audio == TRUE)  {
 							int end_of_frame = (pCtx->audio_packet_length == xfer_length);
-							if(pCtx->audio_stream_type == 0x81 || pCtx->audio_stream_type == 0x6)  {
+                            int streamType = getStreamType(pCtx, pCtx->pid);
+							if(streamType == 0x81 || streamType == 0x6)  {
 								parse_ac3_audio(pCtx, &buffer[i], xfer_length, pCtx->audio_pts, pCtx->first_audio_access_unit, end_of_frame);
 							}
-							else if(pCtx->audio_stream_type == 0x3 || pCtx->audio_stream_type == 0x4)  {
+							else if(streamType == 0x3 || streamType == 0x4)  {
 								parse_mp2_audio(&buffer[i], xfer_length, pCtx->audio_pts, pCtx->first_audio_access_unit);
 							}
-							else if(pCtx->audio_stream_type == 0x80)  {
+							else if(streamType == 0x80)  {
 								parse_lpcm_audio(pCtx, &buffer[i], xfer_length, pCtx->audio_pts, pCtx->first_audio_access_unit, pCtx->audio_lpcm_header_flags);
 							}
-							else if(pCtx->audio_stream_type == 0x0f)  {
+							else if(streamType == 0x0f)  {
 								parse_aac_audio(pCtx, &buffer[i], xfer_length, pCtx->audio_pts, pCtx->first_audio_access_unit, end_of_frame);
 							}
 							else  {
@@ -3749,7 +3772,7 @@ void Demux_DumpStat(MpegTsDemuxCtx *pCtx)
 void demuxDelete(StrmCompIf *pComp)
 {
 	if(pComp->pCtx) {
-		free(pComp->pCtx);
+		delete(pComp->pCtx);
 	}
 	free(pComp);
 	//return 0;
@@ -3758,7 +3781,7 @@ void demuxDelete(StrmCompIf *pComp)
 StrmCompIf *demuxCreate()
 {
 	StrmCompIf *pComp = (StrmCompIf *)malloc(sizeof(StrmCompIf));
-	pComp->pCtx = malloc(sizeof(MpegTsDemuxCtx));
+	//pComp->pCtx = malloc(sizeof(MpegTsDemuxCtx));
 	//memset(pComp->pCtx, 0x00, sizeof(MpegTsDemuxCtx));
 	pComp->pCtx = new MpegTsDemuxCtx();
 	pComp->Open = demuxOpen;
@@ -3775,188 +3798,3 @@ StrmCompIf *demuxCreate()
 	return pComp;
 }
 
-#ifdef UNIT_TEST_DEMUX
-//int gDbgLevel = 3;
-int main(int argc, char **argv)
-{
-	FILE	*fp;
-	unsigned char	buffer[16384];
-	unsigned int	i, length;
-	int			temp;
-	char	videofilename[] = {"bits0001.mpv"};
-	char	audiofilename[] = {"bits0001.mpa"};
-
-	// Ram: added the following to tglle between program detection and use user supplied PIDs
-	StrmCompIf *pComp = demuxCreate();
-	MpegTsDemuxCtx *pCtx = (MpegTsDemuxCtx*)pComp->pCtx;
-	void *pClk = demuxGetClkSrc(pComp);
-
-	if (argc < 7) {
-		fprintf(stderr, "xport Transport Stream Demuxer 1.01\n\n");
-		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "\txport <-pavtdszgher2> <infile> <detect_program_pids> <program number>/pcr_pid> <video stream number/vid_pid> <audio stream number/aud_pd> [<vid_stream_type> <aud_stream_type>]\n\n");
-		fprintf(stderr, "Options:\n");
-		fprintf(stderr, "\tp = parse only, do not demux to video and audio files\n");
-		fprintf(stderr, "\ta = dump audio PTS\n");
-		fprintf(stderr, "\tv = dump video PTS\n");
-		fprintf(stderr, "\tt = GOP timecode mode, count repeated fields/frames\n");
-		fprintf(stderr, "\td = dump all PID's (useful for debugging muxers, but tons of output)\n");
-		fprintf(stderr, "\ts = suppress TS rate dumping (useful when piping output to a file)\n");
-		fprintf(stderr, "\tz = demux to PES streams (instead of elementary streams)\n");
-		fprintf(stderr, "\tg = dump ATSC PSIP information\n");
-		fprintf(stderr, "\th = input file is in HDMV (AVCHD and Blu-ray) format (192 byte packets)\n");
-		fprintf(stderr, "\te = dump HDMV arrival_time_stamp difference\n");
-		fprintf(stderr, "\tr = dump PCR\n");
-		fprintf(stderr, "\t2 = only extract 2 channels of HDMV LPCM audio from multi-channel tracks\n");
-		exit(-1);
-	}
-
-		if(*argv[1] == OPTION_CHAR)  {
-			for(i = 1; i < strlen(argv[1]); i++)  {
-				switch (argv[1][i])  {
-					case 'p':
-					case 'P':
-						pCtx->parse_only = TRUE;
-						break;
-					case 'a':
-					case 'A':
-						pCtx->dump_audio_pts = TRUE;
-						break;
-					case 'v':
-					case 'V':
-						pCtx->dump_video_pts = TRUE;
-						break;
-					case 't':
-					case 'T':
-						pCtx->timecode_mode = TRUE;
-						break;
-					case 'd':
-					case 'D':
-						pCtx->dump_pids = TRUE;
-						break;
-					case 's':
-					case 'S':
-						pCtx->suppress_tsrate = TRUE;
-						break;
-					case 'z':
-					case 'Z':
-						pCtx->pes_streams = TRUE;
-						break;
-					case 'g':
-					case 'G':
-						pCtx->dump_psip = TRUE;
-						break;
-					case 'h':
-					case 'H':
-						pCtx->hdmv_mode = TRUE;
-						break;
-					case 'e':
-					case 'E':
-						pCtx->dump_extra = TRUE;
-						break;
-					case 'r':
-					case 'R':
-						pCtx->dump_pcr = TRUE;
-						break;
-					case '2':
-						pCtx->lpcm_mode = TRUE;
-						break;
-					default:
-						fprintf(stderr, "Unsupported Option: %c\n", argv[1][i]);
-				}
-			}
-		}
-		else  {
-			fprintf(stderr, "xport Transport Stream Demuxer 1.01\n\n");
-			fprintf(stderr, "Usage:\n");
-			fprintf(stderr, "\txport <-pavtdszgher2> <infile> <program number> <video stream number> <audio stream number>\n\n");
-			fprintf(stderr, "Options:\n");
-			fprintf(stderr, "\tp = parse only, do not demux to video and audio files\n");
-			fprintf(stderr, "\ta = dump audio PTS\n");
-			fprintf(stderr, "\tv = dump video PTS\n");
-			fprintf(stderr, "\tt = GOP timecode mode, count repeated fields/frames\n");
-			fprintf(stderr, "\td = dump all PID's (useful for debugging muxers, but tons of output)\n");
-			fprintf(stderr, "\ts = suppress TS rate dumping (useful when piping output to a file)\n");
-			fprintf(stderr, "\tz = demux to PES streams (instead of elementary streams)\n");
-			fprintf(stderr, "\tg = dump ATSC PSIP information\n");
-			fprintf(stderr, "\th = input file is in HDMV (AVCHD and Blu-ray) format (192 byte packets)\n");
-			fprintf(stderr, "\te = dump HDMV arrival_time_stamp difference\n");
-			fprintf(stderr, "\tr = dump PCR\n");
-			fprintf(stderr, "\t2 = only extract 2 channels of HDMV LPCM audio from multi-channel tracks\n");
-			exit(-1);
-		}
-		/*--- open binary file (for parsing) ---*/
-		fp = fopen(argv[2], "rb");
-		if (fp == 0) {
-			fprintf(stderr, "Cannot open bitstream file <%s>\n", argv[2]);
-			exit(-1);
-		}
-
-
-	if(pCtx->parse_only == FALSE)  {
-		/*--- open binary file (for video output) ---*/
-		pCtx->fpoutvideo = fopen(&videofilename[0], "wb");
-		if (pCtx->fpoutvideo == 0) {
-			fprintf(stderr, "Cannot open video output file <%s>\n", &videofilename[0]);
-			exit(-1);
-		}
-
-		/*--- open binary file (for audio output) ---*/
-		pCtx->fpoutaudio = fopen(&audiofilename[0], "wb");
-		if (pCtx->fpoutaudio == 0) {
-			fprintf(stderr, "Cannot open audio output file <%s>\n", &audiofilename[0]);
-			exit(-1);
-		}
-	}
-
-	{
-		pCtx->detect_program_pids = atoi(argv[3]);
-		if(pCtx->detect_program_pids) {
-			pCtx->program = atoi(argv[4]);
-			pCtx->audio_channel = atoi(argv[5]);
-			pCtx->video_channel = atoi(argv[6]);
-		} else {
-			pCtx->pcr_pid = atoi(argv[4]);
-			pCtx->audio_pid = atoi(argv[5]);
-			pCtx->video_pid = atoi(argv[6]);
-			if(argc >= 9) {
-				pCtx->audio_stream_type = atoi(argv[7]);
-				pCtx->video_stream_type = atoi(argv[8]);
-			} else {
-				pCtx->audio_stream_type = 0x0F; // AAC
-				pCtx->video_stream_type = 0x1B; // H.264
-			}
-		}
-	}
-	DBG_MSG("xport Transport Stream Demuxer 1.01\n");
-	DBG_MSG("program = %d, video channel = %d, audio channel = %d\n", pCtx->program, pCtx->video_channel, pCtx->audio_channel);
-	demux_mpeg2_transport_init(pCtx);
-
-	while(!feof(fp))  {
-		length = fread(&buffer[0], 1, 16384, fp);
-		demux_mpeg2_transport(pCtx, length, &buffer[0]);
-	}
-	DBG_MSG("\n");
-	for(i = 0; i < 0x2000; i++)  {
-		if(pCtx->pid_counter[i] != 0)  {
-			DBG_MSG("packets for pCtx->pid %4d <0x%04x> = %d, first = %d, last = %d\n", i, i, pCtx->pid_counter[i], pCtx->pid_first_packet[i], pCtx->pid_last_packet[i]);
-		}
-	}
-	if(pCtx->video_progressive == 0)  {
-		DBG_MSG("coded pictures = %d, video fields = %d\n", pCtx->coded_frames, pCtx->video_fields);
-	}
-	else  {
-		DBG_MSG("coded pictures = %d, video frames = %d\n", pCtx->coded_frames, pCtx->video_fields);
-	}
-	temp = (int)((pCtx->last_audio_pts + pCtx->last_audio_pts_diff) - (pCtx->last_video_pts + pCtx->last_video_pts_diff));
-	DBG_MSG("Ending audio to video PTS difference = %d ticks, %f milliseconds\n", temp, (double)temp / 90.0);
-	fclose(fp);
-	if(pCtx->parse_only == FALSE)  {
-		fclose(pCtx->fpoutvideo);
-		fclose(pCtx->fpoutaudio);
-	}
-
-	demuxDelete(pComp);
-	return 0;
-}
-#endif

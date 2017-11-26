@@ -107,7 +107,17 @@ public class UdpPlayerApi {
 	{
 		return stopServer(mHandle, url);
 	}
-	
+
+	public static int subscribeStream (String url, int strmId)
+	{
+		return subscribeStream(mHandle, url, strmId);
+	}
+
+	public static int unsubscribeStream (String url, int strmId)
+	{
+		return unsubscribeStream(mHandle, url, strmId);
+	}
+
 	public static int getVideoFrame (String url, int strmId, ByteBuffer data, int size, int nTimeoutMs )
 	{
 		return getFrame(mHandle, url, strmId, data, size);
@@ -160,8 +170,10 @@ public class UdpPlayerApi {
 	public native static long removeServer(long handle, String url);
 	
 	public native static long startServer(long handle, String url);	
-	public native static long stopServer(long handle, String url);	
-	
+	public native static long stopServer(long handle, String url);
+
+	public native static int subscribeStream(long handle, String inputId, int strmId);
+	public native static int unsubscribeStream(long handle, String inputId, int strmId);
 	public native static int getFrame(long handle, String inputId, int strmId, ByteBuffer vidData, int numBytes);
 	public native static long getClockUs(long handle, String inputId, int strmId);
 	public native static long getPts(long handle, String inputId, int strmId);

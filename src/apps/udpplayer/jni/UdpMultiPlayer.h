@@ -39,6 +39,9 @@ public:
 	int addServer(std::string url);
 	int removeServer(std::string url);
 
+	int subscribeStream(std::string url, int substrmId);
+	int unsubscribeStream(std::string url, int substrmId);
+
 	int getData(std::string url, int substrmId, char *pData, int numBytes);
 
 	long long getPts(std::string url, int substrmId);

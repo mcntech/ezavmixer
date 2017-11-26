@@ -65,12 +65,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 	
 
     private boolean                  mfPlaying = false;
-    
-    public static final int                        PLAYER_CMD_RUN = 1;
-    public static final int                        PLAYER_CMD_STOP = 2;
-    public static final int                 PLAYER_CMD_INIT = 3;
-    public static final int                 PLAYER_CMD_DEINIT = 4;    
-    
+
     private final Object             mPlayLock = new Object();
     private boolean                  mExitPlayerLoop = false;
     int                              mMaxVidWidth =  1920;
@@ -254,7 +249,7 @@ public class VrDecodeToTexture implements DecPipeBase {
 				return;
 			}
 
-			UdpPlayerApi.startServer(mUrl);
+			UdpPlayerApi.subscribeStream(mUrl, mStrmId);
 			
 			ByteBuffer[] inputBuffers = null;
 			ByteBuffer[] outputBuffers = null;

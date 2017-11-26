@@ -30,6 +30,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 	public final String LOG_TAG = "DecodePipe";
 	String                        mUrl;
 	int                           mStrmId;
+	String 						  mCodec;
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler = null;
 	TextureView                   mVideoTexView = null;
@@ -48,15 +49,9 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 	
 
     private boolean                  mfPlaying = false;
-    
-    final int                        PLAYER_CMD_RUN = 1;
-    final int                        PLAYER_CMD_STOP = 2;
-    final int                        PLAYER_CMD_INIT = 3;
-    final int                        PLAYER_CMD_DEINIT = 4;    
-    
+
     private final Object             mPlayLock = new Object();
     private boolean                  mExitPlayerLoop = false;
-    private int                      mCodecType = 1;
     int                              mMaxVidWidth =  1920;
     int                              mMaxVidHeight = 1080;
     int                              currentapiVersion = android.os.Build.VERSION.SDK_INT;
@@ -66,13 +61,14 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
     LinearLayout                     mStatsLayout;
     boolean mfHevcSupported = false;
     
-	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView, int maxVidWidth, int maxVidHeight) {
+	public DecodePipe(Activity activity, String url, String codec, int strmId, TextureView textureView, int maxVidWidth, int maxVidHeight) {
 
 		mHandler = new LocalHandler();
 		mVideoTexView = textureView;
 		Context context = activity.getApplicationContext();
 		Configure.loadSavedPreferences(context, false);
 		mUrl = url;//Configure.mRtspUrl1;
+		mCodec = codec;
 		mStrmId = strmId;
 		mMaxVidWidth = maxVidWidth;
 		mMaxVidHeight = maxVidHeight;
@@ -109,8 +105,6 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						//OnyxPlayerApi.initialize();
-						UdpPlayerApi.addServer(mUrl);
 		 				mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
 					}
  				}).start();
@@ -176,7 +170,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 		boolean InitDecoder( MediaCodec decoder, Surface surface)
 		{
 			MediaFormat format;
-			if(mCodecType == 2 ) // HEVC
+			if(mCodec.compareTo("H265") == 0) // HEVC
 				format =  MediaFormat.createVideoFormat("video/hevc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
 			else
 				format =  MediaFormat.createVideoFormat("video/avc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);				
@@ -188,7 +182,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 		boolean InitDecoder( MediaCodec decoder, Surface surface, ByteBuffer csd0)
 		{
 			MediaFormat format;
-			if(mCodecType == 2 ) // HEVC
+			if(mCodec.compareTo("H265") == 0) // HEVC
 				format =  MediaFormat.createVideoFormat("video/hevc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
 			else
 				format =  MediaFormat.createVideoFormat("video/avc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);				
@@ -200,9 +194,9 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 		
 		@Override
 		public void run() {
-			mCodecType = UdpPlayerApi.getVidCodecType(mUrl, mStrmId);
+
 			try {
-				if(mCodecType == 2 ) {
+				if(mCodec.compareTo("H265") == 0) {
 					Log.d(LOG_TAG, "decoder create video/hevc");
 					mDecoder = MediaCodec.createDecoderByType("video/hevc");
 					mfSendCsd0DuringInit = false;
@@ -219,7 +213,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 				return;
 			}
 
-			UdpPlayerApi.startServer(mUrl);
+			UdpPlayerApi.subscribeStream(mUrl, mStrmId);
 			
 			ByteBuffer[] inputBuffers = null;
 			ByteBuffer[] outputBuffers = null;

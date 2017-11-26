@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.mcntech.udpplayer.UdpPlayerApi.RemoteNodeHandler;
+import com.mcntech.udpplayer.VrRenderDb;
 
 public class MultiPlayerActivity  extends Activity implements View.OnDragListener, View.OnLongClickListener  {
 	
@@ -88,7 +89,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
 				VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
 				TextureView textureView = getTexture(mLayoutId, i);
-				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mVidPID, textureView, maxDecWidth, maxDecHeight);
+				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mCodec, videoFeed.mRemoteNode.mVidPID, textureView, maxDecWidth, maxDecHeight);
 				videoFeed.textureId = i;
 				textureView.setOnLongClickListener(this);
 				textureView.setOnDragListener(this);
@@ -132,7 +133,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			if(videoFeed.decodePipe != null){
 				Handler handler = videoFeed.decodePipe.getHandler();
 				if(handler != null)
-					handler.sendMessage(handler.obtainMessage(VrDecodeToTexture.PLAYER_CMD_STOP, 0));
+					handler.sendMessage(handler.obtainMessage(VrRenderDb.DecPipeBase.PLAYER_CMD_STOP, 0));
 			}
 		}
 	}

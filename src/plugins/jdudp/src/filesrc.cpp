@@ -94,7 +94,7 @@ int FileSrcInit(FileSrcCtx *pCtx)
 	pCtx->pipeEmptyBuff = 0;
 	pCtx->pipeFillBuff = 0;
 	pCtx->nBlockSize = (21 * 188);
-	pCtx->fLoop = 0;
+	pCtx->fLoop = 1;
 	return 0;
 }
 

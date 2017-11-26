@@ -181,6 +181,11 @@ void CUdpClntBridge::psiJson(std::string &psiString)
 				jEs.emplace("codec",StrmTypeToString(es->stream_type));
 				// TODO es info other attributes
 				jPmt["streams"][i] = jEs;
+#ifdef DEMUX_DUMP_OUTPUT
+				if(es->stream_type == 0x1b)
+                	ConnectStreamForPid(es->elementary_PID, NULL);
+#endif
+
 			}
 			jPmt["pid"] = nPid;
 			jPmt["program"] = m_pat->program_descriptor[j].program_number;
@@ -253,8 +258,6 @@ int CUdpClntBridge::StartStreaming()
 	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PAT_CALLBACK, (char *)patCallback);
 	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PMT_CALLBACK, (char *)pmtCallback);
 	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PSI_CALLBACK_CTX, (char *) this);
-
-	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SELECT_PROGRAM, (char *)pdemuxArgs);
 
 	m_srcComp->SetOutputConn(m_srcComp, 0, m_pConnCtxSrcToDemux);
 	m_demuxComp->SetInputConn(m_demuxComp, 0, m_pConnCtxSrcToDemux);

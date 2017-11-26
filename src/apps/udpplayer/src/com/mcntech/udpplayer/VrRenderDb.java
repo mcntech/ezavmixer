@@ -10,9 +10,15 @@ import android.os.Handler;
 public class VrRenderDb  {
 	public static final int ID_EYE_LEFT = 1;
 	public static final int ID_EYE_RIGHT = 2;
+
     public interface DecPipeBase
     {
-    	public Handler getHandler();
+		final int                        PLAYER_CMD_RUN = 1;
+		final int                        PLAYER_CMD_STOP = 2;
+		final int                        PLAYER_CMD_INIT = 3;
+		final int                        PLAYER_CMD_DEINIT = 4;
+
+		public Handler getHandler();
     	public SurfaceTexture getSurfaceTexture();
     }
 

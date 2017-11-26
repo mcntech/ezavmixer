@@ -18,4 +18,4 @@ SOURCES= main.cpp \
          $(PLUGIN_TSDEMUX)/src/TsPsi.cpp \
          $(CORE)/src/UdpClntBridge.cpp
 all:
-	gcc -g  $(SOURCES) $(INCLUDES) -lstdc++ -std=gnu++11 -lpthread -o testudpclient
+	gcc -g  -DDEMUX_DUMP_OUTPUT $(SOURCES) $(INCLUDES) -lstdc++ -std=gnu++11 -lpthread -o testudpclient

@@ -21,7 +21,7 @@ void CUdpServerNode::stop()
 int CUdpServerNode::subscribeStream(int nStrmId)
 {
 	// TODO video vs audio vs other
-	ConnCtxT *pConn = CreateStrmConn(8, 1024*1024);
+	ConnCtxT *pConn = CreateStrmConn(1024*1024, 8);
 	m_pClntBridge->ConnectStreamForPid(nStrmId, pConn);
 	m_Connections[nStrmId] = pConn;
 	return 0;

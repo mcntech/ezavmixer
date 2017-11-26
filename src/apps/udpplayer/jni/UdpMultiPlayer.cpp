@@ -67,6 +67,24 @@ int CUdpMultiPlayer::startServer(std::string url)
 	return 0;
 }
 
+int CUdpMultiPlayer::subscribeStream(std::string url, int substrmId)
+{
+	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
+	if(pNode) {
+		return pNode->subscribeStream(substrmId);
+	}
+	return 0;
+}
+
+int CUdpMultiPlayer::unsubscribeStream(std::string url, int substrmId)
+{
+	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
+	if(pNode) {
+		return pNode->unsubscribeStream(substrmId);
+	}
+	return 0;
+}
+
 int CUdpMultiPlayer::getData(std::string url, int substrmId, char *pData, int numBytes)
 {
 	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);

@@ -34,6 +34,9 @@ public:
 
 	virtual int  addServer(std::string url) = 0;
 	virtual int  removeServer(std::string url) = 0;
+	virtual int  subscribeStream(std::string url,  int substrmId) = 0;
+	virtual int  unsubscribeStream(std::string url,  int substrmId) = 0;
+
 	virtual int  getData(std::string url,  int substrmId, char *pData, int numBytes) = 0;
 	virtual long long getPts(std::string url, int substrmId) = 0;
 	virtual long long getClkUs(std::string url) = 0;

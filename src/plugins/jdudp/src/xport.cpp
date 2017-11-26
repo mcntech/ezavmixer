@@ -37,18 +37,12 @@ static int modDbgLevel = CJdDbg::LVL_TRACE;
 #define TRUE		1
 #define FALSE		0
 
-#define VIDEO		0
-#define AUDIO		1
-#define PADDING		2
 
 #define I			0
 #define P			1
 #define B			2
 #define BI			3
 #define SKIPPED		4
-
-#define STRM_ID_AUD 1
-#define STRM_ID_VID 2
 
 #define SEQUENCE_HEADER_CODE	0x000001b3
 
@@ -2197,12 +2191,14 @@ void demux_mpeg2_transport_deinit(MpegTsDemuxCtx *pCtx)
 }
 void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned char *buffer)
 {
-	unsigned int	i, j, k, m, n, q, xfer_length;
-	unsigned int	video_channel_count, audio_channel_count;
-	unsigned long long	ts_rate, pcr_ext;
-	unsigned long long	pcrsave;
-	unsigned char	sync, temp;
-	unsigned short	temp_program_map_pid;
+	unsigned int	 i; // Loop index for the entire buffer which can be multiple TS packets
+	unsigned int     j; // Loop count for bursts i.e. section,payload
+	unsigned int     k; // Loop index for processing bursts
+	unsigned int     m; // index for PAT processing
+
+	unsigned int xfer_length; // payload length
+
+	unsigned char	sync, temp; // FOr sycn search
 
 	unsigned int	tp_extra_header;
 	unsigned long long	tp_extra_header_pcr_bytes;
@@ -2291,6 +2287,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						}
 					}
 					else if (pCtx->pcr_parse != 0)  {
+						unsigned long long	ts_rate, pcr_ext;
+						unsigned long long	pcrsave;
 						--pCtx->pcr_parse;
 						pCtx->pcr = (pCtx->pcr << 8) + buffer[i];
 						if (pCtx->pcr_parse == 0 && pCtx->pid == pCtx->pcr_pid)  {
@@ -2390,16 +2388,6 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								for (k = 0; k < (pCtx->pat_offset - 4); k+=4)  {
 									pCtx->program_number = pCtx->program_association_table[k] << 8;
 									pCtx->program_number |= pCtx->program_association_table[k + 1];
-									if (pCtx->first_pat == TRUE)  {
-										temp_program_map_pid = (pCtx->program_association_table[k + 2] & 0x1f) << 8;
-										temp_program_map_pid |= pCtx->program_association_table[k + 3];
-										DBG_MSG("Program Number = %d (0x%04x), Program Map PID = %d (0x%04x)\n", pCtx->program_number, pCtx->program_number, temp_program_map_pid, temp_program_map_pid);
-									}
-									if (pCtx->program_number == pCtx->program)  {
-										pCtx->program_map_pid = (pCtx->program_association_table[k + 2] & 0x1f) << 8;
-										pCtx->program_map_pid |= pCtx->program_association_table[k + 3];
-										DBG_MSG("Program Map PID = %d\r\n",pCtx->program_map_pid);
-									}
 								}
 								pCtx->first_pat = FALSE;
 							}
@@ -2506,32 +2494,22 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							DBG_MSG("End of PSI section = %d\r\n",i);
 							pCtx->pmt_xfer_state = FALSE;
 							if (pCtx->pmt_section_number == pCtx->pmt_last_section_number)  {
-								video_channel_count = 0;
-								audio_channel_count = 0;
 								for (k = 0; k < (pCtx->pmt_offset - 4); k+=5)  {
 									pCtx->pmt_stream_type = pCtx->program_map_table[k];
 									pCtx->pmt_elementary_pid = (pCtx->program_map_table[k+1] & 0x1f) << 8;
 									pCtx->pmt_elementary_pid |= pCtx->program_map_table[k+2];
 									if (pCtx->pmt_stream_type == 0x1 || pCtx->pmt_stream_type == 0x2 || (pCtx->pmt_stream_type == 0x80 && pCtx->hdmv_mode == FALSE) || pCtx->pmt_stream_type == 0x1b || pCtx->pmt_stream_type == 0xea)  {
-										//video_channel_count++;
-										//if (video_channel_count == pCtx->video_channel)
-                                        //{
-										//	pCtx->video_stream_type = pCtx->pmt_stream_type;
-										//}
                                         setStreamType(pCtx, pCtx->pmt_elementary_pid, pCtx->pmt_stream_type);
 									}
 									else if (pCtx->pmt_stream_type == 0x3 || pCtx->pmt_stream_type == 0x4 || pCtx->pmt_stream_type == 0x80 || pCtx->pmt_stream_type == 0x81 || pCtx->pmt_stream_type == 0x6 || pCtx->pmt_stream_type == 0x82 || pCtx->pmt_stream_type == 0x83 || pCtx->pmt_stream_type == 0x84 || pCtx->pmt_stream_type == 0x85 || pCtx->pmt_stream_type == 0x86 || pCtx->pmt_stream_type == 0xa1 || pCtx->pmt_stream_type == 0xa2 || pCtx->pmt_stream_type == 0x11 ||  pCtx->pmt_stream_type == 0x0F)  {
-										audio_channel_count++;
-										//if (audio_channel_count == pCtx->audio_channel)  {
-										//	pCtx->audio_stream_type = pCtx->pmt_stream_type;
-										//}
+
                                         setStreamType(pCtx,  pCtx->pmt_elementary_pid, pCtx->pmt_stream_type);
 									}
 									pCtx->pmt_ES_info_length = (pCtx->program_map_table[k+3] & 0xf) << 8;
 									pCtx->pmt_ES_info_length |= pCtx->program_map_table[k+4];
 									if (pCtx->pmt_ES_info_length != 0)  {
 										pCtx->pmt_ES_descriptor_length_parse = 2;
-										for (q = 0; q < pCtx->pmt_ES_info_length; q++)  {
+										for (int q = 0; q < pCtx->pmt_ES_info_length; q++)  {
 											if (pCtx->pmt_ES_descriptor_length_parse != 0)  {
 												--pCtx->pmt_ES_descriptor_length_parse;
 												switch (pCtx->pmt_ES_descriptor_length_parse)  {
@@ -3440,7 +3418,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 													pCtx->sld_elementary_pid |= pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++];
 													DBG_MSG("SLD elementary pCtx->pid = 0x%04x\n", pCtx->sld_elementary_pid);
 													DBG_MSG("SLD language code = ");
-													for (n = 0; n < 3; n++)  {
+													for (int n = 0; n < 3; n++)  {
 														if (pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index] != 0)  {
 															DBG_MSG("%c", pCtx->psip_ptr[pCtx->pid]->psip_table[pCtx->psip_ptr[pCtx->pid]->psip_index++]);
 														}

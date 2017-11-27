@@ -187,8 +187,9 @@ void CUdpClntBridge::psiJson(std::string &psiString)
 #endif
 
 			}
-			jPmt["pid"] = nPid;
+			jPmt["pid"] = pmt->program_number;
 			jPmt["program"] = m_pat->program_descriptor[j].program_number;
+            jPmt["PCR_PID"] = pmt->PCR_PID;
 			jPsi[j++] = jPmt;
 		}
 	}

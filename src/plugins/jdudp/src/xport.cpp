@@ -32,7 +32,7 @@ typedef __int64 int64_t;
 //#define DBG_MSG printf
 #define DBG_MSG(...)
 
-static int modDbgLevel = CJdDbg::LVL_TRACE;
+static int modDbgLevel = CJdDbg::LVL_SETUP;
 
 #define TRUE		1
 #define FALSE		0
@@ -93,6 +93,17 @@ public:
     //int             streamType = 0;
     unsigned int	video_packet_length;
 } ;
+
+class CPidCtx
+{
+public:
+    CPidCtx()
+    {
+
+    }
+    unsigned long long	pcr;
+    unsigned long long	sysClk;
+};
 
 
 typedef struct
@@ -354,7 +365,31 @@ typedef struct
 	void           *pPsiCallbackCtx;
 	std::map<int, CParseCtx *> mParsers;
 	std::map<int, int> mPrograms;
+    std::map<int, CPidCtx*> mPidCtxs;
 } MpegTsDemuxCtx;
+
+CPidCtx *getPidCtx(MpegTsDemuxCtx *pCtx, int nPid) {
+
+    if ( pCtx->mPidCtxs.find(nPid) == pCtx->mPidCtxs.end()) {
+        pCtx->mPidCtxs[nPid] = new CPidCtx;
+    }
+    CPidCtx *pX = pCtx->mPidCtxs[nPid];
+    return pX;
+}
+
+void setPcr(MpegTsDemuxCtx *pCtx, int nPid, unsigned long long	pcr, unsigned long long sysClk)
+{
+    CPidCtx *pX = getPidCtx(pCtx, nPid);
+    pX->pcr = pcr;
+    pX->sysClk = sysClk;
+}
+
+void getPcr(MpegTsDemuxCtx *pCtx, int nPid, unsigned long long	*pcr, unsigned long long *sysClk)
+{
+    CPidCtx *pX = getPidCtx(pCtx, nPid);
+    *pcr = pX->pcr;
+    *sysClk = pX->sysClk;
+}
 
 CParseCtx *getParseCtx(MpegTsDemuxCtx *pCtx, int nPid) {
     CParseCtx *pX = NULL;
@@ -407,7 +442,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int, unsigned char *);
 
 // Global Context
 
-static int DisplayStat(MpegTsDemuxCtx *self);
+static int DisplayStat(MpegTsDemuxCtx *self, int Pid);
 
 
 int IsSubscribed(MpegTsDemuxCtx *pCtx, int nPid)
@@ -2202,7 +2237,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 
 	unsigned int	tp_extra_header;
 	unsigned long long	tp_extra_header_pcr_bytes;
-
+    unsigned long long	ts_rate, pcr_ext;
+    unsigned long long	pcrsave;
 
 	if (1)  {
 		for (i = 0; i < length; i++)  {
@@ -2287,8 +2323,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						}
 					}
 					else if (pCtx->pcr_parse != 0)  {
-						unsigned long long	ts_rate, pcr_ext;
-						unsigned long long	pcrsave;
+
 						--pCtx->pcr_parse;
 						pCtx->pcr = (pCtx->pcr << 8) + buffer[i];
 						if (pCtx->pcr_parse == 0 && pCtx->pid == pCtx->pcr_pid)  {
@@ -2347,6 +2382,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 										ClockAdjust(pCtx->pClk, pCtx->pcr_arrival_time, pCtx->pcr / 27);
 									}
 								}
+                                setPcr(pCtx, pCtx->pid, pCtx->pcr, pCtx->pcr_arrival_time);
+                                DisplayStat(pCtx, pCtx->pid);
 							}
 							pCtx->previous_pcr = pcrsave;
 							pCtx->pcr_bytes = 0;
@@ -3697,10 +3734,19 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 
 
 int
-DisplayStat(MpegTsDemuxCtx *self)
+DisplayStat(MpegTsDemuxCtx *self, int nPid)
 {
     int64_t ts;
 	int64_t stream_ts;
+
+    static int CtntPid = 0;
+
+    if(CtntPid == 0)
+        CtntPid = nPid;
+
+    if(nPid !=  CtntPid)
+        return 0;
+
     ts = ClockGetInternalTime(self->pClk);
 	stream_ts = ClockGetTime(self->pClk);
 
@@ -3718,10 +3764,12 @@ DisplayStat(MpegTsDemuxCtx *self)
 		char stat_stream_time[256];
 		double time_diff, time_elapsed;
 		int clockDiff;
-
+        unsigned long long current_pcr;
+        unsigned long long pcr_arrival_time;
 		int64_t current_ts = ts;
         self->interval_ts = ts;
 
+        getPcr(self, nPid, &current_pcr, &pcr_arrival_time),
 		totalbytes = self->read_position;
 
 		time_diff = (double) (current_ts - self->last_ts) / TIME_SECOND;
@@ -3731,14 +3779,14 @@ DisplayStat(MpegTsDemuxCtx *self)
 		average_bitrate = (double) totalbytes * 8 / time_elapsed;
 
 		Clock2HMSF(current_ts, stat_time, 255);
-		Clock2HMSF(self->current_pcr / 27, stat_pcr, 255);
-		Clock2HMSF(self->pcr_arrival_time, stat_pcr_arrival_time, 255);
+		Clock2HMSF(current_pcr / 27, stat_pcr, 255);
+		Clock2HMSF(pcr_arrival_time, stat_pcr_arrival_time, 255);
 		Clock2HMSF(stream_ts, stat_stream_time, 255);
 
 		clockDiff = (self->current_pcr / 27 - (current_ts - self->start_ts)) / TIME_MILLISEC;
-		snprintf (stat_message, 511, "<%s:xport: pCtx->pcr=%s  pcr_arriv=%s stream=%s t_bytes=%lld ts=%9d  crnt=%9d  avg=%9d",
-				stat_time, stat_pcr, stat_pcr_arrival_time, stat_stream_time, totalbytes, (unsigned int)self->current_tsrate * 8, (int)rr, (int)average_bitrate);
-		DBG_MSG("StrmId=%d %s\n", self->nInstanceId, stat_message);
+		snprintf (stat_message, 511, "<%s:xport:pid=%d pCtx->pcr=%s  pcr_arriv=%s stream=%s t_bytes=%lld ts=%9d  crnt=%9d  avg=%9d",
+				stat_time, nPid, stat_pcr, stat_pcr_arrival_time, stat_stream_time, totalbytes, (unsigned int)self->current_tsrate * 8, (int)rr, (int)average_bitrate);
+		JDBG_LOG(CJdDbg::LVL_SETUP, ("StrmId=%d %s\n", self->nInstanceId, stat_message));
 
 		self->last_totalbytes = totalbytes;
 		self->last_ts = current_ts;

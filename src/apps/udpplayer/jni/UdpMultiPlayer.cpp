@@ -165,13 +165,19 @@ void CUdpMultiPlayer::UpdateStats(const char *url, UDP_SERVER_STATS *pStats)
 		((CUdpPlayerEvents *)m_EventCallback)->onServerStatistics(url, pStats);
 }
 
-void CUdpMultiPlayer::NotifyPsiChange(const char *url, const char *pPsiData)
+void CUdpMultiPlayer::NotifyPsiPatChange(const char *url, const char *pPsiData)
 {
 	if(m_EventCallback)
-		((CUdpPlayerEvents *)m_EventCallback)->onPsiChange(url, pPsiData);
+		((CUdpPlayerEvents *)m_EventCallback)->onPsiPatChange(url, pPsiData);
 
 }
 
+void CUdpMultiPlayer::NotifyPsiPmtChange(const char *url, const char *pPsiData)
+{
+	if(m_EventCallback)
+		((CUdpPlayerEvents *)m_EventCallback)->onPsiPmtChange(url, pPsiData);
+
+}
 
 CPlayerBase *CUdpMultiPlayer::openInstance(CPlayerEventBase *pEventBase)
 {

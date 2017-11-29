@@ -54,7 +54,8 @@ public:
 	int stopServer(std::string url);
 
 	void UpdateStats(const char *url, UDP_SERVER_STATS *);
-	void NotifyPsiChange(const char *url, const char *pPsiData);
+	void NotifyPsiPatChange(const char *url, const char *pPsiData);
+	void NotifyPsiPmtChange(const char *url, const char *pPsiData);
 
 public:
 	CUdpMultiPlayer(CPlayerEventBase *pEventBase);

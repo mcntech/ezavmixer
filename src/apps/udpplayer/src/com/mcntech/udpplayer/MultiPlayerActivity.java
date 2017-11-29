@@ -117,9 +117,14 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			}
 
 			@Override
-			public void onPsiChange(String url, String message) {
+			public void onPsiPatChange(String url, String message) {
 				// TODO Auto-generated method stub
 				
+			}
+			@Override
+			public void onPsiPmtChange(String url, String message) {
+				// TODO Auto-generated method stub
+
 			}
 	 	}; 
 	 	

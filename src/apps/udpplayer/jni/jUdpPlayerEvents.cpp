@@ -34,13 +34,13 @@ bool CUdpPlayerEvents::onServerStatistics(const char *szPublishId, UDP_SERVER_ST
 	return true;
 }
 
-bool CUdpPlayerEvents::onPsiChange(const char *url, const char *pPsiData)
+bool CUdpPlayerEvents::onPsiPatChange(const char *url, const char *pPsiData)
 {
 	JNIEnv* env;
 	safeAttach(&env);
 	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
 	if(onyxApi != NULL) {
-		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiChange", "(Ljava/lang/String;Ljava/lang/String;)V");
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPatChange", "(Ljava/lang/String;Ljava/lang/String;)V");
 		if(callback != NULL) {
 			jstring jurl = env->NewStringUTF(url);
             jstring jpsi = env->NewStringUTF(pPsiData);
@@ -59,6 +59,30 @@ bool CUdpPlayerEvents::onPsiChange(const char *url, const char *pPsiData)
 	return true;
 }
 
+bool CUdpPlayerEvents::onPsiPmtChange(const char *url, const char *pPsiData)
+{
+	JNIEnv* env;
+	safeAttach(&env);
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	if(onyxApi != NULL) {
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPmtChange", "(Ljava/lang/String;Ljava/lang/String;)V");
+		if(callback != NULL) {
+			jstring jurl = env->NewStringUTF(url);
+			jstring jpsi = env->NewStringUTF(pPsiData);
+			env->CallStaticVoidMethod(onyxApi, callback, jurl, jpsi);
+			env->DeleteLocalRef(jurl);
+			env->DeleteLocalRef(jpsi);
+		}else {
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onDiscoverRemoteNode on com/mcntech/udpplayer/UdpPlayerApi"));
+		}
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find com/mcntech/udpplayer/UdpPlayerApi"));
+	}
+
+	safeDetach();
+
+	return true;
+}
 
 bool CUdpPlayerEvents::attachThread(JNIEnv** env){
   bool changed = false;

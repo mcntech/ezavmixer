@@ -241,10 +241,16 @@ public class SinglePlayerActivity extends Activity implements SurfaceHolder.Call
 
 
 			@Override
-			public void onPsiChange(String url, String message) {
+			public void onPsiPatChange(String url, String message) {
 				// TODO Auto-generated method stub
 				
 			}
+			@Override
+			public void onPsiPmtChange(String url, String message) {
+				// TODO Auto-generated method stub
+
+			}
+
 			public void onRemoteNodeError(final String url,final String message)
 			{
 

@@ -17,7 +17,8 @@ import android.widget.TabHost;
 public class UdpPlayerApi {	
 	
 	public interface RemoteNodeHandler {
-		void onPsiChange(String url, String message);
+		void onPsiPatChange(String url, String message);
+		void onPsiPmtChange(String url, String message);
 		void onRemoteNodeError(final String url,final String message);
 	}
 	
@@ -69,13 +70,18 @@ public class UdpPlayerApi {
 		System.out.println("java onNativeMessage:" + title + " message:" + message);
 	}
 
-	public static void onPsiChange(String url, String psi)
+	public static void onPsiPatChange(String url, String psi)
 	{		
 		if(m_nodeHandler != null)
-			m_nodeHandler.onPsiChange(url, psi);
+			m_nodeHandler.onPsiPatChange(url, psi);
 	}
 
-			
+	public static void onPsiPmtChange(String url, String psi)
+	{
+		if(m_nodeHandler != null)
+			m_nodeHandler.onPsiPmtChange(url, psi);
+	}
+
 	public static String getVersion() {
 		if(mHandle==0)
 			return null;

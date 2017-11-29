@@ -18,7 +18,8 @@ public:
 	void safeDetach();
 
   	bool onServerStatistics(const char *szPublishId, UDP_SERVER_STATS *pStat);
-  	bool onPsiChange(const char *szPublishId, const char *pPsiData);
+  	bool onPsiPatChange(const char *szPublishId, const char *pPsiData);
+	bool onPsiPmtChange(const char *szPublishId, const char *pPsiData);
 
   	jclass m_deviceClass;
 

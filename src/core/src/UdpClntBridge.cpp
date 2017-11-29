@@ -122,7 +122,7 @@ void CUdpClntBridge::UpdatePmt(int nPid, const char *pData, int len )
 	if(m_pCallback) {
 		std::string psiString;
 		psiPmtJson(pmt, psiString);
-		m_pCallback->NotifyPsiChange(m_szRemoteHost, psiString.c_str());
+		m_pCallback->NotifyPsiPmtChange(m_szRemoteHost, psiString.c_str());
 	}
 }
 
@@ -259,7 +259,7 @@ void CUdpClntBridge::UpdatePat(const char *pData, int len)
 	if(m_pCallback) {
 		std::string psiString;
 		psiPatJson(psiString);
-		m_pCallback->NotifyPsiChange(m_szRemoteHost, psiString.c_str());
+		m_pCallback->NotifyPsiPatChange(m_szRemoteHost, psiString.c_str());
 	}
 }
 

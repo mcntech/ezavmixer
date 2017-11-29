@@ -121,7 +121,7 @@ void CUdpClntBridge::UpdatePmt(int nPid, const char *pData, int len )
 	// Notify
 	if(m_pCallback) {
 		std::string psiString;
-		psiJson(psiString);
+		psiPmtJson(pmt, psiString);
 		m_pCallback->NotifyPsiChange(m_szRemoteHost, psiString.c_str());
 	}
 }
@@ -131,7 +131,6 @@ void patCallback(void *ctx, const char *pData, int len)
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("Received PSI len=%d", len));
 	CUdpClntBridge *pObj = (CUdpClntBridge *)ctx;
 	pObj->UpdatePat(pData, len);
-
 }
 
 std::string StrmTypeToString(int strmType)
@@ -196,6 +195,45 @@ void CUdpClntBridge::psiJson(std::string &psiString)
 	psiString = jPsi.dump();
 }
 
+void CUdpClntBridge::psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString)
+{
+		if(pmt != NULL) {
+			json jPmt = {};
+			for(int i=0; i < pmt-> number_of_elementary_streams; i++) {
+				json jEs = {};
+				ELEMENTARY_STREAM_INFO *es = &pmt->elementary_stream_info[i];
+				jEs.emplace("pid", es->elementary_PID);
+				jEs.emplace("type", es->stream_type);
+				jEs.emplace("codec",StrmTypeToString(es->stream_type));
+				// TODO es info other attributes
+				jPmt["streams"][i] = jEs;
+#ifdef DEMUX_DUMP_OUTPUT
+				if(es->stream_type == 0x1b)
+                	ConnectStreamForPid(es->elementary_PID, NULL);
+#endif
+
+			}
+			jPmt["program"] = pmt->program_number;
+			jPmt["PCR_PID"] = pmt->PCR_PID;
+			psiString = jPmt.dump();
+		}
+}
+
+void CUdpClntBridge::psiPatJson(std::string &psiString)
+{
+	json jPsi = {};
+
+	int j = 0;
+	for (std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.begin(); it != m_pmts.end(); ++it) {
+		int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
+		int nPprogram = m_pat->program_descriptor[j].program_number;
+		json jPmt = {};
+		jPmt["pid"] =nPid;
+		jPmt["program"] = nPprogram;
+	}
+	psiString = jPsi.dump();
+}
+
 void CUdpClntBridge::UpdatePat(const char *pData, int len)
 {
 	if(m_pat != NULL) {
@@ -208,6 +246,7 @@ void CUdpClntBridge::UpdatePat(const char *pData, int len)
 	}
 	m_pat = new MPEG2_PAT_SECTION;
 	m_pat->Parse((unsigned char *)pData);
+#ifdef DEMUX_DUMP_OUTPUT
 	for(int i=0; i< m_pat->number_of_programs ; i++) {
 		//pat.program_descriptor[i].program_number;
 		DemuxSubscribeProgramPidT pgm;
@@ -215,10 +254,11 @@ void CUdpClntBridge::UpdatePat(const char *pData, int len)
 		pgm.pmt_callback = pmtCallback;
 		m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SUBSCRIBE_PROGRAM_PID, (char *)&pgm);
 	}
+#endif
 	// Notify
 	if(m_pCallback) {
 		std::string psiString;
-		psiJson(psiString);
+		psiPatJson(psiString);
 		m_pCallback->NotifyPsiChange(m_szRemoteHost, psiString.c_str());
 	}
 }

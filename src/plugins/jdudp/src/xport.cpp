@@ -127,15 +127,12 @@ typedef struct
 #endif
 	ConnCtxT   *pConnSrc;
 
-	int64_t read_position;	
-	int64_t last_totalbytes;
+	int64_t read_position;
 
 	int64_t start_ts;
-	int64_t last_ts;
-	int64_t interval_ts;
+	int64_t start_pcr;
 	int64_t stat_update_interval;
-	
-	unsigned long long current_pcr;
+
 	unsigned long long pcr_arrival_time;
 	unsigned long long current_tsrate;
 	unsigned long long crnt_vid_pts;
@@ -505,8 +502,8 @@ int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 	pCtx->fEoS = 0;
 
 	pCtx->start_ts = 0;
-	pCtx->read_position = 0;	
-	pCtx->last_totalbytes = 0;
+	pCtx->start_pcr = 0;
+	pCtx->read_position = 0;
 	pCtx->VidChunkCnt = 0;
 	pCtx->AudChunkCnt = 0;
 	pCtx->stat_update_interval = TIME_SECOND;
@@ -2371,7 +2368,6 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							}
 
 							if(pCtx) {
-								pCtx->current_pcr = pCtx->pcr;
 								pCtx->pcr_arrival_time = ClockGetInternalTime(pCtx->pClk);
 								pCtx->current_tsrate = ts_rate;
 								if(pCtx->fClkSrc) {
@@ -3736,9 +3732,6 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 int
 DisplayStat(MpegTsDemuxCtx *self, int nPid)
 {
-    int64_t ts;
-	int64_t stream_ts;
-
     static int CtntPid = 0;
 
     if(CtntPid == 0)
@@ -3747,69 +3740,47 @@ DisplayStat(MpegTsDemuxCtx *self, int nPid)
     if(nPid !=  CtntPid)
         return 0;
 
-    ts = ClockGetInternalTime(self->pClk);
-	stream_ts = ClockGetTime(self->pClk);
+	unsigned long long current_ts  = ClockGetInternalTime(self->pClk);
 
-    if (self->start_ts == 0) {
-         self->interval_ts = self->last_ts = self->start_ts = ts;
-    }
-
-    if (ts - self->interval_ts  > self->stat_update_interval) {
+    /*if (ts - self->interval_ts  > self->stat_update_interval)*/ {
 		int64_t totalbytes;
-		double rr, average_bitrate;
+		double average_bitrate;
 		char stat_message[512];
 		char stat_time[256];
 		char stat_pcr[256];
 		char stat_pcr_arrival_time[256];
-		char stat_stream_time[256];
-		double time_diff, time_elapsed;
-		int clockDiff;
-        unsigned long long current_pcr;
-        unsigned long long pcr_arrival_time;
-		int64_t current_ts = ts;
-        self->interval_ts = ts;
+		double time_elapsed;
+		int64_t clockDiff;
+		unsigned long long current_pcr;
+		unsigned long long pcr_arrival_time;
 
-        getPcr(self, nPid, &current_pcr, &pcr_arrival_time),
+		getPcr(self, nPid, &current_pcr, &pcr_arrival_time);
+		if (self->start_pcr == 0 || self->start_pcr >= current_pcr /* wrapping */) {
+			self->start_pcr = current_pcr;
+			self->start_ts = current_ts;
+		}
+
 		totalbytes = self->read_position;
 
-		time_diff = (double) (current_ts - self->last_ts) / TIME_SECOND;
 		time_elapsed = (double) (current_ts - self->start_ts) / TIME_SECOND;
 
-		rr = (double) (totalbytes - self->last_totalbytes) * 8 / time_diff;
 		average_bitrate = (double) totalbytes * 8 / time_elapsed;
 
 		Clock2HMSF(current_ts, stat_time, 255);
 		Clock2HMSF(current_pcr / 27, stat_pcr, 255);
 		Clock2HMSF(pcr_arrival_time, stat_pcr_arrival_time, 255);
-		Clock2HMSF(stream_ts, stat_stream_time, 255);
 
-		clockDiff = (self->current_pcr / 27 - (current_ts - self->start_ts)) / TIME_MILLISEC;
-		snprintf (stat_message, 511, "<%s:xport:pid=%d pCtx->pcr=%s  pcr_arriv=%s stream=%s t_bytes=%lld ts=%9d  crnt=%9d  avg=%9d",
-				stat_time, nPid, stat_pcr, stat_pcr_arrival_time, stat_stream_time, totalbytes, (unsigned int)self->current_tsrate * 8, (int)rr, (int)average_bitrate);
+		clockDiff = ((current_pcr - self->start_pcr) / 27 - (current_ts - self->start_ts));
+
+		// Do rate control
+		if(clockDiff > 1000)
+			usleep(clockDiff);
+
+		snprintf (stat_message, 511, "<%s:xport:pid=%d pCtx->pcr=%s  pcr_arriv=%s  t_bytes=%lld ts=%9d  avg=%9d",
+				stat_time, nPid, stat_pcr, stat_pcr_arrival_time, totalbytes, (unsigned int)self->current_tsrate * 8, (int)average_bitrate);
 		JDBG_LOG(CJdDbg::LVL_SETUP, ("StrmId=%d %s\n", self->nInstanceId, stat_message));
-
-		self->last_totalbytes = totalbytes;
-		self->last_ts = current_ts;
 	}
     return TRUE;
-}
-
-
-
-void Demux_DumpStat(MpegTsDemuxCtx *pCtx)
-{
-	char szTmp[128] = {0};
-	DBG_MSG("\nDemux Statistics:\n");
-
-	Clock2HMSF(pCtx->current_pcr / 27, szTmp,127);
-	DBG_MSG("Current PCR=%s\n", szTmp);
-
-	Clock2HMSF(pCtx->crnt_vid_pts, szTmp,127);
-	DBG_MSG("Current Vid PTS=%s",  szTmp);
-	Clock2HMSF(pCtx->crnt_aud_pts, szTmp,127);
-	DBG_MSG("  Current Aud PTS=%s\n",  szTmp);
-
-	DBG_MSG("Sent Pkts Vids=%d Aud=%d\n", pCtx->VidChunkCnt, pCtx->AudChunkCnt);
 }
 
 

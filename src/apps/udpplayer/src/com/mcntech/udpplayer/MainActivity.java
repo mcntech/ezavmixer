@@ -95,24 +95,15 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 				if(psi != null) {
 					for (int i = 0; i < psi.length(); i++) {
 						try {
-							int vidPid = 0;
+							int pgmNum = 0;
+							int pgmPid = 0;
 							JSONObject pgm = psi.getJSONObject(i);
 
-							if(pgm != null){
-								JSONArray esList = pgm.getJSONArray("streams");
-								for (int j = 0; j < esList.length(); j++) {
-									JSONObject es = esList.getJSONObject(j);
-									String codec = es.getString("codec");
-									vidPid = es.getInt("pid");
-									if(codec.compareToIgnoreCase("mpeg2") == 0 ||
-											codec.compareToIgnoreCase("h264") == 0 || 
-											codec.compareToIgnoreCase("h265") == 0){
+							pgmNum = pgm.getInt("pid");
+							pgmPid = pgm.getInt("program");
+							//RemoteNode node = new RemoteNode(url, pgmNum, pid);
+							//mRemoteNodeList.add(node);
 
-										RemoteNode node = new RemoteNode(url, codec, vidPid);
-										mRemoteNodeList.add(node);
-									}
-								}
-							}
 						} catch (JSONException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -130,64 +121,12 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 				});
 				
 			}
-
 			@Override
-			public void onPsiPmtChange(String url, String message) {
-				Log.d(LOG_TAG, "MainActivity::onPsiChange");
-				JSONArray psi = null;
-				try {
-					psi = new JSONArray(message);
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return;
-				}
-				if(psi != null) {
-					for (int i = 0; i < psi.length(); i++) {
-						try {
-							int vidPid = 0;
-							JSONObject pgm = psi.getJSONObject(i);
-
-							if(pgm != null){
-								JSONArray esList = pgm.getJSONArray("streams");
-								for (int j = 0; j < esList.length(); j++) {
-									JSONObject es = esList.getJSONObject(j);
-									String codec = es.getString("codec");
-									vidPid = es.getInt("pid");
-									if(codec.compareToIgnoreCase("mpeg2") == 0 ||
-											codec.compareToIgnoreCase("h264") == 0 ||
-											codec.compareToIgnoreCase("h265") == 0){
-
-										RemoteNode node = new RemoteNode(url, codec, vidPid);
-										mRemoteNodeList.add(node);
-									}
-								}
-							}
-						} catch (JSONException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-				}
-
-
-				runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						// TODO: update webview
-						((BaseAdapter)((ListView)findViewById(R.id.listRemoteNodes)).getAdapter()).notifyDataSetChanged();
-					}
-				});
+			public void onRemoteNodeError(final String url,final String message)
+			{
 
 			}
-			@Override
-			public void onRemoteNodeError(String url, String message) {
-				// TODO Auto-generated method stub
-				
-			}
-
-
-	 	}; 
+	 	};
 	 	
 
 			

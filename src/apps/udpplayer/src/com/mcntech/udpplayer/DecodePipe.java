@@ -17,12 +17,19 @@ import android.os.Message;
 import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
+import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 
 
 import com.mcntech.udpplayer.VrRenderDb.DecPipeBase;
 import com.mcntech.udpplayer.Configure;
 import com.mcntech.udpplayer.UdpPlayerApi;
+import com.mcntech.udpplayer.UdpPlayerApi.ProgramHandler;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 
 public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListener {
@@ -60,7 +67,9 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
     private boolean                  mfAvcUHdSupported = false;
     LinearLayout                     mStatsLayout;
     boolean mfHevcSupported = false;
-    
+
+	ProgramHandler mProgramHandler;
+
 	public DecodePipe(Activity activity, String url, String codec, int strmId, TextureView textureView, int maxVidWidth, int maxVidHeight) {
 
 		mHandler = new LocalHandler();
@@ -80,9 +89,58 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 		}*/
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mVideoTexView.setSurfaceTextureListener(this);
+
+
+
+		mProgramHandler = new ProgramHandler(){
+			@Override
+			public void onPsiPmtChange(String url, String message) {
+				Log.d(LOG_TAG, "MainActivity::onPsiChange");
+				JSONObject pgm = null;
+				try {
+					pgm = new JSONObject(message);
+					if(pgm != null) {
+						int vidPid = 0;
+
+						JSONArray esList = pgm.getJSONArray("streams");
+						for (int j = 0; j < esList.length(); j++) {
+							JSONObject es = esList.getJSONObject(j);
+							String codec = es.getString("codec");
+							vidPid = es.getInt("pid");
+							if(codec.compareToIgnoreCase("mpeg2") == 0 ||
+									codec.compareToIgnoreCase("h264") == 0 ||
+									codec.compareToIgnoreCase("h265") == 0){
+
+								RemoteNode node = new RemoteNode(url, codec, vidPid);
+								// TODO : mRemoteNodeList.add(node);
+							}
+						}
+					}
+
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return;
+				}
+
+			}
+		};
+
+
+
+
+
+
+
+
+
+
+
+
+
 	}
 
-	private class LocalHandler extends Handler {	
+	private class LocalHandler extends Handler {
         @Override
          public void handleMessage(Message msg) {
              int what = msg.what;
@@ -94,7 +152,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 	 			    	mVidPlayer.AttachSurface(mVideoSurface);
 	 			    	mVidPlayer.start();
 					}
-	 				Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN");	 				
+	 				Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN");
 				} else {
 					Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN ignored...");
 				}
@@ -109,7 +167,7 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 					}
  				}).start();
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_INIT");
- 				
+
 		    }   else if(what == PLAYER_CMD_DEINIT) {
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_DEINIT");
  				new Thread(new Runnable() {
@@ -471,4 +529,5 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 		// TODO Auto-generated method stub
 		return null;
 	}
+
 }

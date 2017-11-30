@@ -161,7 +161,7 @@ std::string StrmTypeToString(int strmType)
 
 	return str;
 }
-
+/*
 void CUdpClntBridge::psiJson(std::string &psiString)
 {
 	json jPsi = {};
@@ -194,7 +194,7 @@ void CUdpClntBridge::psiJson(std::string &psiString)
 	}
 	psiString = jPsi.dump();
 }
-
+*/
 void CUdpClntBridge::psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString)
 {
 		if(pmt != NULL) {
@@ -223,13 +223,13 @@ void CUdpClntBridge::psiPatJson(std::string &psiString)
 {
 	json jPsi = {};
 
-	int j = 0;
-	for (std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.begin(); it != m_pmts.end(); ++it) {
+	for(int j=0; j< m_pat->number_of_programs ; j++) {
 		int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
 		int nPprogram = m_pat->program_descriptor[j].program_number;
 		json jPmt = {};
 		jPmt["pid"] =nPid;
 		jPmt["program"] = nPprogram;
+		jPsi[j]=jPmt;
 	}
 	psiString = jPsi.dump();
 }

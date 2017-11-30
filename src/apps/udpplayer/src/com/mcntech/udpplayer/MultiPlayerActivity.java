@@ -121,12 +121,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 				// TODO Auto-generated method stub
 				
 			}
-			@Override
-			public void onPsiPmtChange(String url, String message) {
-				// TODO Auto-generated method stub
-
-			}
-	 	}; 
+	 	};
 	 	
 	 	UdpPlayerApi.setDeviceHandler(mNodeHandler);
 	}

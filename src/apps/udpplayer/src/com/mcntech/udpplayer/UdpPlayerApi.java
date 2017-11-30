@@ -18,13 +18,16 @@ public class UdpPlayerApi {
 	
 	public interface RemoteNodeHandler {
 		void onPsiPatChange(String url, String message);
-		void onPsiPmtChange(String url, String message);
 		void onRemoteNodeError(final String url,final String message);
 	}
-	
+	public interface ProgramHandler {
+		void onPsiPmtChange(String url, String message);
+	}
+
 	private static long mHandle = 0;
 	private static UdpPlayerApi mSelf = null;
 	private static RemoteNodeHandler m_nodeHandler = null;
+	private static ProgramHandler m_programHandler = null;
 	private static ArrayList<String> mActiveRemoteNodes = new ArrayList<String>();
 	
 	private UdpPlayerApi() {
@@ -78,8 +81,8 @@ public class UdpPlayerApi {
 
 	public static void onPsiPmtChange(String url, String psi)
 	{
-		if(m_nodeHandler != null)
-			m_nodeHandler.onPsiPmtChange(url, psi);
+		if(m_programHandler != null)
+			m_programHandler.onPsiPmtChange(url, psi);
 	}
 
 	public static String getVersion() {

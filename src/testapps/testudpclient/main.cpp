@@ -14,10 +14,15 @@ public:
 	{
 
 	}
-	void NotifyPsiChange(const char *url, const char *pPsiData)
+	void NotifyPsiPmtChange(const char *url, const char *pPsiData)
 	{
-		fprintf(stderr, "NotifyPsiChange:%s\n\n", pPsiData);
+		fprintf(stderr, "NotifyPsiPmtChange:%s\n\n", pPsiData);
 	}
+	void NotifyPsiPatChange(const char *url, const char *pPsiData)
+	{
+		fprintf(stderr, "NotifyPsiPatChange:%s\n\n", pPsiData);
+	}
+
 };
 
 char szServer[256];

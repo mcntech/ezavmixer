@@ -28,7 +28,7 @@ public:
 
 	void UpdatePmt(int nPid, const char *pData, int len );
 	void UpdatePat(const char *pData, int len);
-	void psiJson(std::string &psiString);
+	//void psiJson(std::string &psiString);
 	void psiPatJson(std::string &psiString);
 	void psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString);
 public:

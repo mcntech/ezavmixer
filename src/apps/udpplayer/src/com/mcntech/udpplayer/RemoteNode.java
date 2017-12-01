@@ -10,7 +10,7 @@ public class RemoteNode {
 
 	public String label = "";
 
-	public RemoteNode(String url, String codec, int pgm){
+	public RemoteNode(String url, int pgm){
 		mUrl = url;
 		mProgram =  pgm;
 	}

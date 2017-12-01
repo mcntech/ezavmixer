@@ -100,9 +100,12 @@ public class UdpPlayerApi {
 	public static void onPsiPmtChange(String url, int strmId, String psi)
 	{
 		PgmDispatch dispatch = null;
-		//get from mPsiDispatchList
-		if(dispatch != null) {
-			dispatch.mHandler.onPsiPmtChange(psi);
+		for(int i=0; i < mPsiDispatchList.size(); i++) {
+			dispatch  = mPsiDispatchList.get(i);
+			if(dispatch != null && dispatch.mUrl.compareTo(url) == 0 && dispatch.mPgm == strmId) {
+				dispatch.mHandler.onPsiPmtChange(psi);
+				break;
+			}
 		}
 	}
 
@@ -150,12 +153,12 @@ public class UdpPlayerApi {
 
 	public static int subscribeProgram (String url, int pgmId)
 	{
-		return subscribeStream(mHandle, url, pgmId);
+		return subscribeProgram(mHandle, url, pgmId);
 	}
 
 	public static int unsubscribeProgram (String url, int pgmId)
 	{
-		return unsubscribeStream(mHandle, url, pgmId);
+		return unsubscribeProgram(mHandle, url, pgmId);
 	}
 
 	public static int getVideoFrame (String url, int strmId, ByteBuffer data, int size, int nTimeoutMs )

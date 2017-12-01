@@ -14,7 +14,7 @@ public:
 	{
 
 	}
-	void NotifyPsiPmtChange(const char *url, const char *pPsiData)
+	void NotifyPsiPmtChange(const char *url, int nPgmNo, const char *pPsiData)
 	{
 		fprintf(stderr, "NotifyPsiPmtChange:%s\n\n", pPsiData);
 	}

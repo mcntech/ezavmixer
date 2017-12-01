@@ -266,11 +266,20 @@ void CUdpClntBridge::UpdatePat(const char *pData, int len)
 void CUdpClntBridge::SubscribeProgram(int strmId)
 {
 
-    if(m_pat != NULL && strmId < m_pat->number_of_programs ) {
+    if(m_pat != NULL) {
 		DemuxSubscribeProgramPidT pgm;
-		pgm.nPid = m_pat->program_descriptor[strmId].network_or_program_map_PID;
-		pgm.pmt_callback = pmtCallback;
-		m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SUBSCRIBE_PROGRAM_PID, (char *)&pgm);
+		int nPid = -1;
+		for (int i = 0; i < strmId < m_pat->number_of_programs; i++) {
+			if  (m_pat->program_descriptor[i].program_number == strmId) {
+				nPid = m_pat->program_descriptor[i].network_or_program_map_PID;
+				break;
+			}
+		}
+		if(nPid != -1 ) {
+			pgm.nPid = nPid;
+			pgm.pmt_callback = pmtCallback;
+			m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SUBSCRIBE_PROGRAM_PID, (char *) &pgm);
+		}
 	}
 }
 

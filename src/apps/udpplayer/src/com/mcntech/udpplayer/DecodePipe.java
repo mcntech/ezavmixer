@@ -36,8 +36,9 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 	
 	public final String LOG_TAG = "DecodePipe";
 	String                        mUrl;
-	int                           mStrmId;
-	String 						  mCodec;
+	int                           mPgmNo = 0;
+	String 						  mCodec = null;
+	int                           mVidPid = 0;
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler = null;
 	TextureView                   mVideoTexView = null;
@@ -84,7 +85,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 		Configure.loadSavedPreferences(context, false);
 		mUrl = url;//Configure.mRtspUrl1;
 		//mCodec = codec;
-		mStrmId = strmId;
+		mPgmNo = strmId;
 		mMaxVidWidth = maxVidWidth;
 		mMaxVidHeight = maxVidHeight;
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
@@ -95,8 +96,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 		}*/
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mVideoTexView.setSurfaceTextureListener(this);
-		UdpPlayerApi.registerProgramHandler(mUrl, mStrmId,this);
-		UdpPlayerApi.subscribeProgram(mUrl, mStrmId);
+		UdpPlayerApi.registerProgramHandler(mUrl, mPgmNo,this);
+		UdpPlayerApi.subscribeProgram(mUrl, mPgmNo);
 	}
 
 	@Override
@@ -117,9 +118,10 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 							codec.compareToIgnoreCase("h264") == 0 ||
 							codec.compareToIgnoreCase("h265") == 0){
 						mCodec = codec;
+						mVidPid = vidPid;
 						// Todo : set codec type and post msg to start decode;
 						// TODO : mRemoteNodeList.add(node);
-						//mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
+						mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
 					}
 				}
 			}
@@ -152,14 +154,15 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 				mExitPlayerLoop = true;
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_STOP");
 		    }  else if(what == PLAYER_CMD_INIT) {
-				new Thread(new Runnable() {
-					@Override
-					public void run() {
-		 				mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
-					}
- 				}).start();
- 				Log.d(LOG_TAG, "transition:PLAYER_CMD_INIT");
-
+				if(mVideoSurface != null && mCodec != null) {
+					new Thread(new Runnable() {
+						@Override
+						public void run() {
+							mHandler.sendEmptyMessage(PLAYER_CMD_RUN);
+						}
+					}).start();
+					Log.d(LOG_TAG, "transition:PLAYER_CMD_INIT");
+				}
 		    }   else if(what == PLAYER_CMD_DEINIT) {
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_DEINIT");
  				new Thread(new Runnable() {
@@ -263,7 +266,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 				return;
 			}
 
-			UdpPlayerApi.subscribeStream(mUrl, mStrmId);
+			UdpPlayerApi.subscribeStream(mUrl, mVidPid);
 			
 			ByteBuffer[] inputBuffers = null;
 			ByteBuffer[] outputBuffers = null;
@@ -279,9 +282,9 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 			//long startMs = System.currentTimeMillis();
 			if(mfSendCsd0DuringInit) {
 				while (!Thread.interrupted() && !mExitPlayerLoop) {
-					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mStrmId);
+					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mVidPid);
 					if (!isEOS && mFramesInBuff > 0) {
-						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mStrmId, mBuff, mBuff.capacity(),  100 * 1000);
+						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mVidPid, mBuff, mBuff.capacity(),  100 * 1000);
 						if (sampleSize > 0) {
 							byte [] arCsd0 = null;
 							mBuff.limit(sampleSize);
@@ -325,7 +328,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 			}
 			
 			while (!Thread.interrupted() && !mExitPlayerLoop) {
-				mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mStrmId);
+				mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mVidPid);
 				if (!isEOS && mFramesInBuff > 0) {
 
 					int inIndex;
@@ -351,9 +354,9 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 						if(fFrameAvail) {
 							fFrameAvail = false;
 						} else {
-							sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mStrmId,  mBuff, mBuff.capacity(),  100 * 1000);
+							sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mVidPid,  mBuff, mBuff.capacity(),  100 * 1000);
 						}
-						mPts = UdpPlayerApi.getVideoPts(mUrl, mStrmId);// + 500000; // video pipeline delay
+						mPts = UdpPlayerApi.getVideoPts(mUrl, mVidPid);// + 500000; // video pipeline delay
 						if (sampleSize <= 0) {
 							// We shouldn't stop the playback at this point, just pass the EOS
 							// flag to decoder, we will get it again from the
@@ -390,7 +393,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 					break;
 				}
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:End outIndex=" + outIndex);
-				long sysclk = UdpPlayerApi.getClockUs(mUrl, mStrmId);
+				long sysclk = UdpPlayerApi.getClockUs(mUrl, mVidPid);
 				switch (outIndex) {
 				case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
 					Log.d(LOG_TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
@@ -417,7 +420,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 									interrupt();
 									break;
 								}
-								sysclk = UdpPlayerApi.getClockUs(mUrl, mStrmId);
+								sysclk = UdpPlayerApi.getClockUs(mUrl, mVidPid);
 							}
 						}
 						//Log.d(LOG_TAG, "releaseOutputBuffer:Begin surfacevalid=" + surface.isValid());

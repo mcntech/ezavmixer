@@ -2004,12 +2004,14 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 			DBG_MSG("parse = 0x%08x\n", parse);
 #endif
 		}
-		if (pX->parse == 0x00000109)  {
+		if (pX->parse == 0x00000109) {
 			pX->access_unit_delimiter_parse = 1;
 			pCtx->coded_frames++;
-            JDBG_LOG(CJdDbg::LVL_TRACE, ("Flushing: strmid=%d length=%d",pCtx->pid, pX->nBuffLen));
-            WriteData(pCtx, (unsigned char *)pX->pBuffer, 1, pX->nBuffLen, pCtx->pid);
-            pX->nBuffLen = 0;
+			JDBG_LOG(CJdDbg::LVL_TRACE, ("Flushing: strmid=%d length=%d", pCtx->pid, pX->nBuffLen));
+			if (pX->nBuffLen > 0) {
+				WriteData(pCtx, (unsigned char *) pX->pBuffer, 1, pX->nBuffLen, pCtx->pid);
+				pX->nBuffLen = 0;
+			}
 		}
 		else if (pX->access_unit_delimiter_parse != 0)  {
 			--pX->access_unit_delimiter_parse;

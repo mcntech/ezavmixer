@@ -38,6 +38,9 @@ public:
 	void stop();
 	int subscribeStream(int nStrmId);
 	int unsubscribeStream(int nStrmId);
+	int subscribeProgram(int nStrmId);
+	int unsubscribeProgram(int nStrmId);
+
 	int getData(int nStrmId, char *pData, int numBytes);
 
 	long long getPts(int nStrmId);

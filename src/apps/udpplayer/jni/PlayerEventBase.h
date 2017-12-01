@@ -10,6 +10,6 @@ class CPlayerEventBase
 {
 public:	
   	virtual bool onPsiPatChange(const char *szPublishId, const char *pPsiData) = 0;
-	virtual bool onPsiPmtChange(const char *szPublishId, const char *pPsiData) = 0;
+	virtual bool onPsiPmtChange(const char *szPublishId, int strmId, const char *pPsiData) = 0;
 };
 #endif

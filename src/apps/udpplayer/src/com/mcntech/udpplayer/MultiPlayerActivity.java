@@ -89,7 +89,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
 				VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
 				TextureView textureView = getTexture(mLayoutId, i);
-				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mCodec, videoFeed.mRemoteNode.mVidPID, textureView, maxDecWidth, maxDecHeight);
+				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mProgram, textureView, maxDecWidth, maxDecHeight);
 				videoFeed.textureId = i;
 				textureView.setOnLongClickListener(this);
 				textureView.setOnDragListener(this);

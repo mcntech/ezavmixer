@@ -21,7 +21,8 @@ public:
     virtual int StartStreaming(void);
     virtual int StopStreaming(void);
     virtual int ConnectStreamForPid(int nPid, ConnCtxT *pConn);
-
+	void SubscribeProgram(int strmId);
+	void UnsubscribeProgram(int strmId);
 	void UpdateJitter(int nPktTime);
 
 	void UpdateStat();

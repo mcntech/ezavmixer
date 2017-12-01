@@ -80,6 +80,24 @@ int CUdpMultiPlayer::unsubscribeStream(std::string url, int substrmId)
 {
 	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
 	if(pNode) {
+		return pNode->unsubscribeProgram(substrmId);
+	}
+	return 0;
+}
+
+int  CUdpMultiPlayer::subscribeProgram(std::string url,  int substrmId)
+{
+	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
+	if(pNode) {
+		return pNode->subscribeProgram(substrmId);
+	}
+	return 0;
+}
+
+int  CUdpMultiPlayer::unsubscribeProgram(std::string url,  int substrmId)
+{
+	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
+	if(pNode) {
 		return pNode->unsubscribeStream(substrmId);
 	}
 	return 0;
@@ -172,10 +190,10 @@ void CUdpMultiPlayer::NotifyPsiPatChange(const char *url, const char *pPsiData)
 
 }
 
-void CUdpMultiPlayer::NotifyPsiPmtChange(const char *url, const char *pPsiData)
+void CUdpMultiPlayer::NotifyPsiPmtChange(const char *url, int nPgm, const char *pPsiData)
 {
 	if(m_EventCallback)
-		((CUdpPlayerEvents *)m_EventCallback)->onPsiPmtChange(url, pPsiData);
+		((CUdpPlayerEvents *)m_EventCallback)->onPsiPmtChange(url, nPgm, pPsiData);
 
 }
 

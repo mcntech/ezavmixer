@@ -41,6 +41,9 @@ public:
 
 	int subscribeStream(std::string url, int substrmId);
 	int unsubscribeStream(std::string url, int substrmId);
+    int  subscribeProgram(std::string url,  int substrmId);
+    int  unsubscribeProgram(std::string url,  int substrmId);
+
 
 	int getData(std::string url, int substrmId, char *pData, int numBytes);
 
@@ -55,7 +58,7 @@ public:
 
 	void UpdateStats(const char *url, UDP_SERVER_STATS *);
 	void NotifyPsiPatChange(const char *url, const char *pPsiData);
-	void NotifyPsiPmtChange(const char *url, const char *pPsiData);
+	void NotifyPsiPmtChange(const char *url, int strmId, const char *pPsiData);
 
 public:
 	CUdpMultiPlayer(CPlayerEventBase *pEventBase);

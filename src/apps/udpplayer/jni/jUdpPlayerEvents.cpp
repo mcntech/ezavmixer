@@ -59,17 +59,18 @@ bool CUdpPlayerEvents::onPsiPatChange(const char *url, const char *pPsiData)
 	return true;
 }
 
-bool CUdpPlayerEvents::onPsiPmtChange(const char *url, const char *pPsiData)
+bool CUdpPlayerEvents::onPsiPmtChange(const char *url, int strmId, const char *pPsiData)
 {
 	JNIEnv* env;
 	safeAttach(&env);
 	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
 	if(onyxApi != NULL) {
-		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPmtChange", "(Ljava/lang/String;Ljava/lang/String;)V");
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPmtChange", "(Ljava/lang/String;I;Ljava/lang/String;)V");
 		if(callback != NULL) {
 			jstring jurl = env->NewStringUTF(url);
 			jstring jpsi = env->NewStringUTF(pPsiData);
-			env->CallStaticVoidMethod(onyxApi, callback, jurl, jpsi);
+			jint jStrmId = strmId;
+			env->CallStaticVoidMethod(onyxApi, callback, jurl, jStrmId, jpsi);
 			env->DeleteLocalRef(jurl);
 			env->DeleteLocalRef(jpsi);
 		}else {

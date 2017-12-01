@@ -21,14 +21,27 @@ public class UdpPlayerApi {
 		void onRemoteNodeError(final String url,final String message);
 	}
 	public interface ProgramHandler {
-		void onPsiPmtChange(String url, String message);
+		void onPsiPmtChange(String message);
+	}
+
+	public static class PgmDispatch
+	{
+		PgmDispatch(String url, int pgm, ProgramHandler handler)
+		{
+			mUrl = url;
+			mPgm = pgm;
+			mHandler = handler;
+		}
+		String mUrl;
+		int    mPgm;
+		ProgramHandler mHandler;
 	}
 
 	private static long mHandle = 0;
 	private static UdpPlayerApi mSelf = null;
 	private static RemoteNodeHandler m_nodeHandler = null;
 	private static ProgramHandler m_programHandler = null;
-	private static ArrayList<String> mActiveRemoteNodes = new ArrayList<String>();
+	private static ArrayList<PgmDispatch> mPsiDispatchList = new ArrayList<PgmDispatch>();
 	
 	private UdpPlayerApi() {
 
@@ -52,7 +65,12 @@ public class UdpPlayerApi {
 			e.printStackTrace();
 		}
 	}
-	
+
+	public static void registerProgramHandler(String url, int pgm, ProgramHandler handler) {
+		PgmDispatch dispatch = new PgmDispatch(url, pgm, handler);
+		mPsiDispatchList.add(dispatch);
+	}
+
 	protected void finalize() throws Throwable {
 		if(mHandle==0)
 			return;
@@ -79,10 +97,13 @@ public class UdpPlayerApi {
 			m_nodeHandler.onPsiPatChange(url, psi);
 	}
 
-	public static void onPsiPmtChange(String url, String psi)
+	public static void onPsiPmtChange(String url, int strmId, String psi)
 	{
-		if(m_programHandler != null)
-			m_programHandler.onPsiPmtChange(url, psi);
+		PgmDispatch dispatch = null;
+		//get from mPsiDispatchList
+		if(dispatch != null) {
+			dispatch.mHandler.onPsiPmtChange(psi);
+		}
 	}
 
 	public static String getVersion() {
@@ -125,6 +146,16 @@ public class UdpPlayerApi {
 	public static int unsubscribeStream (String url, int strmId)
 	{
 		return unsubscribeStream(mHandle, url, strmId);
+	}
+
+	public static int subscribeProgram (String url, int pgmId)
+	{
+		return subscribeStream(mHandle, url, pgmId);
+	}
+
+	public static int unsubscribeProgram (String url, int pgmId)
+	{
+		return unsubscribeStream(mHandle, url, pgmId);
 	}
 
 	public static int getVideoFrame (String url, int strmId, ByteBuffer data, int size, int nTimeoutMs )
@@ -183,6 +214,9 @@ public class UdpPlayerApi {
 
 	public native static int subscribeStream(long handle, String inputId, int strmId);
 	public native static int unsubscribeStream(long handle, String inputId, int strmId);
+	public native static int subscribeProgram(long handle, String inputId, int pgmId);
+	public native static int unsubscribeProgram(long handle, String inputId, int pgmId);
+
 	public native static int getFrame(long handle, String inputId, int strmId, ByteBuffer vidData, int numBytes);
 	public native static long getClockUs(long handle, String inputId, int strmId);
 	public native static long getPts(long handle, String inputId, int strmId);

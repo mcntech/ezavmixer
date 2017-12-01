@@ -232,7 +232,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	       for(int i=0; i < numUrls; i++) {
 		       RemoteNode node  = mRemoteNodeList.get(i);
 		       if(node != null) {
-		    	   String url = node.getRtspStream();
+		    	   String url = node.toString();
 		    	   VrRenderDb.addFeed(node, 0);
 		       }
 	       }

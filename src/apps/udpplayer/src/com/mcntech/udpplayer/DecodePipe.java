@@ -32,7 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListener {
+public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.SurfaceTextureListener {
 	
 	public final String LOG_TAG = "DecodePipe";
 	String                        mUrl;
@@ -70,14 +70,20 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 
 	ProgramHandler mProgramHandler;
 
-	public DecodePipe(Activity activity, String url, String codec, int strmId, TextureView textureView, int maxVidWidth, int maxVidHeight) {
+	class AudioStream
+	{
+		int PID;
+		int CodecType;
+	}
+
+	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView, int maxVidWidth, int maxVidHeight) {
 
 		mHandler = new LocalHandler();
 		mVideoTexView = textureView;
 		Context context = activity.getApplicationContext();
 		Configure.loadSavedPreferences(context, false);
 		mUrl = url;//Configure.mRtspUrl1;
-		mCodec = codec;
+		//mCodec = codec;
 		mStrmId = strmId;
 		mMaxVidWidth = maxVidWidth;
 		mMaxVidHeight = maxVidHeight;
@@ -89,54 +95,40 @@ public class DecodePipe  implements DecPipeBase, TextureView.SurfaceTextureListe
 		}*/
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mVideoTexView.setSurfaceTextureListener(this);
+		UdpPlayerApi.registerProgramHandler(mUrl, mStrmId,this);
+		UdpPlayerApi.subscribeProgram(mUrl, mStrmId);
+	}
 
+	@Override
+	public void onPsiPmtChange(String message) {
+		Log.d(LOG_TAG, "MainActivity::onPsiChange");
+		JSONObject pgm = null;
+		try {
+			pgm = new JSONObject(message);
+			if(pgm != null) {
+				int vidPid = 0;
 
-
-		mProgramHandler = new ProgramHandler(){
-			@Override
-			public void onPsiPmtChange(String url, String message) {
-				Log.d(LOG_TAG, "MainActivity::onPsiChange");
-				JSONObject pgm = null;
-				try {
-					pgm = new JSONObject(message);
-					if(pgm != null) {
-						int vidPid = 0;
-
-						JSONArray esList = pgm.getJSONArray("streams");
-						for (int j = 0; j < esList.length(); j++) {
-							JSONObject es = esList.getJSONObject(j);
-							String codec = es.getString("codec");
-							vidPid = es.getInt("pid");
-							if(codec.compareToIgnoreCase("mpeg2") == 0 ||
-									codec.compareToIgnoreCase("h264") == 0 ||
-									codec.compareToIgnoreCase("h265") == 0){
-
-								RemoteNode node = new RemoteNode(url, codec, vidPid);
-								// TODO : mRemoteNodeList.add(node);
-							}
-						}
+				JSONArray esList = pgm.getJSONArray("streams");
+				for (int j = 0; j < esList.length(); j++) {
+					JSONObject es = esList.getJSONObject(j);
+					String codec = es.getString("codec");
+					vidPid = es.getInt("pid");
+					if(codec.compareToIgnoreCase("mpeg2") == 0 ||
+							codec.compareToIgnoreCase("h264") == 0 ||
+							codec.compareToIgnoreCase("h265") == 0){
+						mCodec = codec;
+						// Todo : set codec type and post msg to start decode;
+						// TODO : mRemoteNodeList.add(node);
+						//mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
 					}
-
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return;
 				}
-
 			}
-		};
 
-
-
-
-
-
-
-
-
-
-
-
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return;
+		}
 
 	}
 

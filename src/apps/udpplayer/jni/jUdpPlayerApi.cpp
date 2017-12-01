@@ -123,6 +123,36 @@ jint Java_com_mcntech_udpplayer_UdpPlayerApi_unsubscribeStream(JNIEnv *env, jobj
 	return result;
 }
 
+jint Java_com_mcntech_udpplayer_UdpPlayerApi_subscribeProgram(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jint strmid)
+{
+	const char *szUrl = env->GetStringUTFChars(jurl, 0);
+	std::string url = szUrl;
+
+	//pthread_mutex_lock(&g_mutex);
+	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
+	int result = 0;
+
+	result =  pPlayer->subscribeProgram(url, strmid);
+	env->ReleaseStringUTFChars(jurl, szUrl);
+	//pthread_mutex_unlock(&g_mutex);
+	return result;
+}
+
+jint Java_com_mcntech_udpplayer_UdpPlayerApi_unsubscribeProgram(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jint strmid)
+{
+	const char *szUrl = env->GetStringUTFChars(jurl, 0);
+	std::string url = szUrl;
+
+	//pthread_mutex_lock(&g_mutex);
+	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
+	int result = 0;
+
+	result =  pPlayer->unsubscribeProgram(url, strmid);
+	env->ReleaseStringUTFChars(jurl, szUrl);
+	//pthread_mutex_unlock(&g_mutex);
+	return result;
+}
+
 jint Java_com_mcntech_udpplayer_UdpPlayerApi_getFrame(JNIEnv *env, jobject self, jlong ctx, jstring jurl, jint strmid, jobject buf, jint numBytes, jint nTimeoutMs)
 {
 	const char *szUrl = env->GetStringUTFChars(jurl, 0);

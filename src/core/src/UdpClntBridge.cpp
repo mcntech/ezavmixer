@@ -122,7 +122,7 @@ void CUdpClntBridge::UpdatePmt(int nPid, const char *pData, int len )
 	if(m_pCallback) {
 		std::string psiString;
 		psiPmtJson(pmt, psiString);
-		m_pCallback->NotifyPsiPmtChange(m_szRemoteHost, psiString.c_str());
+		m_pCallback->NotifyPsiPmtChange(m_szRemoteHost, pmt->program_number, psiString.c_str());
 	}
 }
 
@@ -261,6 +261,28 @@ void CUdpClntBridge::UpdatePat(const char *pData, int len)
 		psiPatJson(psiString);
 		m_pCallback->NotifyPsiPatChange(m_szRemoteHost, psiString.c_str());
 	}
+}
+
+void CUdpClntBridge::SubscribeProgram(int strmId)
+{
+
+    if(m_pat != NULL && strmId < m_pat->number_of_programs ) {
+		DemuxSubscribeProgramPidT pgm;
+		pgm.nPid = m_pat->program_descriptor[strmId].network_or_program_map_PID;
+		pgm.pmt_callback = pmtCallback;
+		m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SUBSCRIBE_PROGRAM_PID, (char *)&pgm);
+	}
+}
+
+void CUdpClntBridge::UnsubscribeProgram(int strmId)
+{
+
+    if(m_pat != NULL && strmId < m_pat->number_of_programs ) {
+        DemuxSubscribeProgramPidT pgm;
+        pgm.nPid = m_pat->program_descriptor[strmId].network_or_program_map_PID;
+        pgm.pmt_callback = NULL;
+        m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SUBSCRIBE_PROGRAM_PID, (char *)&pgm);
+    }
 }
 
 int CUdpClntBridge::StartStreaming()

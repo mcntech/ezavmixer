@@ -38,6 +38,18 @@ int CUdpServerNode::unsubscribeStream(int nStrmId)
 	return 0;
 }
 
+int CUdpServerNode::subscribeProgram(int nStrmId)
+{
+	m_pClntBridge->SubscribeProgram(nStrmId);
+	return 0;
+}
+
+int CUdpServerNode::unsubscribeProgram(int nStrmId)
+{
+	m_pClntBridge->UnsubscribeProgram(nStrmId);
+	return 0;
+}
+
 int CUdpServerNode::getData(int nStrmId, char *pData, int numBytes)
 {
 	int res = 0;

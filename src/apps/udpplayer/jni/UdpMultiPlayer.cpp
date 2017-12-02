@@ -197,6 +197,13 @@ void CUdpMultiPlayer::NotifyPsiPmtChange(const char *url, int nPgm, const char *
 
 }
 
+void CUdpMultiPlayer::NotifyFormatChange(const char *url, int nStrmId, const char *pFormat)
+{
+    if(m_EventCallback)
+        ((CUdpPlayerEvents *)m_EventCallback)->onFormatChange(url, nStrmId, pFormat);
+
+}
+
 CPlayerBase *CUdpMultiPlayer::openInstance(CPlayerEventBase *pEventBase)
 {
 	return new CUdpMultiPlayer(pEventBase);

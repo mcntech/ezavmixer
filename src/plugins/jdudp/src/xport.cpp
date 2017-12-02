@@ -359,6 +359,8 @@ typedef struct
     unsigned short	strmType[0x2000];
 	pat_callback_t pPatCallback;
 	pmt_callback_t pPmtCallback;
+	fmt_callback_t pFmtCallback;
+
 	void           *pPsiCallbackCtx;
 	std::map<int, CParseCtx *> mParsers;
 	std::map<int, int> mPrograms;
@@ -461,6 +463,15 @@ pmt_callback_t getCallback(MpegTsDemuxCtx *pCtx, int nPid)
 	return NULL;
 }
 
+int NotifyFrmatChange(MpegTsDemuxCtx *pCtx, int nPid, int codecType, unsigned char *pData, int length)
+{
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("NotifyFrmatChange: strmid=%d length=%d", nPid, length));
+	if (pCtx->pFmtCallback != NULL) {
+		pCtx->pFmtCallback(pCtx->pPsiCallbackCtx, nPid,codecType, (const char *) pData, length);
+	}
+	return 0;
+}
+
 int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int length, int nPid)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("WriteData: strmid=%d length=%d",nPid, length));
@@ -520,6 +531,8 @@ int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 	pCtx->pPatCallback = NULL;
 	pCtx->pPsiCallbackCtx = NULL;
 	pCtx->pPmtCallback = NULL;
+	pCtx->pFmtCallback = NULL;
+
 	demux_mpeg2_transport_init(pCtx);
 	return 0;
 }
@@ -539,6 +552,12 @@ int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
 		case DEMUX_CMD_SET_PMT_CALLBACK:
 		{
 			pCtx->pPmtCallback = (pmt_callback_t)pOptionData;
+		}
+		break;
+
+		case DEMUX_CMD_SET_FMT_CALLBACK:
+		{
+			pCtx->pFmtCallback = (fmt_callback_t)pOptionData;
 		}
 		break;
 
@@ -2050,6 +2069,8 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 		}
 		else if (pX->parse == 0x00000127 ||  pX->parse == 0x00000167)  {
 			pX->sequence_parameter_set_parse = 3;
+            //NotifyFrmatChange(pCtx, pCtx->pid, 0x1B, start_es_ptr, length);
+            NotifyFrmatChange(pCtx, pCtx->pid, 0x1B, es_ptr - 4, length - (es_ptr-start_es_ptr));
 		}
 		else if (pX->sequence_parameter_set_parse != 0)  {
 			--pX->sequence_parameter_set_parse;

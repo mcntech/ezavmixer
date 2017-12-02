@@ -85,6 +85,32 @@ bool CUdpPlayerEvents::onPsiPmtChange(const char *url, int strmId, const char *p
 	return true;
 }
 
+bool CUdpPlayerEvents::onFormatChange(const char *url, int strmId, const char *pFormat)
+{
+	JNIEnv* env;
+	safeAttach(&env);
+	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	if(onyxApi != NULL) {
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPmtChange", "(Ljava/lang/String;ILjava/lang/String;)V");
+		if(callback != NULL) {
+			jstring jurl = env->NewStringUTF(url);
+			jstring jmsg = env->NewStringUTF(pFormat);
+			jint jStrmId = strmId;
+			env->CallStaticVoidMethod(onyxApi, callback, jurl, jStrmId, jmsg);
+			env->DeleteLocalRef(jurl);
+			env->DeleteLocalRef(jmsg);
+		}else {
+			JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find onDiscoverRemoteNode on com/mcntech/udpplayer/UdpPlayerApi"));
+		}
+	} else {
+		JDBG_LOG(CJdDbg::LVL_ERR, ("Failed to find com/mcntech/udpplayer/UdpPlayerApi"));
+	}
+
+	safeDetach();
+
+	return true;
+}
+
 bool CUdpPlayerEvents::attachThread(JNIEnv** env){
   bool changed = false;
   switch (g_vm->GetEnv((void**)env, JNI_VERSION_1_6))

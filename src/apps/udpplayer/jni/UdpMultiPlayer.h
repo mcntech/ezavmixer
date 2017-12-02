@@ -59,7 +59,7 @@ public:
 	void UpdateStats(const char *url, UDP_SERVER_STATS *);
 	void NotifyPsiPatChange(const char *url, const char *pPsiData);
 	void NotifyPsiPmtChange(const char *url, int strmId, const char *pPsiData);
-
+	void NotifyFormatChange(const char *url, int nStrmId, const char *pFormat);
 public:
 	CUdpMultiPlayer(CPlayerEventBase *pEventBase);
 	ServerNodeMap      m_ServerList;

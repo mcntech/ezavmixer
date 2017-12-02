@@ -23,6 +23,9 @@ public class UdpPlayerApi {
 	public interface ProgramHandler {
 		void onPsiPmtChange(String message);
 	}
+	public interface FormatHandler {
+		void onFormatChange(String message);
+	}
 
 	public static class PgmDispatch
 	{
@@ -36,13 +39,26 @@ public class UdpPlayerApi {
 		int    mPgm;
 		ProgramHandler mHandler;
 	}
+	public static class FmtDispatch
+	{
+		FmtDispatch(String url, int strmId, FormatHandler handler)
+		{
+			mUrl = url;
+			mStrmId = strmId;
+			mHandler = handler;
+		}
+		String mUrl;
+		int    mStrmId;
+		FormatHandler mHandler;
+	}
 
 	private static long mHandle = 0;
 	private static UdpPlayerApi mSelf = null;
 	private static RemoteNodeHandler m_nodeHandler = null;
 	private static ProgramHandler m_programHandler = null;
 	private static ArrayList<PgmDispatch> mPsiDispatchList = new ArrayList<PgmDispatch>();
-	
+	private static ArrayList<FmtDispatch> mFmtDispatchList = new ArrayList<FmtDispatch>();
+
 	private UdpPlayerApi() {
 
 	}
@@ -69,6 +85,11 @@ public class UdpPlayerApi {
 	public static void registerProgramHandler(String url, int pgm, ProgramHandler handler) {
 		PgmDispatch dispatch = new PgmDispatch(url, pgm, handler);
 		mPsiDispatchList.add(dispatch);
+	}
+
+	public static void registerFormatHandler(String url, int strmid, FormatHandler handler) {
+		FmtDispatch dispatch = new FmtDispatch(url, strmid, handler);
+		mFmtDispatchList.add(dispatch);
 	}
 
 	protected void finalize() throws Throwable {
@@ -104,6 +125,18 @@ public class UdpPlayerApi {
 			dispatch  = mPsiDispatchList.get(i);
 			if(dispatch != null && dispatch.mUrl.compareTo(url) == 0 && dispatch.mPgm == strmId) {
 				dispatch.mHandler.onPsiPmtChange(psi);
+				break;
+			}
+		}
+	}
+
+	public static void onFormatChange(String url, int strmId, String fmt)
+	{
+		FmtDispatch dispatch = null;
+		for(int i=0; i < mPsiDispatchList.size(); i++) {
+			dispatch  = mFmtDispatchList.get(i);
+			if(dispatch != null && dispatch.mUrl.compareTo(url) == 0 && dispatch.mStrmId == strmId) {
+				dispatch.mHandler.onFormatChange(fmt);
 				break;
 			}
 		}

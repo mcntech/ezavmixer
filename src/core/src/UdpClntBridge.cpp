@@ -18,6 +18,7 @@
 #include "filesrc.h"
 #include "udprx.h"
 #include "xport.h"
+#include "h264parser.h"
 #include <time.h>
 #include "json.hpp"
 
@@ -87,11 +88,25 @@ CUdpClntBridge::~CUdpClntBridge()
 	//}
 }
 
+void patCallback(void *ctx, const char *pData, int len)
+{
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("Received PSI len=%d", len));
+	CUdpClntBridge *pObj = (CUdpClntBridge *)ctx;
+	pObj->UpdatePat(pData, len);
+}
+
 void pmtCallback(void *ctx, int nPid, const char *pData, int len)
 {
 	JDBG_LOG(CJdDbg::LVL_TRACE, ("Received PMT len=%d", len));
 	CUdpClntBridge *pObj = (CUdpClntBridge *)ctx;
 	pObj->UpdatePmt(nPid, pData, len);
+}
+
+void formatCallback(void *ctx, int nPid, int nCodecType, const char *pData, int len)
+{
+	JDBG_LOG(CJdDbg::LVL_TRACE, ("Received PMT len=%d", len));
+	CUdpClntBridge *pObj = (CUdpClntBridge *)ctx;
+	pObj->UpdateFormat(nPid, nCodecType, pData, len);
 }
 
 void CUdpClntBridge::UpdatePmt(int nPid, const char *pData, int len )
@@ -126,11 +141,29 @@ void CUdpClntBridge::UpdatePmt(int nPid, const char *pData, int len )
 	}
 }
 
-void patCallback(void *ctx, const char *pData, int len)
+void CUdpClntBridge::UpdateFormat(int nPid, int nCodecType, const char *pData, int len)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE, ("Received PSI len=%d", len));
-	CUdpClntBridge *pObj = (CUdpClntBridge *)ctx;
-	pObj->UpdatePat(pData, len);
+    if(nCodecType == 0x1B) {
+        if(m_pCallback) {
+            std::string fmtString;
+            strmFmtJson(pData, len, fmtString);
+            m_pCallback->NotifyPsiPmtChange(m_szRemoteHost, nPid, fmtString.c_str());
+        }
+    }
+}
+
+void CUdpClntBridge::strmFmtJson(const char *pFmtData, int len, std::string &psiString)
+{
+    json jFmt = {};
+    long lWidth = 0;
+    long lHeight = 0;
+    H264::cParser *mH264Parser = new H264::cParser();
+    mH264Parser->ParseSequenceParameterSetMin((unsigned char *)pFmtData, len, &lWidth, &lHeight);
+    if(lWidth != 0){
+        jFmt["width"] = lWidth;
+        jFmt["height"] = lHeight;
+    }
+    psiString = jFmt.dump();
 }
 
 std::string StrmTypeToString(int strmType)
@@ -263,6 +296,7 @@ void CUdpClntBridge::UpdatePat(const char *pData, int len)
 	}
 }
 
+
 void CUdpClntBridge::SubscribeProgram(int strmId)
 {
 
@@ -330,6 +364,7 @@ int CUdpClntBridge::StartStreaming()
 	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PAT_CALLBACK, (char *)patCallback);
 	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PMT_CALLBACK, (char *)pmtCallback);
 	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_PSI_CALLBACK_CTX, (char *) this);
+	m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_SET_FMT_CALLBACK, (char *)formatCallback);
 
 	m_srcComp->SetOutputConn(m_srcComp, 0, m_pConnCtxSrcToDemux);
 	m_demuxComp->SetInputConn(m_demuxComp, 0, m_pConnCtxSrcToDemux);

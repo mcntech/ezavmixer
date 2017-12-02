@@ -20,6 +20,7 @@ public:
   	bool onServerStatistics(const char *szPublishId, UDP_SERVER_STATS *pStat);
   	bool onPsiPatChange(const char *szPublishId, const char *pPsiData);
 	bool onPsiPmtChange(const char *szPublishId, int strmId, const char *pPsiData);
+	bool onFormatChange(const char *url, int strmId, const char *pFormat);
 
   	jclass m_deviceClass;
 

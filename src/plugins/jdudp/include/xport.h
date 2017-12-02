@@ -28,6 +28,7 @@ typedef struct _DemuxSelectProgramT
 
 typedef void (*pat_callback_t)(void *pCtx, const char *pPsiData, int len);
 typedef void (*pmt_callback_t)(void *pCtx, int nPid, const char *pPmtData, int len);
+typedef void (*fmt_callback_t)(void *pCtx, int nPid, int codecType, const char *pFmtData, int len);
 
 typedef struct _DemuxSubscribeProgramPidT
 {
@@ -41,6 +42,7 @@ typedef struct _DemuxSubscribeProgramPidT
 #define DEMUX_CMD_SET_PSI_CALLBACK_CTX   4
 #define DEMUX_CMD_SUBSCRIBE_PROGRAM_PID  5
 #define DEMUX_CMD_SUBSCRIBE_ES_PID       6
+#define DEMUX_CMD_SET_FMT_CALLBACK		 7
 
 #include "strmcomp.h"
 

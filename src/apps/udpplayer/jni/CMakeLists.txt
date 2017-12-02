@@ -24,6 +24,7 @@ add_subdirectory(${LOCAL_PATH}/../../../core/jni subproject/onyxcore)
 add_subdirectory(${LOCAL_PATH}/../../../plugins/jdudp/jni subproject/jdudp)
 add_subdirectory(${LOCAL_PATH}/../../../plugins/streamif/jni subproject/streamif)
 add_subdirectory(${LOCAL_PATH}/../../../plugins/osal/jni subproject/osal)
+add_subdirectory(${LOCAL_PATH}/../../../plugins/parseutil/jni subproject/parseutil)
 
 add_library(UdpPlayerApi SHARED
  	jUdpPlayerApi.cpp
@@ -38,6 +39,7 @@ target_link_libraries(
     jdudp
     jdosal
     streamif
+    parseutil
     android
     log
     )

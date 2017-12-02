@@ -37,6 +37,7 @@ public:
 	virtual void UpdateStats(const char *url, UDP_SERVER_STATS *) = 0;
 	virtual void NotifyPsiPatChange(const char *url, const char *pPsiData) = 0;
 	virtual void NotifyPsiPmtChange(const char *url, int strmId, const char *pPsiData) = 0;
+    virtual void NotifyFormatChange(const char *url, int strmId, const char *pPsiData) = 0;
 };
 
 #endif //__RTSP_CALLBACK_H__

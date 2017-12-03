@@ -6,19 +6,28 @@
 #include <android/log.h>
 #include "JdDbg.h"
 
+
+static int  modDbgLevel = CJdDbg::LVL_TRACE;
+
 JavaVM* g_vm;
 jobject g_jniGlobalSelf = NULL;
-static int  modDbgLevel = CJdDbg::LVL_TRACE;
+
+
+
+static jclass onyxApi = NULL;
+static jmethodID jonPsiChange = NULL;
+static jmethodID jonPsiPmtChange = NULL;
+jmethodID jonFormatChange = NULL;
 
 CUdpPlayerEvents::CUdpPlayerEvents(JNIEnv* env,jobject javaReceiver)
 {
 	env->GetJavaVM(&g_vm);
 	g_jniGlobalSelf = env->NewGlobalRef(javaReceiver);
-
-    // Test
-    //jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
-    //jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiChange", "(Ljava/lang/String;Ljava/lang/String;)V");
-
+    jclass tmpClass  = env->GetObjectClass(g_jniGlobalSelf);
+    onyxApi = reinterpret_cast<jclass>(env->NewGlobalRef(tmpClass));
+    jonPsiChange = env->GetStaticMethodID(onyxApi, "onPsiPatChange", "(Ljava/lang/String;Ljava/lang/String;)V");
+    jonPsiPmtChange = env->GetStaticMethodID(onyxApi, "onPsiPmtChange", "(Ljava/lang/String;ILjava/lang/String;)V");
+    jonFormatChange = env->GetStaticMethodID(onyxApi, "onFormatChange", "(Ljava/lang/String;ILjava/lang/String;)V");
 	pthread_mutex_init(&m_eventMutex, NULL);
 }
 
@@ -38,13 +47,13 @@ bool CUdpPlayerEvents::onPsiPatChange(const char *url, const char *pPsiData)
 {
 	JNIEnv* env;
 	safeAttach(&env);
-	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	//jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
 	if(onyxApi != NULL) {
-		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPatChange", "(Ljava/lang/String;Ljava/lang/String;)V");
-		if(callback != NULL) {
+		//jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPatChange", "(Ljava/lang/String;Ljava/lang/String;)V");
+		if(jonPsiChange != NULL) {
 			jstring jurl = env->NewStringUTF(url);
             jstring jpsi = env->NewStringUTF(pPsiData);
-			env->CallStaticVoidMethod(onyxApi, callback, jurl, jpsi);
+			env->CallStaticVoidMethod(onyxApi, jonPsiChange/*callback*/, jurl, jpsi);
 			env->DeleteLocalRef(jurl);
             env->DeleteLocalRef(jpsi);
 		}else {
@@ -63,14 +72,14 @@ bool CUdpPlayerEvents::onPsiPmtChange(const char *url, int strmId, const char *p
 {
 	JNIEnv* env;
 	safeAttach(&env);
-	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	//jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
 	if(onyxApi != NULL) {
-		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPmtChange", "(Ljava/lang/String;ILjava/lang/String;)V");
-		if(callback != NULL) {
+		//jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPmtChange", "(Ljava/lang/String;ILjava/lang/String;)V");
+		if(jonPsiPmtChange != NULL) {
 			jstring jurl = env->NewStringUTF(url);
 			jstring jpsi = env->NewStringUTF(pPsiData);
 			jint jStrmId = strmId;
-			env->CallStaticVoidMethod(onyxApi, callback, jurl, jStrmId, jpsi);
+			env->CallStaticVoidMethod(onyxApi, jonPsiPmtChange, jurl, jStrmId, jpsi);
 			env->DeleteLocalRef(jurl);
 			env->DeleteLocalRef(jpsi);
 		}else {
@@ -89,14 +98,14 @@ bool CUdpPlayerEvents::onFormatChange(const char *url, int strmId, const char *p
 {
 	JNIEnv* env;
 	safeAttach(&env);
-	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
+	//jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
 	if(onyxApi != NULL) {
-		jmethodID callback = env->GetStaticMethodID(onyxApi, "onFormatChange", "(Ljava/lang/String;ILjava/lang/String;)V");
-		if(callback != NULL) {
+		//jmethodID callback = env->GetStaticMethodID(onyxApi, "onFormatChange", "(Ljava/lang/String;ILjava/lang/String;)V");
+		if(jonFormatChange != NULL) {
 			jstring jurl = env->NewStringUTF(url);
 			jstring jmsg = env->NewStringUTF(pFormat);
 			jint jStrmId = strmId;
-			env->CallStaticVoidMethod(onyxApi, callback, jurl, jStrmId, jmsg);
+			env->CallStaticVoidMethod(onyxApi, jonFormatChange, jurl, jStrmId, jmsg);
 			env->DeleteLocalRef(jurl);
 			env->DeleteLocalRef(jmsg);
 		}else {

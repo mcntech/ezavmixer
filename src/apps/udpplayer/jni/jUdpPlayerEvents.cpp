@@ -91,7 +91,7 @@ bool CUdpPlayerEvents::onFormatChange(const char *url, int strmId, const char *p
 	safeAttach(&env);
 	jclass onyxApi = env->GetObjectClass(g_jniGlobalSelf);
 	if(onyxApi != NULL) {
-		jmethodID callback = env->GetStaticMethodID(onyxApi, "onPsiPmtChange", "(Ljava/lang/String;ILjava/lang/String;)V");
+		jmethodID callback = env->GetStaticMethodID(onyxApi, "onFormatChange", "(Ljava/lang/String;ILjava/lang/String;)V");
 		if(callback != NULL) {
 			jstring jurl = env->NewStringUTF(url);
 			jstring jmsg = env->NewStringUTF(pFormat);

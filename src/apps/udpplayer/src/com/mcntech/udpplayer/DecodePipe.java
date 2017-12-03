@@ -32,7 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.SurfaceTextureListener {
+public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.FormatHandler, TextureView.SurfaceTextureListener {
 	
 	public final String LOG_TAG = "DecodePipe";
 	String                        mUrl;
@@ -46,8 +46,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 	
 	ByteBuffer                    mBuff;
 	long                          mPts;
-	public static int             mFramesInBuff = 0;
-	public static int             mFramesRendered = 0;
+	public  int             	  mFramesInBuff = 0;
+	public  int             	  mFramesRendered = 0;
 
 	//Video Parameters
 	int                              maxBuffSize = (4 * 1024 * 1024);
@@ -57,11 +57,11 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 	
 
     private boolean                  mfPlaying = false;
-
+	private boolean                  mfStreamAvailable = false;
     private final Object             mPlayLock = new Object();
     private boolean                  mExitPlayerLoop = false;
-    int                              mMaxVidWidth =  1920;
-    int                              mMaxVidHeight = 1080;
+    int                              mMaxVidWidth =  0;
+    int                              mMaxVidHeight = 0;
     int                              currentapiVersion = android.os.Build.VERSION.SDK_INT;
 
     private boolean                  mfSendCsd0DuringInit = false;
@@ -77,8 +77,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 		int CodecType;
 	}
 
-	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView, int maxVidWidth, int maxVidHeight) {
-
+	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView) {
+		Log.d(LOG_TAG, "DecodePipe:" + url + ":" + strmId);
 		mHandler = new LocalHandler();
 		mVideoTexView = textureView;
 		Context context = activity.getApplicationContext();
@@ -86,8 +86,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 		mUrl = url;//Configure.mRtspUrl1;
 		//mCodec = codec;
 		mPgmNo = strmId;
-		mMaxVidWidth = maxVidWidth;
-		mMaxVidHeight = maxVidHeight;
+
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
 		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
 /*		if(mfAvcUHdSupported) {
@@ -102,7 +101,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 
 	@Override
 	public void onPsiPmtChange(String message) {
-		Log.d(LOG_TAG, "MainActivity::onPsiChange");
+		Log.d(LOG_TAG, "MainActivity::onPsiPmtChange");
 		JSONObject pgm = null;
 		try {
 			pgm = new JSONObject(message);
@@ -121,7 +120,42 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 						mVidPid = vidPid;
 						// Todo : set codec type and post msg to start decode;
 						// TODO : mRemoteNodeList.add(node);
+						Log.d(LOG_TAG, "MainActivity::onPsiPmtChange:registerFormatHandler:" + mVidPid);
+						UdpPlayerApi.registerFormatHandler(mUrl, mVidPid,this);
+						UdpPlayerApi.subscribeStream(mUrl, mVidPid);
 						mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
+					}
+				}
+			}
+
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return;
+		}
+
+	}
+
+	@Override
+	public void onFormatChange(String message) {
+
+		JSONObject fmt = null;
+		try {
+			fmt = new JSONObject(message);
+			if(fmt != null) {
+				int witdh =  fmt.getInt("width");
+				int height = fmt.getInt("height");
+				if(witdh != 0 && height != 0) {
+					if (witdh != mMaxVidWidth || height != mMaxVidHeight) {
+						Log.d(LOG_TAG, "MainActivity::onFormatChange");
+						mMaxVidWidth = witdh;
+						mMaxVidHeight = height;
+						mfStreamAvailable = true;
+						if(mfPlaying)
+							mHandler.sendEmptyMessage(PLAYER_CMD_REINIT);
+						else
+							mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
+
 					}
 				}
 			}
@@ -154,7 +188,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 				mExitPlayerLoop = true;
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_STOP");
 		    }  else if(what == PLAYER_CMD_INIT) {
-				if(mVideoSurface != null && mCodec != null) {
+				if(mVideoSurface != null && mfStreamAvailable) {
 					new Thread(new Runnable() {
 						@Override
 						public void run() {
@@ -266,7 +300,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, TextureView.Sur
 				return;
 			}
 
-			UdpPlayerApi.subscribeStream(mUrl, mVidPid);
+			//UdpPlayerApi.subscribeStream(mUrl, mVidPid);
 			
 			ByteBuffer[] inputBuffers = null;
 			ByteBuffer[] outputBuffers = null;

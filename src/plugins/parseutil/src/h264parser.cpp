@@ -536,8 +536,7 @@ namespace H264
     uint32_t gaps_in_frame_num_value_allowed_flag = br.u(1);
     uint32_t pic_width_in_mbs_minus1 = br.ue();
     uint32_t pic_height_in_map_units_minus1 = br.ue();
-	*plWidth = (pic_width_in_mbs_minus1 + 1) * 16;
-	*plHeight = (pic_height_in_map_units_minus1 + 1) * 16;
+
     SPS.frame_mbs_only_flag = br.u(1);
 
     //if (!omitPicTiming) 
@@ -626,6 +625,11 @@ namespace H264
              }
           SPS.pic_struct_present_flag = br.u(1);
           }
+
+        *plWidth = (pic_width_in_mbs_minus1 + 1) * 16;
+        *plHeight = (pic_height_in_map_units_minus1 + 1) * 16;
+        if(!SPS.frame_mbs_only_flag)
+            *plHeight = *plHeight * 2;
        }
 	return 0;
   }

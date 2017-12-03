@@ -83,7 +83,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		mNodeHandler = new RemoteNodeHandler(){
 			@Override
 			public void onPsiPatChange(String url, String message) {
-				Log.d(LOG_TAG, "MainActivity::onPsiChange");
+				Log.d(LOG_TAG, "MainActivity::onPsiPatChange");
 				JSONArray psi = null;
 				try {
 					psi = new JSONArray(message);
@@ -96,11 +96,15 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 					for (int i = 0; i < psi.length(); i++) {
 						try {
 							int pgmNum = 0;
+							int pid = 0;
 							JSONObject pgm = psi.getJSONObject(i);
 
 							pgmNum = pgm.getInt("program");
-							RemoteNode node = new RemoteNode(url, pgmNum);
-							mRemoteNodeList.add(node);
+							pid = pgm.getInt("pid");
+							if(pid > 31 ) {
+								RemoteNode node = new RemoteNode(url, pgmNum);
+								mRemoteNodeList.add(node);
+							}
 
 						} catch (JSONException e) {
 							// TODO Auto-generated catch block

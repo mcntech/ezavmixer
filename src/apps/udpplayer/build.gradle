@@ -9,27 +9,35 @@ buildscript {
 apply plugin: 'com.android.application'
 
 dependencies {
-    compile fileTree(dir: 'libs', include: '*.jar')
+    compile fileTree(include: '*.jar', dir: 'libs')
 }
 
 android {
+    signingConfigs {
+        udpplayer {
+            keyAlias 'udpplayer'
+            keyPassword 'udpplayer'
+            storeFile file('/opt/mcnt/ezavmixer/src/apps/udpplayer/udpplayer.jks')
+            storePassword 'udpplayer'
+        }
+    }
     compileSdkVersion 21
     buildToolsVersion '26.0.2'
-
+    aaptOptions { cruncherEnabled = false }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
     }
-
     defaultConfig {
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++11"
+                cppFlags += "-DPLATFORM_ANDROID"
                 arguments "-DANDROID_CPP_FEATURES=rtti exceptions", "-DANDROID_STL=c++_static"
             }
         }
     }
-        sourceSets {
+    sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
             java.srcDirs = ['src']
@@ -55,6 +63,16 @@ android {
     externalNativeBuild {
         cmake {
             path 'jni/CMakeLists.txt'
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.udpplayer
+        }
+        debug {
+            signingConfig signingConfigs.udpplayer
+            debuggable true
+            jniDebuggable true
         }
     }
 }

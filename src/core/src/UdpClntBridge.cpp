@@ -147,7 +147,7 @@ void CUdpClntBridge::UpdateFormat(int nPid, int nCodecType, const char *pData, i
         if(m_pCallback) {
             std::string fmtString;
             strmFmtJson(pData, len, fmtString);
-            m_pCallback->NotifyPsiPmtChange(m_szRemoteHost, nPid, fmtString.c_str());
+            m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
         }
     }
 }
@@ -164,6 +164,7 @@ void CUdpClntBridge::strmFmtJson(const char *pFmtData, int len, std::string &psi
         jFmt["height"] = lHeight;
     }
     psiString = jFmt.dump();
+	delete mH264Parser;
 }
 
 std::string StrmTypeToString(int strmType)

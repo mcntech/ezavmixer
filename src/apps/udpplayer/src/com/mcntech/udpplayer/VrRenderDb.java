@@ -17,6 +17,7 @@ public class VrRenderDb  {
 		final int                        PLAYER_CMD_STOP = 2;
 		final int                        PLAYER_CMD_INIT = 3;
 		final int                        PLAYER_CMD_DEINIT = 4;
+		final int                        PLAYER_CMD_REINIT = 5;
 
 		public Handler getHandler();
     	public SurfaceTexture getSurfaceTexture();

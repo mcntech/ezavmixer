@@ -48,8 +48,6 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 		} else if(numUrls > 9 &&  numUrls <= 16) {
 			mLayoutId = 16;
 		}
-		int maxDecWidth = 0;
-		int maxDecHeight = 0;
 		//mHandler = new LocalHandler();
 		Configure.loadSavedPreferences(this, false);
 
@@ -57,30 +55,22 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			case 1:
 			{
 				setContentView(R.layout.activity_multi_player_1_1);
-					maxDecWidth = 3840;
-					maxDecHeight = 2160;
 			}
 			break;
 			case 4:
 			{
 				setContentView(R.layout.activity_multi_player_2_2);
-				maxDecWidth = 1280;
-				maxDecHeight = 720;
 			}
 				break;
 	
 			case 9:
 			{
 				setContentView(R.layout.activity_multi_player_3_3);
-				maxDecWidth = 1280;
-				maxDecHeight = 720;
 			}
 				break;
 	
 			case 16:
 				setContentView(R.layout.activity_multi_player_4_4);
-				maxDecWidth = 640;
-				maxDecHeight = 360;
 				break;
 
 		}
@@ -89,7 +79,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
 				VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
 				TextureView textureView = getTexture(mLayoutId, i);
-				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mProgram, textureView, maxDecWidth, maxDecHeight);
+				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mProgram, textureView);
 				videoFeed.textureId = i;
 				textureView.setOnLongClickListener(this);
 				textureView.setOnDragListener(this);

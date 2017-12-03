@@ -133,7 +133,7 @@ public class UdpPlayerApi {
 	public static void onFormatChange(String url, int strmId, String fmt)
 	{
 		FmtDispatch dispatch = null;
-		for(int i=0; i < mPsiDispatchList.size(); i++) {
+		for(int i=0; i < mFmtDispatchList.size(); i++) {
 			dispatch  = mFmtDispatchList.get(i);
 			if(dispatch != null && dispatch.mUrl.compareTo(url) == 0 && dispatch.mStrmId == strmId) {
 				dispatch.mHandler.onFormatChange(fmt);

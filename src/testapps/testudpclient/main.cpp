@@ -22,7 +22,10 @@ public:
 	{
 		fprintf(stderr, "NotifyPsiPatChange:%s\n\n", pPsiData);
 	}
-
+	void NotifyFormatChange(const char *url, int strmId, const char *pData)
+	{
+		fprintf(stderr, "NotifyFormatChange:%d:%s\n\n", strmId, pData);
+	}
 };
 
 char szServer[256];

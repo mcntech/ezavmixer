@@ -35,6 +35,7 @@ public:
 	void psiPatJson(std::string &psiString);
 	void psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString);
 	void strmFmtJson(const char *pFmtData, int len, std::string &psiString);
+	unsigned long long GetPcrClock(int nPid);
 
 public:
 	//CJdRtspClntSession	*m_pRtspClnt;

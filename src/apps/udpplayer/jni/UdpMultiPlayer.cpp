@@ -122,11 +122,11 @@ long long CUdpMultiPlayer::getPts(std::string url, int substrmId)
 	return 0;
 }
 
-long long CUdpMultiPlayer::getClkUs(std::string url)
+long long CUdpMultiPlayer::getClkUs(std::string url, int substrmId)
 {
 	CUdpServerNode *pNode = (CUdpServerNode *)getServerNode(url);
 	if(pNode) {
-		return pNode->getClkUs();
+		return pNode->getClkUs(substrmId);
 	}
 	return 0;
 }

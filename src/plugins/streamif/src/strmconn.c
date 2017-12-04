@@ -11,7 +11,8 @@
 #endif
 
 #include "strmconn.h"
-//#include "dbglog.h"
+//#include "JdDbg.h"
+//static int modDbgLevel = CJdDbg::LVL_SETUP;
 
 /* Circular buffer object */
 typedef struct 
@@ -116,7 +117,8 @@ int dpRead (ConnCtxT *pConn, char *pData, int lenData, unsigned long *pulFlags, 
 		memcpy(pData, pBuffer->pBuffer,pBuffer->nFilledLen);
 		ret = pBuffer->nFilledLen;
 	} else {
-		//DBG_LOG(DBGLVL_ERROR, ("Error: Insufficient buffer fill=%d buf=%d!!",pBuffer->nFilledLen, lenData));
+		//JDBG_LOG(CJdDbg::LVL_ERROR, ("Error: Insufficient buffer fill=%d buf=%d!!",pBuffer->nFilledLen, lenData));
+        int err = -1;
 	}
 	*pulFlags = pBuffer->nFlags;
 	cbAdvanceReadPtr(dp);

@@ -4,8 +4,6 @@
 CUdpServerNode::CUdpServerNode(CUdpClntBridge *pClntBridge)
 {
 	m_pClntBridge = pClntBridge;
-	m_ulFlags = 0;
-	m_llPts = 0;
 }
 
 void CUdpServerNode::start()
@@ -21,9 +19,10 @@ void CUdpServerNode::stop()
 int CUdpServerNode::subscribeStream(int nStrmId)
 {
 	// TODO video vs audio vs other
-	ConnCtxT *pConn = CreateStrmConn(1024*1024, 8);
+	ConnCtxT *pConn = CreateStrmConn(720 * 576 / 2, 30);
 	m_pClntBridge->ConnectStreamForPid(nStrmId, pConn);
 	m_Connections[nStrmId] = pConn;
+    m_StrmCtxs[nStrmId] = new CStrmCtx();
 	return 0;
 }
 
@@ -35,6 +34,12 @@ int CUdpServerNode::unsubscribeStream(int nStrmId)
 		DeleteStrmConn(pConnSrc);
 		// Todo Erase map entry
 	}
+    std::map<int, CStrmCtx *>::iterator it2 = m_StrmCtxs.find( nStrmId );
+    if(it2 != m_StrmCtxs.end()) {
+        CStrmCtx *pStrmCtx = it2->second;
+        delete (pStrmCtx);
+        // Todo Erase map entry
+    }
 	return 0;
 }
 
@@ -58,7 +63,8 @@ int CUdpServerNode::getData(int nStrmId, char *pData, int numBytes)
 
 		ConnCtxT *pConnSrc = it->second;
 		if(pConnSrc) {
-			res =  pConnSrc->Read(pConnSrc, pData, numBytes, &m_ulFlags, &m_llPts);
+            CStrmCtx *pCtx = m_StrmCtxs[nStrmId];
+			res =  pConnSrc->Read(pConnSrc, pData, numBytes, &pCtx->m_ulFlags, &pCtx->m_llPts);
 		}
 	}
 	return res;
@@ -66,8 +72,16 @@ int CUdpServerNode::getData(int nStrmId, char *pData, int numBytes)
 
 long long CUdpServerNode::getPts(int nStrmId)
 {
-	// TODO
-	return m_llPts;
+    long long llPts = 0;
+    std::map<int, CStrmCtx *>::iterator it = m_StrmCtxs.find( nStrmId );
+    if(it != m_StrmCtxs.end()) {
+
+        CStrmCtx *pCtx = it->second;
+        if(pCtx) {
+            llPts =  pCtx->m_llPts;
+        }
+    }
+	return llPts;
 }
 
 int CUdpServerNode::getCodecType(int nStrmId)
@@ -75,9 +89,9 @@ int CUdpServerNode::getCodecType(int nStrmId)
 	return 0;
 }
 
-long long CUdpServerNode::getClkUs()
+long long CUdpServerNode::getClkUs(int nStrmId)
 {
-	return 0;
+	return m_pClntBridge->GetPcrClock(nStrmId);
 }
 
 

@@ -39,6 +39,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 	int                           mPgmNo = 0;
 	String 						  mCodec = null;
 	int                           mVidPid = 0;
+	int                           mPcrPid = 0;
 	private PlayerThread          mVidPlayer = null;
 	Handler                       mHandler = null;
 	TextureView                   mVideoTexView = null;
@@ -107,12 +108,13 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 			pgm = new JSONObject(message);
 			if(pgm != null) {
 				int vidPid = 0;
-
+				mPcrPid = pgm.getInt("PCR_PID");
 				JSONArray esList = pgm.getJSONArray("streams");
 				for (int j = 0; j < esList.length(); j++) {
 					JSONObject es = esList.getJSONObject(j);
 					String codec = es.getString("codec");
 					vidPid = es.getInt("pid");
+
 					if(codec.compareToIgnoreCase("mpeg2") == 0 ||
 							codec.compareToIgnoreCase("h264") == 0 ||
 							codec.compareToIgnoreCase("h265") == 0){
@@ -427,7 +429,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 					break;
 				}
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:End outIndex=" + outIndex);
-				long sysclk = UdpPlayerApi.getClockUs(mUrl, mVidPid);
+				long sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
 				switch (outIndex) {
 				case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
 					Log.d(LOG_TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
@@ -444,7 +446,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 					if(outIndex >= 0) {
 						//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);				
 						if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
-							//Log.d(LOG_TAG, "FreeRun ");
+							Log.d(LOG_TAG, "FreeRun strm=" + mVidPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
 						} else {
 							while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
 								try {
@@ -454,7 +456,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 									interrupt();
 									break;
 								}
-								sysclk = UdpPlayerApi.getClockUs(mUrl, mVidPid);
+								sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
 							}
 						}
 						//Log.d(LOG_TAG, "releaseOutputBuffer:Begin surfacevalid=" + surface.isValid());

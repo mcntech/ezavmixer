@@ -41,7 +41,7 @@ public:
 
 	virtual int  getData(std::string url,  int substrmId, char *pData, int numBytes) = 0;
 	virtual long long getPts(std::string url, int substrmId) = 0;
-	virtual long long getClkUs(std::string url) = 0;
+	virtual long long getClkUs(std::string url, int substrmId) = 0;
 	virtual int  getCodecType(std::string url, int substrmId) = 0;
 	virtual int  getNumAvailFrames(std::string url, int substrmId) = 0;
 

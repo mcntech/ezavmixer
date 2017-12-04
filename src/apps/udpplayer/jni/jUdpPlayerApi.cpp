@@ -169,7 +169,7 @@ jint Java_com_mcntech_udpplayer_UdpPlayerApi_getFrame(JNIEnv *env, jobject self,
 	return result;
 }
 
-jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getClockUs(JNIEnv *env, jobject self, jlong ctx,jstring jurl)
+jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getClockUs(JNIEnv *env, jobject self, jlong ctx,jstring jurl, jint strmid)
 {
 	//pthread_mutex_lock(&g_mutex);
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
@@ -178,7 +178,7 @@ jlong Java_com_mcntech_udpplayer_UdpPlayerApi_getClockUs(JNIEnv *env, jobject se
 	std::string url = szUrl;
 
 
-	clock = pPlayer->getClkUs(url);
+	clock = pPlayer->getClkUs(url, strmid);
 	env->ReleaseStringUTFChars(jurl, szUrl);
 	return clock;
 }

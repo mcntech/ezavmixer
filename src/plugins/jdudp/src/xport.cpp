@@ -92,6 +92,9 @@ public:
     FILE	        *fpout;
     //int             streamType = 0;
     unsigned int	video_packet_length;
+    unsigned long long crnt_vid_pts;
+    unsigned long long crnt_vid_dts;
+
 } ;
 
 class CPidCtx
@@ -99,7 +102,8 @@ class CPidCtx
 public:
     CPidCtx()
     {
-
+        pcr = 0;
+        sysClk = 0;
     }
     unsigned long long	pcr;
     unsigned long long	sysClk;
@@ -138,8 +142,8 @@ typedef struct
 
 	unsigned long long pcr_arrival_time;
 	unsigned long long current_tsrate;
-	unsigned long long crnt_vid_pts;
-	unsigned long long crnt_vid_dts;
+	//unsigned long long crnt_vid_pts;
+	//unsigned long long crnt_vid_dts;
 	unsigned long long crnt_aud_pts;
 	int                aud_end_of_frame;
 	int                fClkSrc;
@@ -500,7 +504,7 @@ int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int len
 					JD_OAL_SLEEP(1)
 			}
 			JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
-			pConn->Write(pConn, (char *)pData, dataLen,  ulFlags, pCtx->crnt_vid_pts * 1000 / 90);
+			pConn->Write(pConn, (char *)pData, dataLen,  ulFlags, pX->crnt_vid_pts * 1000 / 90);
 		}
 #endif
 	}
@@ -579,9 +583,20 @@ int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
 			pCtx->mPrograms[nPid] =  1;
 		}
 		break;
+        case DEMUX_CMD_GET_PCR:
+        {
+            unsigned long long	sysClk;
+            unsigned long long	pcr;
+            PgmPcrT *pPcr = (PgmPcrT *)pOptionData;
+            getPcr(pCtx, pPcr->nPid, &pcr, &sysClk);
+            unsigned long long	crntClk = ClockGetInternalTime(pCtx->pClk);;
+            pPcr->clk = pcr / 27 + (crntClk - sysClk);
+        }
+        break;
 	}
 	return -1;
 }
+
 
 void demuxClose(StrmCompIf *pComp)
 {
@@ -1988,8 +2003,8 @@ void parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int
 		}
 	}
 #else
-	pCtx->crnt_vid_pts = pts;
-	pCtx->crnt_vid_dts = dts;
+	//pCtx->crnt_vid_pts = pts;
+	//pCtx->crnt_vid_dts = dts;
 
 	WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 #endif
@@ -2019,8 +2034,8 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 	unsigned char	*middle_es_ptr;
 	unsigned int	middle_length = 0x55555555;
 
-	pCtx->crnt_vid_pts = pts;
-	pCtx->crnt_vid_dts = dts;
+    pX->crnt_vid_pts = pts;
+    pX->crnt_vid_dts = dts;
 
 	start_es_ptr = es_ptr;
 	for(i = 0; i < length; i++)  {
@@ -2153,8 +2168,8 @@ void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int 
 		}
 	}
 #else
-	pCtx->crnt_vid_pts = pts;
-	pCtx->crnt_vid_dts = dts;
+    pX->crnt_vid_pts = pts;
+	pX->crnt_vid_dts = dts;
 
 	WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 #endif

@@ -30,6 +30,14 @@
 
 typedef std::map<std::string, CServerNodeBase *> ServerNodeMap;
 
+class CStrmCtx
+{
+public:
+    CStrmCtx() {m_ulFlags = 0; m_llPts = 0;}
+    unsigned long   m_ulFlags;
+    long long       m_llPts;
+};
+
 class CUdpServerNode : public CServerNodeBase
 {
 public:
@@ -44,7 +52,7 @@ public:
 	int getData(int nStrmId, char *pData, int numBytes);
 
 	long long getPts(int nStrmId);
-	long long getClkUs();
+	long long getClkUs(int nStrmId);
 	int getCodecType(int nStrmId);
 	int getNumAvailFrames(int nStrmId);
 
@@ -52,10 +60,9 @@ public:
 
 public:
 	CUdpClntBridge *m_pClntBridge;
-	unsigned long   m_ulFlags;
-	long long       m_llPts;
 
 	std::map<int, ConnCtxT *> m_Connections;
+    std::map<int, CStrmCtx *> m_StrmCtxs;
 };
 
 

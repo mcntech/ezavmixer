@@ -36,6 +36,12 @@ typedef struct _DemuxSubscribeProgramPidT
 	pmt_callback_t pmt_callback;
 } DemuxSubscribeProgramPidT;
 
+typedef struct _PgmPcrT
+{
+	int nPid;
+	unsigned long long	clk;
+} PgmPcrT;
+
 #define DEMUX_CMD_SELECT_PROGRAM	     1
 #define DEMUX_CMD_SET_PAT_CALLBACK       2
 #define DEMUX_CMD_SET_PMT_CALLBACK       3
@@ -43,6 +49,7 @@ typedef struct _DemuxSubscribeProgramPidT
 #define DEMUX_CMD_SUBSCRIBE_PROGRAM_PID  5
 #define DEMUX_CMD_SUBSCRIBE_ES_PID       6
 #define DEMUX_CMD_SET_FMT_CALLBACK		 7
+#define DEMUX_CMD_GET_PCR        		 8
 
 #include "strmcomp.h"
 

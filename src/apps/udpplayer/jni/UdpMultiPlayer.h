@@ -48,7 +48,7 @@ public:
 	int getData(std::string url, int substrmId, char *pData, int numBytes);
 
 	long long getPts(std::string url, int substrmId);
-	long long getClkUs(std::string url);
+	long long getClkUs(std::string url,  int substrmId);
 
 	virtual int  getCodecType(std::string url, int substrmId);
 

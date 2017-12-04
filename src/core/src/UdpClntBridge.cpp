@@ -448,7 +448,7 @@ unsigned long long CUdpClntBridge::GetPcrClock(int nPid)
     Pcr.nPid = nPid;
     Pcr.clk = 0;
     if(m_demuxComp) {
-        m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PCR&Pcr);
+        m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PCR, (char *)&Pcr);
     }
     return Pcr.clk;
 }

@@ -281,7 +281,7 @@ void CUdpClntBridge::UpdatePat(const char *pData, int len)
 	m_pat = new MPEG2_PAT_SECTION;
 	m_pat->Parse((unsigned char *)pData);
 #ifdef DEMUX_DUMP_OUTPUT
-	for(int i=0; i< m_pat->number_of_programs && i < 5; i++) {
+	for(int i=0; i< m_pat->number_of_programs ; i++) {
 		//pat.program_descriptor[i].program_number;
 		DemuxSubscribeProgramPidT pgm;
 		pgm.nPid = m_pat->program_descriptor[i].network_or_program_map_PID;
@@ -448,7 +448,7 @@ unsigned long long CUdpClntBridge::GetPcrClock(int nPid)
     Pcr.nPid = nPid;
     Pcr.clk = 0;
     if(m_demuxComp) {
-        m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PCR, (char *)&Pcr);
+        m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PCR&Pcr);
     }
     return Pcr.clk;
 }

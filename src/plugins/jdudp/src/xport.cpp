@@ -22,8 +22,12 @@ typedef __int64 int64_t;
 // Undefining the following falg creates original xport binary
 
 #include "xport.h"
+
 #include "filesrc.h"
 
+#ifdef UDP_STREAMER
+#include "udptx.h"
+#endif
 
 #include "strmcomp.h"
 #include "strmclock.h"
@@ -372,6 +376,9 @@ typedef struct
 	std::map<int, CParseCtx *> mParsers;
 	std::map<int, int> mPrograms;
     std::map<int, CPidCtx*> mPidCtxs;
+#ifdef UDP_STREAMER
+	CUdpTx          *pUdpTx;
+#endif
 } MpegTsDemuxCtx;
 
 CPidCtx *getPidCtx(MpegTsDemuxCtx *pCtx, int nPid) {
@@ -662,6 +669,10 @@ static void threadDemux(void *threadsArg)
 		} else {
 			demux_mpeg2_transport(pCtx, length, (unsigned char *)pData);
             RateControl(pCtx, length);
+#ifdef UDP_STREAMER
+			CUdpTx *pUdp = pCtx->pUdpTx;
+			pUdp->Write(pData, length);
+#endif
 		}
 		
 		pCtx->read_position += length;
@@ -689,6 +700,13 @@ int demuxStart(StrmCompIf *pComp)
 	MpegTsDemuxCtx * pCtx = (MpegTsDemuxCtx*)pComp->pCtx;
 	JdDbg(CJdDbg::DBGLVL_TRACE, ("Enter"));
 	pCtx->fRun = 1;
+
+#ifdef UDP_STREAMER
+	CUdpTx *pUdp = new CUdpTx();
+	pUdp->CreateSession();
+	pCtx->pUdpTx = pUdp;
+
+#endif
 #ifdef WIN32
 	{
 		DWORD dwThreadId;

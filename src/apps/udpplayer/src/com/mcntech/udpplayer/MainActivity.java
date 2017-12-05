@@ -205,7 +205,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	@Override
 	public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2,
 			long arg3) {
-		// TODO Auto-generated method stub
+		//RemoteNode node = (RemoteNode)mListAdapter.getItem(position);
 		
 	}
 
@@ -227,13 +227,13 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	       if(numUrls > numWindows)
 	    	   numUrls = numWindows;
 	       else if (numUrls  == 0) {
-	    	   Toast.makeText(this, "No Cameras", Toast.LENGTH_LONG).show();
+	    	   Toast.makeText(this, "No Programs", Toast.LENGTH_LONG).show();
 	    	   return;
 	       }
 	       
 	       for(int i=0; i < numUrls; i++) {
 		       RemoteNode node  = mRemoteNodeList.get(i);
-		       if(node != null) {
+		       if(node != null && mRemoteNodeListView.isItemChecked(i)) {
 		    	   String url = node.toString();
 		    	   VrRenderDb.addFeed(node, 0);
 		       }

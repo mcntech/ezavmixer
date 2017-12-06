@@ -219,27 +219,51 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	       Intent intent = new Intent(this, Settings.class);
 	       startActivity(intent);
 	   }
-	  
-	   public void initVrRenderDb(int numWindows, int res, boolean stereo){
-		   int eyeId;
-		   VrRenderDb.init();
-	       int numUrls = mRemoteNodeList.size();
-	       if(numUrls > numWindows)
-	    	   numUrls = numWindows;
-	       else if (numUrls  == 0) {
-	    	   Toast.makeText(this, "No Programs", Toast.LENGTH_LONG).show();
-	    	   return;
-	       }
-	       
-	       for(int i=0; i < numUrls; i++) {
-		       RemoteNode node  = mRemoteNodeList.get(i);
-		       if(node != null && mRemoteNodeListView.isItemChecked(i)) {
-		    	   String url = node.toString();
-		    	   VrRenderDb.addFeed(node, 0);
-		       }
-	       }
-	       initEyeIds(stereo);
+
+	   int getNumSelectedPgms()
+	   {
+
+		   int numUrls = mRemoteNodeList.size();
+		   int numSelected = 0;
+		   for(int i=0; i < numUrls; i++) {
+			   RemoteNode node = mRemoteNodeList.get(i);
+			   if (node != null && mRemoteNodeListView.isItemChecked(i)) {
+				   numSelected++;
+			   }
+		   }
+		   return numSelected;
+		}
+
+	public void initVrRenderDb(int numWindows, int res, boolean stereo){
+		int numUrls = mRemoteNodeList.size();
+		boolean fPgmsSelected = false;
+		if (numUrls  == 0) {
+			Toast.makeText(this, "No Programs", Toast.LENGTH_LONG).show();
+			return;
+		}
+
+	   int numSelectedPgms = getNumSelectedPgms();
+
+		if(numSelectedPgms > 0) {
+			fPgmsSelected = true;
+			if(numWindows > numSelectedPgms)
+				numWindows = numSelectedPgms;
+		} else {
+			if(numWindows > numUrls)
+				numWindows = numUrls;
+		}
+		VrRenderDb.init();
+
+	   for(int i=0; i < numUrls && numWindows > 0; i++) {
+		   RemoteNode node  = mRemoteNodeList.get(i);
+		   if(node != null && (!fPgmsSelected || mRemoteNodeListView.isItemChecked(i))) {
+			   String url = node.toString();
+			   VrRenderDb.addFeed(node, 0);
+			   numWindows--;
+		   }
 	   }
+	   initEyeIds(stereo);
+	}
 
 	   public void initEyeIds(boolean stereo){
 		   int eyeId;

@@ -17,7 +17,7 @@ android {
         udpplayer {
             keyAlias 'udpplayer'
             keyPassword 'udpplayer'
-            storeFile file('/opt/mcnt/ezavmixer/src/apps/udpplayer/udpplayer.jks')
+            storeFile file('./udpplayer.jks')
             storePassword 'udpplayer'
         }
     }

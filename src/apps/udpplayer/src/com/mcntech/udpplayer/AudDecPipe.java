@@ -1,51 +1,39 @@
 package com.mcntech.udpplayer;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
-import android.media.MediaCodecInfo;
-
 import android.media.MediaFormat;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.Surface;
-import android.view.TextureView;
-import android.widget.BaseAdapter;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-
-
-import com.mcntech.udpplayer.VrRenderDb.DecPipeBase;
-import com.mcntech.udpplayer.Configure;
-import com.mcntech.udpplayer.UdpPlayerApi;
-import com.mcntech.udpplayer.UdpPlayerApi.ProgramHandler;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
-public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.FormatHandler, TextureView.SurfaceTextureListener {
-	
-	public final String LOG_TAG = "DecodePipe";
+
+public class AudDecPipe implements UdpPlayerApi.FormatHandler {
+
+	public final int PLAYER_CMD_RUN = 1;
+	public final int PLAYER_CMD_STOP = 2;
+	public final int PLAYER_CMD_INIT = 3;
+	public final int PLAYER_CMD_DEINIT = 4;
+	public final String LOG_TAG = "AudDecPipe";
 	String                        mUrl;
-	int                           mPgmNo = 0;
 	String 						  mCodec = null;
-	int                           mVidPid = 0;
+	int                           mAudPid = 0;
 	int                           mPcrPid = 0;
-	private PlayerThread          mVidPlayer = null;
+	private PlayerThread          mPlayerThrd = null;
 	Handler                       mHandler = null;
-	TextureView                   mVideoTexView = null;
-	Surface                       mVideoSurface = null;
-	
+
 	ByteBuffer                    mBuff;
+	ByteBuffer                    mOutBuff;
 	long                          mPts;
 	public  int             	  mFramesInBuff = 0;
 	public  int             	  mFramesRendered = 0;
@@ -53,101 +41,31 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 	//Video Parameters
 	int                              maxBuffSize = (4 * 1024 * 1024);
 	private MediaCodec               mDecoder = null;
-	final long                       MAX_VIDEO_SYNC_THRESHOLD_US = 10000000;
 	final long                       MAX_AUDIO_SYNC_THRESHOLD_US = 10000000;
-	
+
 
     private boolean                  mfPlaying = false;
 	private boolean                  mfStreamAvailable = false;
     private final Object             mPlayLock = new Object();
     private boolean                  mExitPlayerLoop = false;
-    int                              mMaxVidWidth =  0;
-    int                              mMaxVidHeight = 0;
     int                              currentapiVersion = android.os.Build.VERSION.SDK_INT;
+	public AudRenderInterface      	 mRender = null;
 
-    private boolean                  mfSendCsd0DuringInit = false;
-    private boolean                  mfAvcUHdSupported = false;
-    LinearLayout                     mStatsLayout;
-    boolean mfHevcSupported = false;
-
-	ProgramHandler mProgramHandler;
-
-	class AudioStream
-	{
-		int PID;
-		int CodecType;
-	}
-
-	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView) {
-		Log.d(LOG_TAG, "DecodePipe:" + url + ":" + strmId);
+	public AudDecPipe(Activity activity, String url, int strmPid, int clkPid, String codec) {
+		Log.d(LOG_TAG, "DecodePipe:" + url + ":" + strmPid);
 		mHandler = new LocalHandler();
-		mVideoTexView = textureView;
 		Context context = activity.getApplicationContext();
-		Configure.loadSavedPreferences(context, false);
-		mUrl = url;//Configure.mRtspUrl1;
-		//mCodec = codec;
-		mPgmNo = strmId;
-
-		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
-		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
-/*		if(mfAvcUHdSupported) {
-			mMaxVidWidth = 3840;
-			mMaxVidHeight = 2160;
-		}*/
+		mUrl = url;
+		mCodec = codec;
+		mAudPid = strmPid;
+		mPcrPid = clkPid;
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
-		mVideoTexView.setSurfaceTextureListener(this);
-		UdpPlayerApi.registerProgramHandler(mUrl, mPgmNo,this);
-		UdpPlayerApi.subscribeProgram(mUrl, mPgmNo);
-	}
-
-	@Override
-	public void onPsiPmtChange(String message) {
-		Log.d(LOG_TAG, "MainActivity::onPsiPmtChange");
-		JSONObject pgm = null;
-		try {
-			pgm = new JSONObject(message);
-			if(pgm != null) {
-				int vidPid = 0;
-				mPcrPid = pgm.getInt("PCR_PID");
-				JSONArray esList = pgm.getJSONArray("streams");
-				for (int j = 0; j < esList.length(); j++) {
-					JSONObject es = esList.getJSONObject(j);
-					String codec = es.getString("codec");
-					vidPid = es.getInt("pid");
-
-					if(codec.compareToIgnoreCase("mpeg2") == 0 ||
-							codec.compareToIgnoreCase("h264") == 0 ||
-							codec.compareToIgnoreCase("h265") == 0){
-						mCodec = codec;
-						mVidPid = vidPid;
-						// Todo : set codec type and post msg to start decode;
-						// TODO : mRemoteNodeList.add(node);
-						Log.d(LOG_TAG, "MainActivity::onPsiPmtChange:registerFormatHandler:" + mVidPid);
-						UdpPlayerApi.registerFormatHandler(mUrl, mVidPid,this);
-						UdpPlayerApi.subscribeStream(mUrl, mVidPid);
-						mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
-					} 	if(codec.compareToIgnoreCase("aac") == 0 ||
-							codec.compareToIgnoreCase("ac2") == 0 ||
-							codec.compareToIgnoreCase("mp2") == 0){
-						mCodec = codec;
-						mVidPid = vidPid;
-						// Todo : set codec type and post msg to start decode;
-						// TODO : mRemoteNodeList.add(node);
-						Log.d(LOG_TAG, "MainActivity::onPsiPmtChange:registerFormatHandler:" + mVidPid);
-						// start AudDecPipe
-					}
-
-				}
-			}
-
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return;
-		}
+		mOutBuff = ByteBuffer.allocate(maxBuffSize);
+		UdpPlayerApi.registerFormatHandler(mUrl, mAudPid,this);
+		UdpPlayerApi.subscribeStream(mUrl, mAudPid);
+		mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
 
 	}
-
 	@Override
 	public void onFormatChange(String message) {
 
@@ -155,7 +73,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 		try {
 			fmt = new JSONObject(message);
 			if(fmt != null) {
-				int witdh =  fmt.getInt("width");
+	/*			int witdh =  fmt.getInt("width");
 				int height = fmt.getInt("height");
 				if(witdh != 0 && height != 0) {
 					if (witdh != mMaxVidWidth || height != mMaxVidHeight) {
@@ -170,7 +88,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 
 					}
 				}
-			}
+*/			}
 
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
@@ -188,9 +106,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 				if(!mfPlaying) {
 					mExitPlayerLoop = false;
 					if(Configure.mEnableVideo) {
-	 			    	mVidPlayer = new PlayerThread();
-	 			    	mVidPlayer.AttachSurface(mVideoSurface);
-	 			    	mVidPlayer.start();
+	 			    	mPlayerThrd = new PlayerThread();
+	 			    	mPlayerThrd.start();
 					}
 	 				Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN");
 				} else {
@@ -200,7 +117,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 				mExitPlayerLoop = true;
  				Log.d(LOG_TAG, "transition:PLAYER_CMD_STOP");
 		    }  else if(what == PLAYER_CMD_INIT) {
-				if(mVideoSurface != null && mfStreamAvailable) {
+				if( mfStreamAvailable) {
 					new Thread(new Runnable() {
 						@Override
 						public void run() {
@@ -216,7 +133,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 					public void run() {
 			 			if(Configure.mEnableVideo) {
 			 				mExitPlayerLoop = true;
-			 				waitForVideoStop();
+							waitForPlayStop();
 			 			}
 						//OnyxPlayerApi.deinitialize();
 					}
@@ -230,25 +147,25 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
      * <p>
      * Called from any thread other than the PlayTask thread.
      */
-    public void waitForVideoStop() {
+    public void waitForPlayStop() {
         synchronized (mPlayLock) {
  	       while (mfPlaying) {
                 try {
                     mPlayLock.wait();
                 } catch (InterruptedException ie) {
-                	Log.d(LOG_TAG, "transition:waitForVideoStop exception ");
+                	Log.d(LOG_TAG, "transition:waitForPlayStop exception ");
                 }
             }
         }
     }
 
-    public void waitForVideoPlay() {
+    public void waitForPlayStart() {
         synchronized (mPlayLock) {
             while (!mfPlaying) {
                 try {
                     mPlayLock.wait();
                 } catch (InterruptedException ie) {
-                	Log.d(LOG_TAG, "transition:waitForVideoPlay exception ");
+                	Log.d(LOG_TAG, "transition:waitForPlayStart exception ");
                 }
             }
         }
@@ -262,46 +179,37 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 			
 		}
 
-		public void AttachSurface (Surface surface) {
-			this.surface = surface;
-		}
-		
-		boolean InitDecoder( MediaCodec decoder, Surface surface)
-		{
-			MediaFormat format;
-			if(mCodec.compareTo("H265") == 0) // HEVC
-				format =  MediaFormat.createVideoFormat("video/hevc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
-			else
-				format =  MediaFormat.createVideoFormat("video/avc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);				
+		boolean InitDecoder( MediaCodec decoder) {
+			MediaFormat format = null;
+			if (mCodec.compareTo("AC3") == 0)
+				format = MediaFormat.createAudioFormat("audio/ac3", 44100, 2);
+			else if (mCodec.compareTo("AAC") == 0)
+				format = MediaFormat.createAudioFormat("audio/aac", 44100, 2);
+			if (mCodec.compareTo("MP2") == 0)
+				format = MediaFormat.createAudioFormat("audio/mp2", 44100, 2);
 			Log.d(LOG_TAG, "decoder configure");
-			decoder.configure(format, surface, null, 0);
+			if (format != null) {
+				decoder.configure(format, surface, null, 0);
+			} else {
+				Log.d(LOG_TAG, "decoder configure: failed!!!");
+			}
 			return true;
 		}
-		
-		boolean InitDecoder( MediaCodec decoder, Surface surface, ByteBuffer csd0)
-		{
-			MediaFormat format;
-			if(mCodec.compareTo("H265") == 0) // HEVC
-				format =  MediaFormat.createVideoFormat("video/hevc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
-			else
-				format =  MediaFormat.createVideoFormat("video/avc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);				
-			format.setByteBuffer("csd-0", csd0);
-			Log.d(LOG_TAG, "decoder configure");
-			decoder.configure(format, surface, null, 0);
-			return true;
-		}
-		
+
 		@Override
 		public void run() {
 
 			try {
-				if(mCodec.compareTo("H265") == 0) {
-					Log.d(LOG_TAG, "decoder create video/hevc");
-					mDecoder = MediaCodec.createDecoderByType("video/hevc");
-					mfSendCsd0DuringInit = false;
-				} else {
-					Log.d(LOG_TAG, "decoder create video/avc");
-					mDecoder = MediaCodec.createDecoderByType("video/avc");
+				if(mCodec.compareTo("MP2") == 0) {
+					Log.d(LOG_TAG, "decoder create audio/mp2");
+					mDecoder = MediaCodec.createDecoderByType("audio/mp2");
+				} else if(mCodec.compareTo("AAC") == 0){
+					Log.d(LOG_TAG, "decoder create audio/aac");
+					mDecoder = MediaCodec.createDecoderByType("audio/aac");
+				}
+				else if(mCodec.compareTo("AC3") == 0){
+					Log.d(LOG_TAG, "decoder create audio/ac3");
+					mDecoder = MediaCodec.createDecoderByType("audio/ac3");
 				}
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
@@ -325,40 +233,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 				mfPlaying = true;
 				mPlayLock.notifyAll();
 			}			
-			//long startMs = System.currentTimeMillis();
-			if(mfSendCsd0DuringInit) {
-				while (!Thread.interrupted() && !mExitPlayerLoop) {
-					mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mVidPid);
-					if (!isEOS && mFramesInBuff > 0) {
-						sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mVidPid, mBuff, mBuff.capacity(),  100 * 1000);
-						if (sampleSize > 0) {
-							byte [] arCsd0 = null;
-							mBuff.limit(sampleSize);
-							mBuff.position(0);
-							arCsd0 = extractCsd0(mBuff);
-							if(arCsd0 != null && arCsd0.length > 0) {
-							ByteBuffer Csd0 = ByteBuffer.wrap(arCsd0);
-								Log.d(LOG_TAG, "Initializing decoder with Csd0");
-								InitDecoder(mDecoder, surface, Csd0);
-								fFrameAvail = true;
-								break;
-							} else {
-								continue;
-							}
-						}
-					} else {
-						try {
-							sleep(10);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-							interrupt();
-							break;
-						}
-					}
-				}
-			} else {
-				InitDecoder(mDecoder, surface);
-			}
+			InitDecoder(mDecoder);
 			if(!mExitPlayerLoop) {
 				try{
 					Log.d(LOG_TAG, "mDecoder.start");
@@ -367,14 +242,10 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 					Log.d(LOG_TAG, "IllegalStateException");
 					e.printStackTrace();
 				}
-				if(currentapiVersion <= 20) {
-					inputBuffers = mDecoder.getInputBuffers();
-					outputBuffers = mDecoder.getOutputBuffers();
-				}
 			}
 			
 			while (!Thread.interrupted() && !mExitPlayerLoop) {
-				mFramesInBuff = UdpPlayerApi.getNumAvailVideoFrames(mUrl, mVidPid);
+				mFramesInBuff = UdpPlayerApi.getNumAvailAudioFrames(mUrl, mAudPid);
 				if (!isEOS && mFramesInBuff > 0) {
 
 					int inIndex;
@@ -400,9 +271,9 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 						if(fFrameAvail) {
 							fFrameAvail = false;
 						} else {
-							sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mVidPid,  mBuff, mBuff.capacity(),  100 * 1000);
+							sampleSize = UdpPlayerApi.getVideoFrame(mUrl, mAudPid,  mBuff, mBuff.capacity(),  100 * 1000);
 						}
-						mPts = UdpPlayerApi.getVideoPts(mUrl, mVidPid);// + 500000; // video pipeline delay
+						mPts = UdpPlayerApi.getVideoPts(mUrl, mAudPid);// + 500000; // video pipeline delay
 						if (sampleSize <= 0) {
 							// We shouldn't stop the playback at this point, just pass the EOS
 							// flag to decoder, we will get it again from the
@@ -455,8 +326,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 				default:
 					if(outIndex >= 0) {
 						//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);				
-						if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
-							Log.d(LOG_TAG, "FreeRun strm=" + mVidPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
+						if(info.presentationTimeUs > sysclk + MAX_AUDIO_SYNC_THRESHOLD_US) {
+							Log.d(LOG_TAG, "FreeRun strm=" + mAudPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
 						} else {
 							while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
 								try {
@@ -470,6 +341,11 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 							}
 						}
 						//Log.d(LOG_TAG, "releaseOutputBuffer:Begin surfacevalid=" + surface.isValid());
+						if(mRender != null) {
+							ByteBuffer outBuffer = mDecoder.getOutputBuffer(outIndex);
+							outBuffer.get(mOutBuff.array());
+							mRender.Render(mAudPid, outBuffer, info.presentationTimeUs);
+						}
 						mDecoder.releaseOutputBuffer(outIndex, true);
 						mFramesRendered++;
 						//Log.d(LOG_TAG, "releaseOutputBuffer:End");
@@ -501,74 +377,9 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 		}
 	}
 		
-	int findStartCode(byte []arData, int pos, int limit, int nalu) {
-		for(int i=pos; i < limit - 5; i++) {
-			if(arData[i] == 0x00 && arData[1+1] == 0x00 && arData[i+2] == 0x00 && arData[i+3] == 0x01){
-				if(nalu == 0x00 || arData[i+4] == nalu)
-					return i; 
-			}
-		}
-		return -1;
-	}
-	
-	byte [] extractCsd0(ByteBuffer data){
-		byte [] arData = data.array();
-		byte [] arCsd0 = null;
-		if (data.getInt() == 0x00000001) {
-			System.out.println("parsing sps/pps");
-		} else {
-			System.out.println("something is amiss?");
-		}
-		
-		int spsPos = findStartCode(arData, 0, data.limit(), 0x67);
-		if(spsPos != -1) {
-			int ppsPos = findStartCode(arData, spsPos + 4, data.limit(),0x68);
-			if(ppsPos != -1) {
-				int ppsEnd = findStartCode(arData, ppsPos+4, data.limit(), 0x00);
-				if (ppsEnd == -1)
-					ppsEnd = arData.length;
-				arCsd0 = new byte[ppsEnd - spsPos];
-				System.arraycopy(arData, spsPos, arCsd0, 0, arCsd0.length);
-			}
-		}
-		return arCsd0;
-	}
-
-	@Override
-	public void onSurfaceTextureAvailable(SurfaceTexture surface, int width,
-			int height) {	 	
-		mVideoSurface = new Surface(surface);
-		mHandler.sendEmptyMessage(PLAYER_CMD_INIT);	 	
-	}
-
-	@Override
-	public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width,
-			int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-		mHandler.sendEmptyMessage(PLAYER_CMD_DEINIT);
-		return false;
-	}
-
-	@Override
-	public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
+	//@Override
 	public Handler getHandler() {
 		return mHandler;
-	}
-
-	@Override
-	public SurfaceTexture getSurfaceTexture() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

@@ -1,5 +1,7 @@
 package com.mcntech.udpplayer;
 import com.mcntech.udpplayer.VrRenderDb.VideoFeed;
+
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,17 +25,17 @@ import android.widget.Toast;
 import com.mcntech.udpplayer.UdpPlayerApi.RemoteNodeHandler;
 import com.mcntech.udpplayer.VrRenderDb;
 
-public class MultiPlayerActivity  extends Activity implements View.OnDragListener, View.OnLongClickListener  {
-	
+public class MultiPlayerActivity  extends Activity implements AudRenderInterface, View.OnDragListener, View.OnLongClickListener  {
+
 	public final String LOG_TAG = MainActivity.LOG_TAG;
 	RemoteNodeHandler             mNodeHandler;
 	Handler                       mHandler;
 	ImageView                     img;
 	int                           mLayoutId;
-	
+
 
     //LinearLayout                     mStatsLayout;
-    
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -62,13 +64,13 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 				setContentView(R.layout.activity_multi_player_2_2);
 			}
 				break;
-	
+
 			case 9:
 			{
 				setContentView(R.layout.activity_multi_player_3_3);
 			}
 				break;
-	
+
 			case 16:
 				setContentView(R.layout.activity_multi_player_4_4);
 				break;
@@ -79,7 +81,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
 				VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
 				TextureView textureView = getTexture(mLayoutId, i);
-				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mProgram, textureView);
+				videoFeed.decodePipe = new DecodePipe(this, videoFeed.mRemoteNode.mUrl, videoFeed.mRemoteNode.mProgram, textureView, this);
 				videoFeed.textureId = i;
 				textureView.setOnLongClickListener(this);
 				textureView.setOnDragListener(this);
@@ -88,7 +90,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			Toast toast = Toast.makeText(this, "No suitable Layout for stream count  " +  numUrls, Toast.LENGTH_SHORT);
 			toast.show();
 		}
-		
+
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -96,27 +98,27 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 				//OnyxPlayerApi.onvifDiscvrStart(0);
 			}
 		}).start();
-		
+
 		mNodeHandler = new RemoteNodeHandler(){
 
 
 			@Override
 			public void onRemoteNodeError(String url, String message) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
 			@Override
 			public void onPsiPatChange(String url, String message) {
 				// TODO Auto-generated method stub
-				
+
 			}
 	 	};
-	 	
+
 	 	UdpPlayerApi.setDeviceHandler(mNodeHandler);
 	}
-	
-	private void StopStreaming()	
+
+	private void StopStreaming()
 	{
 		for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
 			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
@@ -127,7 +129,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 			}
 		}
 	}
-	
+
 	public String findUrlForTexture(TextureView textureView)
 	{
 		for(VideoFeed videoFeed: VrRenderDb.mVideoFeeds){
@@ -153,7 +155,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 				case 3: return  (TextureView)findViewById(R.id.multi_player_surface_2_2_4);
 				}
 			}
-				
+
 			case 9:
 			{
 				switch(windowId){
@@ -165,11 +167,11 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 				case 5: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_6);
 				case 6: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_7);
 				case 7: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_8);
-				case 8: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_9);	
+				case 8: return  (TextureView)findViewById(R.id.multi_player_surface_3_3_9);
 				}
 			}
 			break;
-				
+
 			case 16:
 			{
 				switch(windowId){
@@ -181,7 +183,7 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 				case 5: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_6);
 				case 6: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_7);
 				case 7: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_8);
-				case 8: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_9);	
+				case 8: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_9);
 				case 9: return (TextureView)findViewById(R.id.multi_player_surface_4_4_10);
 				case 10: return (TextureView)findViewById(R.id.multi_player_surface_4_4_11);
 				case 11: return  (TextureView)findViewById(R.id.multi_player_surface_4_4_12);
@@ -195,28 +197,28 @@ public class MultiPlayerActivity  extends Activity implements View.OnDragListene
 		}
 		return null;
 	}
-	
+
     void makeStreamVisible(String url) {
     	// Get Current Visibe
-    	
+
     	// Start Playing url
-    	
+
     	// install callback for notifying first frame
-    	
+
     		// on callback make Current invisible and make url visible, stop current
     }
-    
+
 	protected void onDestroy() {
 		super.onDestroy();
 	}
-	
+
    @Override
     protected void onPause() {
 	   StopStreaming();
 	   super.onPause();
 
    }
-  
+
    @Override
    public void onBackPressed() {
 	   System.exit(2);
@@ -236,7 +238,7 @@ public boolean onDrag(View v, DragEvent event) {
 		//Toast toast = Toast.makeText(this, "Drag : Action= Drag Start: " + " Item= " + url + " X=" + x + " Y=" + y, Toast.LENGTH_SHORT );
 		//toast.show();
 		//Log.d(LOG_TAG, "Drag : Action= Drag Start: " + " Item= " + url + " X=" + x + " Y=" + y );
-		
+
 	} else if(action == DragEvent.ACTION_DROP) {
 		String urlDest = "";
 		String urlSrc = "";
@@ -260,7 +262,7 @@ public boolean onDrag(View v, DragEvent event) {
    public boolean onLongClick(View v) {
       //ClipData.Item item = new ClipData.Item((CharSequence)v.getTag());
 	   String url = "";
-	  
+
       String[] mimeTypes = {ClipDescription.MIMETYPE_TEXT_PLAIN};
       TextureView textureView = (TextureView)v;
 		url = findUrlForTexture(textureView);
@@ -268,8 +270,13 @@ public boolean onDrag(View v, DragEvent event) {
 		ClipData.Item item = new ClipData.Item(url);
       ClipData clipData = new ClipData("move",mimeTypes, item);
       View.DragShadowBuilder myShadow = new View.DragShadowBuilder(img);
-      
+
       v.startDrag(clipData,myShadow,null,0);
       return true;
    }
+
+	@Override
+	public void RenderAudio(int strmId, ByteBuffer buffer, long pts) {
+
+	}
 }

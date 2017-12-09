@@ -26,6 +26,9 @@ public class UdpPlayerApi {
 	public interface FormatHandler {
 		void onFormatChange(String message);
 	}
+	public interface StatUpdateHandler {
+		void onStatUpdate(String url, String message);
+	}
 
 	public static class PgmDispatch
 	{
@@ -58,6 +61,7 @@ public class UdpPlayerApi {
 	private static ProgramHandler m_programHandler = null;
 	private static ArrayList<PgmDispatch> mPsiDispatchList = new ArrayList<PgmDispatch>();
 	private static ArrayList<FmtDispatch> mFmtDispatchList = new ArrayList<FmtDispatch>();
+	private static StatUpdateHandler mStatUpdateHandler = null;
 
 	private UdpPlayerApi() {
 
@@ -107,6 +111,9 @@ public class UdpPlayerApi {
 	public static void setDeviceHandler(RemoteNodeHandler handler) {
 		m_nodeHandler = handler;
 	}
+	public static void setStatUpdateHandler(StatUpdateHandler handler) {
+		mStatUpdateHandler = handler;
+	}
 	
 	public static void onNativeMessage(final Object title,final Object message) {		
 		System.out.println("java onNativeMessage:" + title + " message:" + message);
@@ -116,6 +123,12 @@ public class UdpPlayerApi {
 	{		
 		if(m_nodeHandler != null)
 			m_nodeHandler.onPsiPatChange(url, psi);
+	}
+
+	public static void onStatUpdate(String url, String psi)
+	{
+		if(mStatUpdateHandler != null)
+			mStatUpdateHandler.onStatUpdate(url, psi);
 	}
 
 	public static void onPsiPmtChange(String url, int strmId, String psi)

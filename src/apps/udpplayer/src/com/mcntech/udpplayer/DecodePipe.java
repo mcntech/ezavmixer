@@ -2,6 +2,7 @@ package com.mcntech.udpplayer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 
 import android.app.Activity;
@@ -44,7 +45,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 	Handler                       mHandler = null;
 	TextureView                   mVideoTexView = null;
 	Surface                       mVideoSurface = null;
-	
+	AudRenderInterface 			  mAudRender = null;
 	ByteBuffer                    mBuff;
 	long                          mPts;
 	public  int             	  mFramesInBuff = 0;
@@ -69,31 +70,35 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
     private boolean                  mfAvcUHdSupported = false;
     LinearLayout                     mStatsLayout;
     boolean mfHevcSupported = false;
-
+	Activity mActivity = null;
 	ProgramHandler mProgramHandler;
 
+	ArrayList<AudDecPipe> mAudDecList;
 	class AudioStream
 	{
 		int PID;
 		int CodecType;
 	}
 
-	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView) {
+	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView, AudRenderInterface audRender) {
 		Log.d(LOG_TAG, "DecodePipe:" + url + ":" + strmId);
 		mHandler = new LocalHandler();
 		mVideoTexView = textureView;
+		mActivity = activity;
 		Context context = activity.getApplicationContext();
 		Configure.loadSavedPreferences(context, false);
 		mUrl = url;//Configure.mRtspUrl1;
 		//mCodec = codec;
 		mPgmNo = strmId;
-
+		mAudRender = audRender;
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
 		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
 /*		if(mfAvcUHdSupported) {
 			mMaxVidWidth = 3840;
 			mMaxVidHeight = 2160;
 		}*/
+		mAudDecList = new ArrayList<AudDecPipe>();
+
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mVideoTexView.setSurfaceTextureListener(this);
 		UdpPlayerApi.registerProgramHandler(mUrl, mPgmNo,this);
@@ -107,36 +112,35 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 		try {
 			pgm = new JSONObject(message);
 			if(pgm != null) {
-				int vidPid = 0;
+				int nPid = 0;
 				mPcrPid = pgm.getInt("PCR_PID");
 				JSONArray esList = pgm.getJSONArray("streams");
 				for (int j = 0; j < esList.length(); j++) {
 					JSONObject es = esList.getJSONObject(j);
 					String codec = es.getString("codec");
-					vidPid = es.getInt("pid");
+					nPid = es.getInt("pid");
 
 					if(codec.compareToIgnoreCase("mpeg2") == 0 ||
 							codec.compareToIgnoreCase("h264") == 0 ||
 							codec.compareToIgnoreCase("h265") == 0){
 						mCodec = codec;
-						mVidPid = vidPid;
+						mVidPid = nPid;
 						// Todo : set codec type and post msg to start decode;
 						// TODO : mRemoteNodeList.add(node);
 						Log.d(LOG_TAG, "MainActivity::onPsiPmtChange:registerFormatHandler:" + mVidPid);
 						UdpPlayerApi.registerFormatHandler(mUrl, mVidPid,this);
 						UdpPlayerApi.subscribeStream(mUrl, mVidPid);
 						mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
-					} 	if(codec.compareToIgnoreCase("aac") == 0 ||
+					} else if(codec.compareToIgnoreCase("aac") == 0 ||
 							codec.compareToIgnoreCase("ac2") == 0 ||
 							codec.compareToIgnoreCase("mp2") == 0){
-						mCodec = codec;
-						mVidPid = vidPid;
 						// Todo : set codec type and post msg to start decode;
 						// TODO : mRemoteNodeList.add(node);
-						Log.d(LOG_TAG, "MainActivity::onPsiPmtChange:registerFormatHandler:" + mVidPid);
+						Log.d(LOG_TAG, "DecodePipe::onPsiPmtChange:audcodec pid:" + nPid);
 						// start AudDecPipe
+						AudDecPipe audDec =  new AudDecPipe(mActivity, mUrl, nPid, mPcrPid, codec, mAudRender);
+						mAudDecList.add(audDec);
 					}
-
 				}
 			}
 

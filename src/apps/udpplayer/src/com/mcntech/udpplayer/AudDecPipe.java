@@ -24,6 +24,8 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 	public final int PLAYER_CMD_STOP = 2;
 	public final int PLAYER_CMD_INIT = 3;
 	public final int PLAYER_CMD_DEINIT = 4;
+	public final int PLAYER_CMD_REINIT = 5;
+
 	public final String LOG_TAG = "AudDecPipe";
 	String                        mUrl;
 	String 						  mCodec = null;
@@ -31,7 +33,8 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 	int                           mPcrPid = 0;
 	private PlayerThread          mPlayerThrd = null;
 	Handler                       mHandler = null;
-
+	int							  mNumChannels;
+	int							  mSamplerate;
 	ByteBuffer                    mBuff;
 	ByteBuffer                    mOutBuff;
 	long                          mPts;
@@ -39,7 +42,7 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 	public  int             	  mFramesRendered = 0;
 
 	//Video Parameters
-	int                              maxBuffSize = (4 * 1024 * 1024);
+	int                              maxBuffSize = (64 * 1024);
 	private MediaCodec               mDecoder = null;
 	final long                       MAX_AUDIO_SYNC_THRESHOLD_US = 10000000;
 
@@ -51,8 +54,8 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
     int                              currentapiVersion = android.os.Build.VERSION.SDK_INT;
 	public AudRenderInterface      	 mRender = null;
 
-	public AudDecPipe(Activity activity, String url, int strmPid, int clkPid, String codec) {
-		Log.d(LOG_TAG, "DecodePipe:" + url + ":" + strmPid);
+	public AudDecPipe(Activity activity, String url, int strmPid, int clkPid, String codec, AudRenderInterface render) {
+		Log.d(LOG_TAG, "AudDecPipe:" + url + ":" + strmPid);
 		mHandler = new LocalHandler();
 		Context context = activity.getApplicationContext();
 		mUrl = url;
@@ -61,10 +64,12 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 		mPcrPid = clkPid;
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mOutBuff = ByteBuffer.allocate(maxBuffSize);
+
 		UdpPlayerApi.registerFormatHandler(mUrl, mAudPid,this);
 		UdpPlayerApi.subscribeStream(mUrl, mAudPid);
-		mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
 
+		mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
+		mRender = render;
 	}
 	@Override
 	public void onFormatChange(String message) {
@@ -73,22 +78,18 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 		try {
 			fmt = new JSONObject(message);
 			if(fmt != null) {
-	/*			int witdh =  fmt.getInt("width");
-				int height = fmt.getInt("height");
-				if(witdh != 0 && height != 0) {
-					if (witdh != mMaxVidWidth || height != mMaxVidHeight) {
-						Log.d(LOG_TAG, "MainActivity::onFormatChange");
-						mMaxVidWidth = witdh;
-						mMaxVidHeight = height;
-						mfStreamAvailable = true;
-						if(mfPlaying)
-							mHandler.sendEmptyMessage(PLAYER_CMD_REINIT);
-						else
-							mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
+				mNumChannels =  fmt.getInt("channels");
+				mSamplerate = fmt.getInt("samplerate");
+				if (mNumChannels > 0 && mNumChannels <= 6 && mSamplerate > 0 && mSamplerate <= 48000) {
+					Log.d(LOG_TAG, "MainActivity::onFormatChange");
+					mfStreamAvailable = true;
+					if(mfPlaying)
+						mHandler.sendEmptyMessage(PLAYER_CMD_REINIT);
+					else
+						mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
 
-					}
 				}
-*/			}
+			}
 
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
@@ -105,10 +106,8 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 			if(what == PLAYER_CMD_RUN) {
 				if(!mfPlaying) {
 					mExitPlayerLoop = false;
-					if(Configure.mEnableVideo) {
-	 			    	mPlayerThrd = new PlayerThread();
-	 			    	mPlayerThrd.start();
-					}
+					mPlayerThrd = new PlayerThread();
+					mPlayerThrd.start();
 	 				Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN");
 				} else {
 					Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN ignored...");
@@ -344,7 +343,7 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 						if(mRender != null) {
 							ByteBuffer outBuffer = mDecoder.getOutputBuffer(outIndex);
 							outBuffer.get(mOutBuff.array());
-							mRender.Render(mAudPid, outBuffer, info.presentationTimeUs);
+							mRender.RenderAudio(mAudPid, outBuffer, info.presentationTimeUs);
 						}
 						mDecoder.releaseOutputBuffer(outIndex, true);
 						mFramesRendered++;

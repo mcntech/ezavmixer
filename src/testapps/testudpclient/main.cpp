@@ -36,6 +36,7 @@ int main(int argc, char **argv)
 
 	} else {
 		strcpy(szServer, "../teststreams/20130218_SVN_MUX_A.ts");
+		//strcpy(szServer, "../teststreams/zv_baseline.ts");
 	}
 	int fEnableAud = 1;
 	int fEnableVid = 1;

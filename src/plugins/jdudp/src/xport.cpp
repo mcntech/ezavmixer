@@ -52,6 +52,8 @@ static int modDbgLevel = CJdDbg::LVL_SETUP;
 
 #define OPTION_CHAR	'-'
 
+#define MAX_PSI_SECTION_LENGTH 		1021
+
 class MpegTsDemuxCtx;
 
 typedef struct	psip
@@ -231,9 +233,6 @@ public:
 	unsigned int	first_pts_count = 0;
 	unsigned char	constraint_set3_flag;
 
-	unsigned int	video_packet_length;
-	unsigned long long crnt_vid_pts;
-	unsigned long long crnt_vid_dts;
 	void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned long long dts);
 };
 
@@ -249,8 +248,31 @@ public:
     unsigned long long	sysClk;
 };
 
+class CPsiSectionBuff
+{
+public:
+	CPsiSectionBuff()
+	{
+		init();
+	}
+	unsigned char   mBuff[1024];
+	int             mWr;
 
-class MpegTsDemuxCtx
+	void init()
+	{
+		mWr = 0;
+	}
+	void add(unsigned char *data, int len)
+	{
+		memcpy(&mBuff[mWr],data, len);
+		mWr += len;
+	}
+
+	unsigned char *getBuffer(){ return mBuff;}
+	int getLen(){ return mWr;}
+};
+
+typedef struct MpegTsDemuxCtx
 {
 public:
 	unsigned int frameNo;
@@ -502,7 +524,6 @@ public:
 	unsigned long long	pcr;
 	int             fDisCont;
 	int             nInstanceId;
-
     // TODO
     unsigned short	strmType[0x2000];
 	pat_callback_t pPatCallback;
@@ -513,10 +534,13 @@ public:
 	std::map<int, CParseCtx *> mParsers;
 	std::map<int, int> mPrograms;
     std::map<int, CPidCtx*> mPidCtxs;
+	CPsiSectionBuff mPsiSection;
 #ifdef UDP_STREAMER
 	CUdpTx          *pUdpTx;
 #endif
-};
+} MpegTsDemuxCtx;
+
+int SetOutputConn(StrmCompIf *pComp, int nPid, int nStrmType, ConnCtxT *pConn);
 
 CPidCtx *getPidCtx(MpegTsDemuxCtx *pCtx, int nPid) {
 
@@ -608,7 +632,7 @@ int NotifyFrmatChange(MpegTsDemuxCtx *pCtx, int nPid, int codecType, unsigned ch
 
 int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int length, int nPid)
 {
-	JDBG_LOG(CJdDbg::LVL_TRACE, ("WriteData: strmid=%d length=%d",nPid, length));
+	JDBG_LOG(CJdDbg::LVL_SETUP, ("WriteData: strmid=%d length=%d",nPid, length));
     if(pCtx->mParsers.find( nPid ) != pCtx->mParsers.end()) {
         CParseCtx *pX = pCtx->mParsers[nPid];
 #ifdef DEMUX_DUMP_OUTPUT
@@ -741,13 +765,15 @@ int demuxSetInputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn)
 	return 0;
 }
 
-int demuxSetOutputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn) {
+int demuxSetOutputConn(StrmCompIf *pComp, int nPid, ConnCtxT *pConn)
+{
     MpegTsDemuxCtx *pCtx = (MpegTsDemuxCtx *) pComp->pCtx;
-    int nPid = nConnNum;
-    int strmType = getStreamType(pCtx, nPid);
+
+    int nStrmType = getStreamType(pCtx, nPid);
     CParseCtx *pX = NULL;
     char outputName[256];
-    switch (strmType) {
+
+    switch (nStrmType) {
         case 0x01:
         case 0x02:
         case 0x80:
@@ -778,7 +804,7 @@ int demuxSetOutputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn) {
     #ifdef DEMUX_DUMP_OUTPUT
         pX->fpout = fopen(outputName, "wb");
     #endif
-        pCtx->mParsers[nConnNum] = pX;
+        pCtx->mParsers[nPid] = pX;
     }
 	return 0;
 }
@@ -2150,24 +2176,15 @@ void CMPEG2ParseCtx::parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_p
 void CH264ParseCtx::parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned long long dts)
 {
 	unsigned int	i;
-/*
- 	static int		first = TRUE;
-	static int		first_sequence = FALSE;
-	static int		first_sequence_dump = FALSE;
-	static unsigned int	parse = 0;
-	static unsigned int	access_unit_delimiter_parse = 0;
-	static unsigned int	sequence_parameter_set_parse = 0;
-	static unsigned int	picture_count = 0;
-	static unsigned char	header[5] = {0x0, 0x0, 0x0, 0x1, 0x9};
-	static unsigned long long	first_pts;
-	static unsigned int	first_pts_count = 0;
-	static unsigned char	constraint_set3_flag;
- */
+
 	unsigned char	primary_pic_type;
 	unsigned int	whole_buffer = TRUE;
 	unsigned char	*start_es_ptr;
 	unsigned char	*middle_es_ptr;
 	unsigned int	middle_length = 0x55555555;
+
+    //WriteData(pCtx, (unsigned char *) es_ptr, 1, length, pCtx->pid);
+    //return;
 
     crnt_vid_pts = pts;
     crnt_vid_dts = dts;
@@ -2399,6 +2416,7 @@ void demux_mpeg2_transport_deinit(MpegTsDemuxCtx *pCtx)
 			free(pCtx->psip_ptr[i]);
 	}
 }
+
 void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned char *buffer)
 {
 	unsigned int	 i; // Loop index for the entire buffer which can be multiple TS packets
@@ -2695,14 +2713,17 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							pCtx->program_map_table[pCtx->pmt_offset] = buffer[i];
 							DBG_MSG("PMT byte %d = 0x%02x\n", pCtx->pmt_offset, buffer[i]);
 							pCtx->pmt_offset++;
-							i++;
+                            pCtx->mPsiSection.add(&buffer[i], 1);
+                            i++;
+
 							--pCtx->pmt_section_length;
 							--pCtx->xport_packet_length;
 							pCtx->pcr_bytes++;
 						}
 						--i;	/* adjust because of for loop */
 						if (pCtx->pmt_section_length == 0)  {
-							DBG_MSG("End of PSI section = %d\r\n",i);
+
+                            DBG_MSG("End of PSI section = %d\r\n",i);
 							pCtx->pmt_xfer_state = FALSE;
 							if (pCtx->pmt_section_number == pCtx->pmt_last_section_number)  {
 								for (k = 0; k < (pCtx->pmt_offset - 4); k+=5)  {
@@ -2759,6 +2780,9 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									k += pCtx->pmt_ES_info_length;
 								}
 								pCtx->first_pmt = FALSE;
+                                pmt_callback_t pPmtCallback = getCallback(pCtx, pCtx->pid);
+                                if(pCtx->pPmtCallback)
+                                    pPmtCallback(pCtx->pPsiCallbackCtx, pCtx->pid, (char *)pCtx->mPsiSection.getBuffer(), pCtx->mPsiSection.getLen());
 							}
 						}
 					}
@@ -2787,19 +2811,25 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									if (buffer[i] != 0x2)  {
 										pCtx->pmt_section_length_parse = 0;
 									} else {
-										pmt_callback_t pPmtCallback = getCallback(pCtx, pCtx->pid);
-										if(pCtx->pPmtCallback)
-											pPmtCallback(pCtx->pPsiCallbackCtx, pCtx->pid, (char *)(&buffer[i]), pCtx->xport_packet_length);
+										//pmt_callback_t pPmtCallback = getCallback(pCtx, pCtx->pid);
+										//if(pCtx->pPmtCallback)
+										//	pPmtCallback(pCtx->pPsiCallbackCtx, pCtx->pid, (char *)(&buffer[i]), pCtx->xport_packet_length);
+										pCtx->mPsiSection.init();
+										pCtx->mPsiSection.add(&buffer[i], 1);
 									}
 									break;
 								case 1:
 									pCtx->pmt_section_length = (buffer[i] & 0xf) << 8;
+									pCtx->mPsiSection.add(&buffer[i], 1);
 									break;
 								case 0:
 									pCtx->pmt_section_length |= buffer[i];
+
+									pCtx->mPsiSection.add(&buffer[i], 1);
+
 									DBG_MSG("Section length = %d\r\n", pCtx->pmt_section_length);
-									if (pCtx->pmt_section_length > 1021)  {
-										DBG_MSG("PMT Section length = %d\r\n", pCtx->pmt_section_length);
+									if (pCtx->pmt_section_length > MAX_PSI_SECTION_LENGTH)  {
+										DBG_MSG("PMT Section length excedds max(%d) = %d\r\n", MAX_PSI_SECTION_LENGTH, pCtx->pmt_section_length);
 										pCtx->pmt_section_length = 0;
 									}
 									else  {
@@ -2811,6 +2841,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						else if (pCtx->pmt_section_parse != 0)  {
 							--pCtx->pmt_section_length;
 							--pCtx->pmt_section_parse;
+							pCtx->mPsiSection.add(&buffer[i], 1);
 							switch (pCtx->pmt_section_parse)  {
 								case 8:
 									break;
@@ -2851,6 +2882,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						else if (pCtx->pmt_program_info_length != 0)  {
 							--pCtx->pmt_section_length;
 							--pCtx->pmt_program_info_length;
+							pCtx->mPsiSection.add(&buffer[i], 1);
 							if (pCtx->pmt_program_descriptor_length_parse != 0)  {
 								--pCtx->pmt_program_descriptor_length_parse;
 								switch (pCtx->pmt_program_descriptor_length_parse)  {

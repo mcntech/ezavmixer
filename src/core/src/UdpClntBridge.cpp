@@ -195,40 +195,7 @@ std::string StrmTypeToString(int strmType)
 
 	return str;
 }
-/*
-void CUdpClntBridge::psiJson(std::string &psiString)
-{
-	json jPsi = {};
 
-	int j = 0;
-	for (std::map<int, struct MPEG2_PMT_SECTION *>::iterator it = m_pmts.begin(); it != m_pmts.end(); ++it) {
-		int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
-		struct MPEG2_PMT_SECTION *pmt = it->second;
-		if(pmt != NULL) {
-			json jPmt = {};
-			for(int i=0; i < pmt-> number_of_elementary_streams; i++) {
-				json jEs = {};
-				ELEMENTARY_STREAM_INFO *es = &pmt->elementary_stream_info[i];
-				jEs.emplace("pid", es->elementary_PID);
-				jEs.emplace("type", es->stream_type);
-				jEs.emplace("codec",StrmTypeToString(es->stream_type));
-				// TODO es info other attributes
-				jPmt["streams"][i] = jEs;
-#ifdef DEMUX_DUMP_OUTPUT
-				if(es->stream_type == 0x1b)
-                	ConnectStreamForPid(es->elementary_PID, NULL);
-#endif
-
-			}
-			jPmt["pid"] = pmt->program_number;
-			jPmt["program"] = m_pat->program_descriptor[j].program_number;
-            jPmt["PCR_PID"] = pmt->PCR_PID;
-			jPsi[j++] = jPmt;
-		}
-	}
-	psiString = jPsi.dump();
-}
-*/
 void CUdpClntBridge::psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString)
 {
 		if(pmt != NULL) {
@@ -242,6 +209,14 @@ void CUdpClntBridge::psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString)
 				// TODO es info other attributes
 				jPmt["streams"][i] = jEs;
 #ifdef DEMUX_DUMP_OUTPUT
+/*
+				if(es->stream_type == 0x1b
+                    || es->stream_type == 0x1 || es->stream_type == 0x2 || es->stream_type == 0x80
+                    || es->stream_type == 0x81 || es->stream_type == 0x6
+                    || es->stream_type == 0x3  || es->stream_type == 0x4
+                    || es->stream_type == 0x1F
+				)
+*/
 				if(es->stream_type == 0x1b)
                 	ConnectStreamForPid(es->elementary_PID, NULL);
 #endif

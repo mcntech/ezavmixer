@@ -76,21 +76,60 @@ class CParseCtx
 {
 public:
 	CParseCtx(int buffsize){
-		pBuffer = (char *)malloc(buffsize);
+		mBuffer = (char *)malloc(buffsize);
+		mMaxLen = buffsize;
 	}
 	~CParseCtx()
 	{
-		free(pBuffer);
+		free(mBuffer);
 	}
-	
-	char            *pBuffer;
-    int              nBuffLen = 0;
-    ConnCtxT        *pConn;
-    FILE	        *fpout;
-    unsigned int	video_packet_length;
-    unsigned long long crnt_vid_pts;
-    unsigned long long crnt_vid_dts;
 
+	int WriteFrameData(unsigned char *pData, int length)
+	{
+		if(length + mWr < mMaxLen) {
+			memcpy(mBuffer+mWr, pData, length);
+			mWr += length;
+		} else {
+			// Overflow
+		}
+		return 0;
+	}
+
+	void FlushFrameData(int nPid, int fEoS, int fDiscont)
+	{
+		JDBG_LOG(CJdDbg::LVL_SETUP, ("WriteData: strmid=%d length=%d",nPid, mWr));
+	#ifdef DEMUX_DUMP_OUTPUT
+		if(fpout != NULL)
+			fwrite(mBuffer, 1, mWr, fpout);
+	#else
+		if(pConn) {
+			JdDbg(CJdDbg::DBGLVL_STRM, ("strmid=%d length=%d",nPid, dataLen));
+			unsigned long ulFlags = 0;
+			if(fEoS) {
+				ulFlags = OMX_BUFFERFLAG_EOS;
+			}
+			if(fDiscont){
+				ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
+			}
+			while(pConn->IsFull(pConn)){
+				JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"))
+					JD_OAL_SLEEP(1)
+			}
+			JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
+			pConn->Write(pConn, mBuffer, mWr,  ulFlags, crnt_vid_pts * 1000 / 90);
+		}
+	#endif
+		mWr = 0;
+	}
+
+	char            *mBuffer;
+    int              mWr = 0;
+    int              mMaxLen = 0;
+    ConnCtxT        *pConn = NULL;
+    FILE	        *fpout = NULL;
+    unsigned int	video_packet_length = 0;
+    unsigned long long crnt_vid_pts = 0;
+    unsigned long long crnt_vid_dts = 0;
 };
 
 class CAC3ParseCtx : public CParseCtx
@@ -131,6 +170,12 @@ public:
 
 };
 
+class CDVBParseCtx : public CParseCtx {
+public:
+    CDVBParseCtx():CParseCtx(8*1024) {}
+    void parse_dvb_subtitle(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit, int end_of_frame);
+};
+
 class CMP2AudParseCtx : public CParseCtx {
 public:
 	CMP2AudParseCtx():CParseCtx(8*1024) {}
@@ -159,7 +204,7 @@ public:
 	unsigned int	audio_original;
 	unsigned int	audio_emphasis;
 
-	void parse_mp2_audio(unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit);
+	void parse_mp2_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit, int end_of_frame);
 };
 
 class CPCMParseCtx : public CParseCtx {
@@ -632,31 +677,10 @@ int NotifyFrmatChange(MpegTsDemuxCtx *pCtx, int nPid, int codecType, unsigned ch
 
 int WriteData(MpegTsDemuxCtx *pCtx, unsigned char *pData, int item_size, int length, int nPid)
 {
-	JDBG_LOG(CJdDbg::LVL_SETUP, ("WriteData: strmid=%d length=%d",nPid, length));
+	//JDBG_LOG(CJdDbg::LVL_SETUP, ("WriteData: strmid=%d length=%d",nPid, length));
     if(pCtx->mParsers.find( nPid ) != pCtx->mParsers.end()) {
         CParseCtx *pX = pCtx->mParsers[nPid];
-#ifdef DEMUX_DUMP_OUTPUT
-    fwrite(pData, item_size, length,pX->fpout);
-#else
-		ConnCtxT *pConn = pX->pConn;
-		if(pConn) {
-			int dataLen = item_size * length;
-			JdDbg(CJdDbg::DBGLVL_STRM, ("strmid=%d length=%d",nPid, dataLen));
-			unsigned long ulFlags = 0;
-			if(pCtx->fEoS) {
-				ulFlags = OMX_BUFFERFLAG_EOS;
-			}
-			if(pCtx->fDisCont){
-				ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
-			}
-			while(pConn->IsFull(pConn)){
-				JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"))
-					JD_OAL_SLEEP(1)
-			}
-			JdDbg(CJdDbg::DBGLVL_PACKET, ("Sending Vid ulFlags=0x%x", ulFlags));
-			pConn->Write(pConn, (char *)pData, dataLen,  ulFlags, pX->crnt_vid_pts * 1000 / 90);
-		}
-#endif
+        pX->WriteFrameData(pData, item_size*length);
 	}
 
 	return 0;
@@ -785,9 +809,12 @@ int demuxSetOutputConn(StrmCompIf *pComp, int nPid, ConnCtxT *pConn)
             sprintf(outputName, "stream_pid_%d.h264", nPid);
             break;
         case 0x81:
-        case 0x06:
             pX = new CAC3ParseCtx();
             sprintf(outputName, "stream_pid_%d.ac3", nPid);
+            break;
+        case 0x06:
+            pX = new CDVBParseCtx();
+            sprintf(outputName, "stream_pid_%d.dvb", nPid);
             break;
         case 0x03:
         case 0x04:
@@ -1156,12 +1183,18 @@ void CAC3ParseCtx::parse_ac3_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, 
 				}
 			}
 			if(audio_synced == FALSE && first_header == TRUE && second_header == TRUE)  {
-				if (pCtx->pts_aligned != 0xffffffffffffffffLL || pCtx->video_channel == 0)  {
-					if (current_pts >= pCtx->pts_aligned || pCtx->video_channel == 0)  {
+				//if (pCtx->pts_aligned != 0xffffffffffffffffLL || pCtx->video_channel == 0)
+				if(1) // TODO
+				{
+					//if (current_pts >= pCtx->pts_aligned || pCtx->video_channel == 0)
+					if(1)
+					{
 						audio_synced = TRUE;
 						frame_buffer_length[frame_buffer_count] = frame_buffer_index;
 						for (j = 0; j <= frame_buffer_count; j++)  {
-							if ((frame_buffer_pts[j] + 2800) > pCtx->pts_aligned || pCtx->video_channel == 0)  {
+							//if ((frame_buffer_pts[j] + 2800) > pCtx->pts_aligned || pCtx->video_channel == 0)
+							if(1)
+							{
 #if 0
 								DBG_MSG("j = %d, pts = 0x%08x, length = %d\n", j, (unsigned int)frame_buffer_pts[j], frame_buffer_length[j]);
 #endif
@@ -1228,11 +1261,9 @@ void CAC3ParseCtx::parse_ac3_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, 
 #endif
 }
 
-void CMP2AudParseCtx::parse_mp2_audio(unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit)
+void CMP2AudParseCtx::parse_mp2_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit, int end_of_frame)
 {
 	unsigned int	i, j;
-
-	MpegTsDemuxCtx *pCtx = pCtx;
 
 	if(pCtx->parse_only == FALSE)  {
 		if(audio_synced == TRUE)  {
@@ -1408,12 +1439,18 @@ void CMP2AudParseCtx::parse_mp2_audio(unsigned char *es_ptr, unsigned int length
 				}
 			}
 			if(audio_synced == FALSE && first_header == TRUE && second_header == TRUE)  {
-				if (pCtx->pts_aligned != 0xffffffffffffffffLL || pCtx->video_channel == 0)  {
-					if (current_pts >= pCtx->pts_aligned || pCtx->video_channel == 0)  {
+				//if (pCtx->pts_aligned != 0xffffffffffffffffLL || pCtx->video_channel == 0)
+				if(1) // todo
+				{
+					//if (current_pts >= pCtx->pts_aligned || pCtx->video_channel == 0)
+					if(1)
+					{
 						audio_synced = TRUE;
 						frame_buffer_length[frame_buffer_count] = frame_buffer_index;
 						for (j = 0; j <= frame_buffer_count; j++)  {
-							if ((frame_buffer_pts[j] + 2160) > pCtx->pts_aligned || pCtx->video_channel == 0)  {
+							//if ((frame_buffer_pts[j] + 2160) > pCtx->pts_aligned || pCtx->video_channel == 0)
+							if(1)
+							{
 #if 0
 								DBG_MSG("j = %d, pts = 0x%08x, length = %d\n", j, (unsigned int)frame_buffer_pts[j], frame_buffer_length[j]);
 #endif
@@ -1463,6 +1500,8 @@ void CMP2AudParseCtx::parse_mp2_audio(unsigned char *es_ptr, unsigned int length
 			}
 		}
 	}
+	if(end_of_frame)
+		FlushFrameData(pCtx->pid, 0, 0);
 }
 
 void CPCMParseCtx::parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit, unsigned short lpcm_header_flags)
@@ -1718,6 +1757,17 @@ void CAACParseCtx::parse_aac_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, 
 	pCtx->crnt_aud_pts = pts;
 	pCtx->aud_end_of_frame = end_of_frame;
 	WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
+	if(end_of_frame)
+		FlushFrameData(pCtx->pid, 0, 0);
+}
+
+void CDVBParseCtx::parse_dvb_subtitle(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit, int end_of_frame)
+{
+    pCtx->crnt_aud_pts = pts;
+    pCtx->aud_end_of_frame = end_of_frame;
+    WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
+    if(end_of_frame)
+    FlushFrameData(pCtx->pid, 0, 0);
 }
 
 void CMPEG2ParseCtx::parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int dts)
@@ -1770,6 +1820,11 @@ void CMPEG2ParseCtx::parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_p
 	for(i = 0; i < length; i++)  {
 		parse = (parse << 8) + *es_ptr++;
 		if (parse == 0x00000100)  {
+
+
+
+			FlushFrameData(pCtx->pid, 0, 0);
+
 			picture_parse = 2;
 			if (first_sequence == TRUE)  {
 				pCtx->coded_frames++;
@@ -2183,9 +2238,6 @@ void CH264ParseCtx::parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr
 	unsigned char	*middle_es_ptr;
 	unsigned int	middle_length = 0x55555555;
 
-    //WriteData(pCtx, (unsigned char *) es_ptr, 1, length, pCtx->pid);
-    //return;
-
     crnt_vid_pts = pts;
     crnt_vid_dts = dts;
 
@@ -2200,11 +2252,7 @@ void CH264ParseCtx::parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr
 		if (parse == 0x00000109) {
 			access_unit_delimiter_parse = 1;
 			pCtx->coded_frames++;
-			JDBG_LOG(CJdDbg::LVL_TRACE, ("Flushing: strmid=%d length=%d", pCtx->pid, nBuffLen));
-			if (nBuffLen > 0) {
-				WriteData(pCtx, (unsigned char *) pBuffer, 1, nBuffLen, pCtx->pid);
-				nBuffLen = 0;
-			}
+			this->FlushFrameData(pCtx->pid, 0, 0);
 		}
 		else if (access_unit_delimiter_parse != 0)  {
 			--access_unit_delimiter_parse;
@@ -2215,11 +2263,7 @@ void CH264ParseCtx::parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr
 			if (first_sequence == FALSE && primary_pic_type == 0)  {
 				DBG_MSG("%d frames before first I-frame\n", picture_count);
 				if(pCtx->parse_only == FALSE)  {
-					memcpy(pBuffer + nBuffLen, (unsigned char *)&header, 5);
-					nBuffLen += 5;
-
-					//WriteData(pCtx, (unsigned char *)&header, 1, 5, pCtx->pid);
-
+					WriteData(pCtx, (unsigned char *)&header, 1, 5, pCtx->pid);
 					middle_es_ptr = es_ptr - 1;
 					middle_length = length - i;
 					whole_buffer = FALSE;
@@ -2307,15 +2351,10 @@ void CH264ParseCtx::parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr
 	if(pCtx->parse_only == FALSE)  {
 		if(first_sequence == TRUE)  {
 			if(whole_buffer == TRUE)  {
-				//WriteData(pCtx, start_es_ptr, 1, length, pCtx->pid);
-                memcpy(pBuffer + nBuffLen, start_es_ptr, length);
-                nBuffLen += length;
-
+				WriteData(pCtx, start_es_ptr, 1, length, pCtx->pid);
 			}
 			else  {
-				//WriteData(pCtx, middle_es_ptr, 1, middle_length, pCtx->pid);
-                memcpy(pBuffer + nBuffLen, middle_es_ptr, middle_length);
-                nBuffLen += middle_length;
+				WriteData(pCtx, middle_es_ptr, 1, middle_length, pCtx->pid);
 			}
 		}
 	}
@@ -2746,13 +2785,15 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 												--pCtx->pmt_ES_descriptor_length_parse;
 												switch (pCtx->pmt_ES_descriptor_length_parse)  {
 													case 1:
-														if (pCtx->first_pmt == TRUE)  {
+														//if (pCtx->first_pmt == TRUE)
+														{
 															DBG_MSG("ES descriptor for stream type 0x%02x = 0x%02x", pCtx->pmt_stream_type, pCtx->program_map_table[k+5+q]);
 														}
 														break;
 													case 0:
 														pCtx->pmt_ES_descriptor_length = pCtx->program_map_table[k+5+q];
-														if (pCtx->first_pmt == TRUE)  {
+														//if (pCtx->first_pmt == TRUE)
+														{
 															DBG_MSG(", 0x%02x", pCtx->program_map_table[k+5+q]);
 															if (pCtx->pmt_ES_descriptor_length == 0)  {
 																DBG_MSG("\n");
@@ -2763,11 +2804,13 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 											}
 											else if (pCtx->pmt_ES_descriptor_length != 0)  {
 												--pCtx->pmt_ES_descriptor_length;
-												if (pCtx->first_pmt == TRUE)  {
+												//if (pCtx->first_pmt == TRUE)
+												{
 													DBG_MSG(", 0x%02x", pCtx->program_map_table[k+5+q]);
 												}
 												if (pCtx->pmt_ES_descriptor_length == 0)  {
-													if (pCtx->first_pmt == TRUE)  {
+													//if (pCtx->first_pmt == TRUE)
+													{
 														DBG_MSG("\n");
 													}
 													if (q < pCtx->pmt_ES_info_length)  {
@@ -2927,7 +2970,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						pCtx->sync_state = FALSE;
 					}
 				}
-				else if (/*pCtx->pid == pCtx->video_pid &&*/ IsSubscribed(pCtx, pCtx->pid) && pCtx->transport_scrambling_control == 0) {
+				else if (/*pCtx->pid == pCtx->video_pid &&*/ isVideoPid(pCtx, pCtx->pid) && IsSubscribed(pCtx, pCtx->pid) && pCtx->transport_scrambling_control == 0) {
                     CParseCtx *pX = getParseCtx(pCtx, pCtx->pid);
                     pCtx->video_parse = (pCtx->video_parse << 8) + buffer[i];
 					if (pCtx->video_xfer_state == TRUE)  {
@@ -3190,15 +3233,20 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						if (pCtx->demux_audio == TRUE)  {
 							int end_of_frame = (pCtx->audio_packet_length == xfer_length);
                             int streamType = getStreamType(pCtx, pCtx->pid);
-							if(streamType == 0x81 || streamType == 0x6)  {
+							if(streamType == 0x81)  {
 								CAC3ParseCtx *pAudParse = (CAC3ParseCtx *)getParseCtx(pCtx, pCtx->pid);
 								if(pAudParse!=NULL)
 									pAudParse->parse_ac3_audio(pCtx, &buffer[i], xfer_length, pCtx->audio_pts, pCtx->first_audio_access_unit, end_of_frame);
 							}
+                            else if( streamType == 0x6)  {
+                                CDVBParseCtx *pAudParse = (CDVBParseCtx *)getParseCtx(pCtx, pCtx->pid);
+                                if(pAudParse!=NULL)
+                                    pAudParse->parse_dvb_subtitle(pCtx, &buffer[i], xfer_length, pCtx->audio_pts, pCtx->first_audio_access_unit, end_of_frame);
+                            }
 							else if(streamType == 0x3 || streamType == 0x4)  {
 								CMP2AudParseCtx *pAudParse = (CMP2AudParseCtx *)getParseCtx(pCtx, pCtx->pid);
 								if(pAudParse!=NULL)
-									pAudParse->parse_mp2_audio(&buffer[i], xfer_length, pCtx->audio_pts, pCtx->first_audio_access_unit);
+									pAudParse->parse_mp2_audio(pCtx, &buffer[i], xfer_length, pCtx->audio_pts, pCtx->first_audio_access_unit, end_of_frame);
 							}
 							else if(streamType == 0x80)  {
 								CPCMParseCtx *pAudParse = (CPCMParseCtx *)getParseCtx(pCtx, pCtx->pid);
@@ -3249,7 +3297,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 					else  {
 						--pCtx->xport_packet_length;
 						pCtx->pcr_bytes++;
-						if (((pCtx->audio_parse >= 0x000001c0 && pCtx->audio_parse <= 0x000001df) && (pCtx->audio_stream_type == 0x3 || pCtx->audio_stream_type == 0x4 || pCtx->audio_stream_type == 0x6 || pCtx->audio_stream_type == 0x0f)) || pCtx->audio_parse == 0x000001bd || pCtx->audio_parse == 0x000001fd || pCtx->audio_parse == 0x000001fa)  {
+						if (((pCtx->audio_parse >= 0x000001c0 && pCtx->audio_parse <= 0x000001df) /*&& (pCtx->audio_stream_type == 0x3 || pCtx->audio_stream_type == 0x4 || pCtx->audio_stream_type == 0x6 || pCtx->audio_stream_type == 0x0f)*/) || pCtx->audio_parse == 0x000001bd || pCtx->audio_parse == 0x000001fd || pCtx->audio_parse == 0x000001fa)  {
 							DBG_MSG("PES start code = 0x%08x, stream_type = 0x%02x\r\n", pCtx->audio_parse, pCtx->audio_stream_type);
 							pCtx->audio_packet_length_parse = 2;
 							pCtx->audio_packet_number++;

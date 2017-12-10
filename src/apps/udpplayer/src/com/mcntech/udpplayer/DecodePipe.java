@@ -131,7 +131,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 						UdpPlayerApi.registerFormatHandler(mUrl, mVidPid,this);
 						UdpPlayerApi.subscribeStream(mUrl, mVidPid);
 						mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
-					} else if(codec.compareToIgnoreCase("aac") == 0 ||
+					} /*else if(codec.compareToIgnoreCase("aac") == 0 ||
 							codec.compareToIgnoreCase("ac2") == 0 ||
 							codec.compareToIgnoreCase("mp2") == 0){
 						// Todo : set codec type and post msg to start decode;
@@ -140,7 +140,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 						// start AudDecPipe
 						AudDecPipe audDec =  new AudDecPipe(mActivity, mUrl, nPid, mPcrPid, codec, mAudRender);
 						mAudDecList.add(audDec);
-					}
+					}*/
 				}
 			}
 

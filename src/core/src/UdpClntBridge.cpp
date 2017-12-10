@@ -171,10 +171,13 @@ std::string StrmTypeToString(int strmType)
 {
 	std::string str;
 
-	if(strmType == 0x81 || strmType == 0x6)  {
+	if(strmType == 0x81)  {
 		str = "AC3";
 	}
-	else if(strmType == 0x3 || strmType == 0x4)  {
+    else if(strmType == 0x6)  {
+        str = "DVB_SUBTITLE";
+    }
+    else if(strmType == 0x3 || strmType == 0x4)  {
 		str = "MP2";
 	}
 	else if(strmType == 0x80)  {
@@ -209,15 +212,12 @@ void CUdpClntBridge::psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString)
 				// TODO es info other attributes
 				jPmt["streams"][i] = jEs;
 #ifdef DEMUX_DUMP_OUTPUT
-/*
 				if(es->stream_type == 0x1b
                     || es->stream_type == 0x1 || es->stream_type == 0x2 || es->stream_type == 0x80
                     || es->stream_type == 0x81 || es->stream_type == 0x6
                     || es->stream_type == 0x3  || es->stream_type == 0x4
                     || es->stream_type == 0x1F
 				)
-*/
-				if(es->stream_type == 0x1b)
                 	ConnectStreamForPid(es->elementary_PID, NULL);
 #endif
 

@@ -37,6 +37,8 @@ int main(int argc, char **argv)
 	} else {
 		strcpy(szServer, "../teststreams/20130218_SVN_MUX_A.ts");
 		//strcpy(szServer, "../teststreams/zv_baseline.ts");
+		//strcpy(szServer, "../teststreams/hbo-mpeg2sd-dish301.ts");
+
 	}
 	int fEnableAud = 1;
 	int fEnableVid = 1;

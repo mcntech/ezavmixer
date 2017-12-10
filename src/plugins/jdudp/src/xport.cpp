@@ -98,6 +98,8 @@ public:
 	void FlushFrameData(int nPid, int fEoS, int fDiscont)
 	{
 		JDBG_LOG(CJdDbg::LVL_SETUP, ("WriteData: strmid=%d length=%d",nPid, mWr));
+        if(mWr == 0)
+            return;
 	#ifdef DEMUX_DUMP_OUTPUT
 		if(fpout != NULL)
 			fwrite(mBuffer, 1, mWr, fpout);

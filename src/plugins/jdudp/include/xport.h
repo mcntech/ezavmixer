@@ -25,6 +25,11 @@ typedef struct _DemuxSelectProgramT
 	unsigned char	        video_stream_type;
 } DemuxSelectProgramT;
 
+typedef struct AudParam
+{
+    int nSampleRate;
+    int nNumChannels;
+} AudParam;
 
 typedef void (*pat_callback_t)(void *pCtx, const char *pPsiData, int len);
 typedef void (*pmt_callback_t)(void *pCtx, int nPid, const char *pPmtData, int len);

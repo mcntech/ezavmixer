@@ -32,6 +32,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static android.media.MediaFormat.MIMETYPE_VIDEO_AVC;
+import static android.media.MediaFormat.MIMETYPE_VIDEO_HEVC;
+import static android.media.MediaFormat.MIMETYPE_VIDEO_MPEG2;
+
 
 public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.FormatHandler, TextureView.SurfaceTextureListener {
 	
@@ -73,12 +77,14 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 	Activity mActivity = null;
 	ProgramHandler mProgramHandler;
 
-	ArrayList<AudDecPipe> mAudDecList;
+
 	class AudioStream
 	{
 		int PID;
-		int CodecType;
+		String codec;
 	}
+
+	ArrayList<AudDecPipe> mAudDecList;
 
 	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView, AudRenderInterface audRender) {
 		Log.d(LOG_TAG, "DecodePipe:" + url + ":" + strmId);
@@ -91,8 +97,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 		//mCodec = codec;
 		mPgmNo = strmId;
 		mAudRender = audRender;
-		mfAvcUHdSupported  = CodecInfo.isSupportedLevel("video/avc", MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
-		mfHevcSupported  = CodecInfo.isMimeTypeAvailable("video/hevc");
+		mfAvcUHdSupported  = CodecInfo.isSupportedLevel(MIMETYPE_VIDEO_AVC, MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
+		mfHevcSupported  = CodecInfo.isMimeTypeAvailable(MIMETYPE_VIDEO_HEVC);
 /*		if(mfAvcUHdSupported) {
 			mMaxVidWidth = 3840;
 			mMaxVidHeight = 2160;
@@ -131,7 +137,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 						UdpPlayerApi.registerFormatHandler(mUrl, mVidPid,this);
 						UdpPlayerApi.subscribeStream(mUrl, mVidPid);
 						mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
-					} /*else if(codec.compareToIgnoreCase("aac") == 0 ||
+					} else if(codec.compareToIgnoreCase("aac") == 0 ||
 							codec.compareToIgnoreCase("ac2") == 0 ||
 							codec.compareToIgnoreCase("mp2") == 0){
 						// Todo : set codec type and post msg to start decode;
@@ -140,7 +146,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 						// start AudDecPipe
 						AudDecPipe audDec =  new AudDecPipe(mActivity, mUrl, nPid, mPcrPid, codec, mAudRender);
 						mAudDecList.add(audDec);
-					}*/
+						//mHandler.sendEmptyMessage(PLAYER_CMD_CREATE_AUDDECPIPE);
+					}
 				}
 			}
 
@@ -218,14 +225,17 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
  				new Thread(new Runnable() {
 					@Override
 					public void run() {
-			 			if(Configure.mEnableVideo) {
-			 				mExitPlayerLoop = true;
-			 				waitForVideoStop();
-			 			}
+						if(Configure.mEnableVideo) {
+							mExitPlayerLoop = true;
+							waitForVideoStop();
+						}
 						//OnyxPlayerApi.deinitialize();
 					}
  				}).start();
-		    }
+		    } else if(what == PLAYER_CMD_CREATE_AUDDECPIPE) {
+				//AudDecPipe audDec =  new AudDecPipe(mActivity, mUrl, nPid, mPcrPid, codec, mAudRender);
+				//mAudDecList.add(audDec);
+			}
 		}
 	}
 
@@ -272,27 +282,39 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 		
 		boolean InitDecoder( MediaCodec decoder, Surface surface)
 		{
-			MediaFormat format;
+			MediaFormat format = null;
 			if(mCodec.compareTo("H265") == 0) // HEVC
-				format =  MediaFormat.createVideoFormat("video/hevc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
-			else
-				format =  MediaFormat.createVideoFormat("video/avc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);				
+				format =  MediaFormat.createVideoFormat(MIMETYPE_VIDEO_HEVC, mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
+			else if(mCodec.compareTo("H264") == 0)
+				format =  MediaFormat.createVideoFormat(MIMETYPE_VIDEO_AVC, mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
+			else if(mCodec.compareTo("MPEG2") == 0)
+				format =  MediaFormat.createVideoFormat(MIMETYPE_VIDEO_MPEG2, mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
 			Log.d(LOG_TAG, "decoder configure");
-			decoder.configure(format, surface, null, 0);
-			return true;
+
+			if(format != null){
+				decoder.configure(format, surface, null, 0);
+				return true;
+			}
+			return false;
 		}
 		
 		boolean InitDecoder( MediaCodec decoder, Surface surface, ByteBuffer csd0)
 		{
-			MediaFormat format;
+			MediaFormat format = null;
 			if(mCodec.compareTo("H265") == 0) // HEVC
-				format =  MediaFormat.createVideoFormat("video/hevc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
-			else
-				format =  MediaFormat.createVideoFormat("video/avc", mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);				
-			format.setByteBuffer("csd-0", csd0);
+				format =  MediaFormat.createVideoFormat(MIMETYPE_VIDEO_HEVC, mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
+			else if(mCodec.compareTo("H264") == 0)
+				format =  MediaFormat.createVideoFormat(MIMETYPE_VIDEO_AVC, mMaxVidWidth, mMaxVidHeight);// = extractor.getTrackFormat(i);
+			else if(mCodec.compareTo("MPEG2") == 0)
+				format =  MediaFormat.createVideoFormat(MIMETYPE_VIDEO_MPEG2, mMaxVidWidth, mMaxVidHeight);
+
 			Log.d(LOG_TAG, "decoder configure");
-			decoder.configure(format, surface, null, 0);
-			return true;
+			if(format != null) {
+				format.setByteBuffer("csd-0", csd0);
+				decoder.configure(format, surface, null, 0);
+				return true;
+			}
+			return false;
 		}
 		
 		@Override
@@ -301,11 +323,14 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 			try {
 				if(mCodec.compareTo("H265") == 0) {
 					Log.d(LOG_TAG, "decoder create video/hevc");
-					mDecoder = MediaCodec.createDecoderByType("video/hevc");
+					mDecoder = MediaCodec.createDecoderByType(MIMETYPE_VIDEO_HEVC);
 					mfSendCsd0DuringInit = false;
-				} else {
+				} else if(mCodec.compareTo("H264") == 0) {
 					Log.d(LOG_TAG, "decoder create video/avc");
-					mDecoder = MediaCodec.createDecoderByType("video/avc");
+					mDecoder = MediaCodec.createDecoderByType(MIMETYPE_VIDEO_AVC);
+				} else if(mCodec.compareTo("MPEG2") == 0) {
+					Log.d(LOG_TAG, "decoder create video/avc");
+					mDecoder = MediaCodec.createDecoderByType(MIMETYPE_VIDEO_MPEG2);
 				}
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block

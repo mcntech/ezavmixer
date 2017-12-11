@@ -1266,7 +1266,7 @@ void CAC3ParseCtx::parse_ac3_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, 
 void CMP2AudParseCtx::parse_mp2_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit, int end_of_frame)
 {
 	unsigned int	i, j;
-
+    int numChannels = 0;
 	if(pCtx->parse_only == FALSE)  {
 		if(audio_synced == TRUE)  {
 			WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
@@ -1306,15 +1306,19 @@ void CMP2AudParseCtx::parse_mp2_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_pt
 						DBG_MSG("Audio Bitrate = %d, Audio Sampling Rate = %d\n", audio_bitrate, audio_sampling_rate);
 						switch (audio_mode & 0x3)  {
 							case 3:
+                                numChannels = 1;
 								DBG_MSG("Audio Mode = Single Channel, mode_extension = %d\n", audio_mode_ext);
 								break;
 							case 2:
+                                numChannels = 2;
 								DBG_MSG("Audio Mode = Dual Channel, mode_extension = %d\n", audio_mode_ext);
 								break;
 							case 1:
+                                numChannels = 2;
 								DBG_MSG("Audio Mode = Joint Stereo, mode_extension = %d\n", audio_mode_ext);
 								break;
 							case 0:
+                                numChannels = 2
 								DBG_MSG("Audio Mode = Stereo, mode_extension = %d\n", audio_mode_ext);
 								break;
 						}
@@ -1448,6 +1452,13 @@ void CMP2AudParseCtx::parse_mp2_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_pt
 					if(1)
 					{
 						audio_synced = TRUE;
+
+                        {
+                            AudParam audParam = {0};
+                            audParam.nNumChannels = numChannels;
+                            audParam.nSampleRate = audio_sampling_rate;
+                            NotifyFrmatChange(pCtx, pCtx->pid, 0x03, (unsigned char *)&audParam, sizeof(audParam));
+                        }
 						frame_buffer_length[frame_buffer_count] = frame_buffer_index;
 						for (j = 0; j <= frame_buffer_count; j++)  {
 							//if ((frame_buffer_pts[j] + 2160) > pCtx->pts_aligned || pCtx->video_channel == 0)

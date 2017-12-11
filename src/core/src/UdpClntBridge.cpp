@@ -146,13 +146,19 @@ void CUdpClntBridge::UpdateFormat(int nPid, int nCodecType, const char *pData, i
     if(nCodecType == 0x1B) {
         if(m_pCallback) {
             std::string fmtString;
-            strmFmtJson(pData, len, fmtString);
+            strmH264FmtJson(pData, len, fmtString);
+            m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
+        }
+    } else if(nCodecType == 0x03 || nCodecType == 0x04) {
+        if(m_pCallback) {
+            std::string fmtString;
+            strmMP2AudFmtJson(pData, len, fmtString);
             m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
         }
     }
 }
 
-void CUdpClntBridge::strmFmtJson(const char *pFmtData, int len, std::string &psiString)
+void CUdpClntBridge::strmH264FmtJson(const char *pFmtData, int len, std::string &psiString)
 {
     json jFmt = {};
     long lWidth = 0;
@@ -167,6 +173,16 @@ void CUdpClntBridge::strmFmtJson(const char *pFmtData, int len, std::string &psi
 	delete mH264Parser;
 }
 
+void CUdpClntBridge::strmMP2AudFmtJson(const char *pFmtData, int len, std::string &psiString)
+{
+    json jFmt = {};
+    AudParam *audParam = (AudParam *)pFmtData;
+    if(audParam->nNumChannels != 0){
+        jFmt["channels"] = audParam->nNumChannels;
+        jFmt["samplerate"] = audParam->nSampleRate;
+    }
+    psiString = jFmt.dump();
+}
 std::string StrmTypeToString(int strmType)
 {
 	std::string str;

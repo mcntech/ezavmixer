@@ -6,6 +6,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
 import android.media.MediaFormat;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.view.Surface;
@@ -16,6 +17,10 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import static android.media.MediaFormat.MIMETYPE_AUDIO_AAC;
+import static android.media.MediaFormat.MIMETYPE_AUDIO_AC3;
+import static android.media.MediaFormat.MIMETYPE_AUDIO_MPEG;
 
 
 public class AudDecPipe implements UdpPlayerApi.FormatHandler {
@@ -67,8 +72,6 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 
 		UdpPlayerApi.registerFormatHandler(mUrl, mAudPid,this);
 		UdpPlayerApi.subscribeStream(mUrl, mAudPid);
-
-		mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
 		mRender = render;
 	}
 	@Override
@@ -100,7 +103,11 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 	}
 
 	private class LocalHandler extends Handler {
-        @Override
+
+		LocalHandler() {
+			super(Looper.getMainLooper());
+		}
+		@Override
          public void handleMessage(Message msg) {
              int what = msg.what;
 			if(what == PLAYER_CMD_RUN) {
@@ -181,11 +188,11 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 		boolean InitDecoder( MediaCodec decoder) {
 			MediaFormat format = null;
 			if (mCodec.compareTo("AC3") == 0)
-				format = MediaFormat.createAudioFormat("audio/ac3", 44100, 2);
+				format = MediaFormat.createAudioFormat(MIMETYPE_AUDIO_AC3, 48000, 2);
 			else if (mCodec.compareTo("AAC") == 0)
-				format = MediaFormat.createAudioFormat("audio/aac", 44100, 2);
+				format = MediaFormat.createAudioFormat(MIMETYPE_AUDIO_AAC, 48000, 2);
 			if (mCodec.compareTo("MP2") == 0)
-				format = MediaFormat.createAudioFormat("audio/mp2", 44100, 2);
+				format = MediaFormat.createAudioFormat(MIMETYPE_AUDIO_MPEG , mSamplerate, mNumChannels);
 			Log.d(LOG_TAG, "decoder configure");
 			if (format != null) {
 				decoder.configure(format, surface, null, 0);
@@ -201,14 +208,14 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
 			try {
 				if(mCodec.compareTo("MP2") == 0) {
 					Log.d(LOG_TAG, "decoder create audio/mp2");
-					mDecoder = MediaCodec.createDecoderByType("audio/mp2");
+					mDecoder = MediaCodec.createDecoderByType(MIMETYPE_AUDIO_MPEG);
 				} else if(mCodec.compareTo("AAC") == 0){
 					Log.d(LOG_TAG, "decoder create audio/aac");
-					mDecoder = MediaCodec.createDecoderByType("audio/aac");
+					mDecoder = MediaCodec.createDecoderByType(MIMETYPE_AUDIO_AAC);
 				}
 				else if(mCodec.compareTo("AC3") == 0){
 					Log.d(LOG_TAG, "decoder create audio/ac3");
-					mDecoder = MediaCodec.createDecoderByType("audio/ac3");
+					mDecoder = MediaCodec.createDecoderByType(MIMETYPE_AUDIO_AC3);
 				}
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block

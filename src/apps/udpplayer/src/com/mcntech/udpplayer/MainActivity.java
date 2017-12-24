@@ -101,7 +101,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 
 							pgmNum = pgm.getInt("program");
 							pid = pgm.getInt("pid");
-							if(pid > 31 ) {
+							if(pid > 0 &&  pgmNum > 0) {
 								RemoteNode node = new RemoteNode(url, pgmNum);
 								mRemoteNodeList.add(node);
 							}

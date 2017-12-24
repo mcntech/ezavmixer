@@ -130,6 +130,8 @@ public:
     ConnCtxT        *pConn = NULL;
     FILE	        *fpout = NULL;
     unsigned int	video_packet_length = 0;
+    unsigned int	audio_packet_length = 0;
+    unsigned int	audio_xfer_state = FALSE;
     unsigned long long crnt_vid_pts = 0;
     unsigned long long crnt_vid_dts = 0;
 };
@@ -355,7 +357,7 @@ public:
 	//unsigned long long crnt_vid_pts;
 	//unsigned long long crnt_vid_dts;
 	unsigned long long crnt_aud_pts;
-	int                aud_end_of_frame;
+
 	int                fClkSrc;
 	void               *pClk;
 	int                nUiCmd;
@@ -425,7 +427,7 @@ public:
 	unsigned int	audio_pts_parse;
 	unsigned int	audio_pts_dts_parse;
 	unsigned int	audio_lpcm_parse;
-	unsigned int	audio_xfer_state;
+	//unsigned int	audio_xfer_state;
 	unsigned int	audio_packet_number;
 	unsigned char	audio_pes_header_length;
 
@@ -471,7 +473,7 @@ public:
 	unsigned int	video_dts;
 
 	unsigned int	audio_parse;
-	unsigned short	audio_packet_length;
+	//unsigned short	audio_packet_length;
 	unsigned long long	audio_temp_pts;
 	unsigned long long	audio_pts;
 	unsigned char	audio_pes_header_flags;
@@ -635,6 +637,13 @@ int isVideoPid(MpegTsDemuxCtx *pCtx, int nPid) {
     return 0;
 }
 
+int isAudioPid(MpegTsDemuxCtx *pCtx, int nPid) {
+    int streamType = getStreamType(pCtx, nPid);
+    if (streamType == 0x3 || streamType == 0x4 || streamType == 0x81 || streamType == 0x6 || streamType == 0xf) {
+       return 1;
+    }
+    return 0;
+}
     typedef void *(*thrdStartFcnPtr)(void *);
 
 
@@ -1248,7 +1257,6 @@ void CAC3ParseCtx::parse_ac3_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, 
 	}
 #else
 	pCtx->crnt_aud_pts = pts;
-	pCtx->aud_end_of_frame = end_of_frame;
 	//Swap data
 	{
 		int i;
@@ -1768,7 +1776,7 @@ void CPCMParseCtx::parse_lpcm_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr,
 void CAACParseCtx::parse_aac_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit, int end_of_frame)
 {
 	pCtx->crnt_aud_pts = pts;
-	pCtx->aud_end_of_frame = end_of_frame;
+
 	WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
 	if(end_of_frame)
 		FlushFrameData(pCtx->pid, 0, 0);
@@ -1777,7 +1785,7 @@ void CAACParseCtx::parse_aac_audio(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, 
 void CDVBParseCtx::parse_dvb_subtitle(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int first_access_unit, int end_of_frame)
 {
     pCtx->crnt_aud_pts = pts;
-    pCtx->aud_end_of_frame = end_of_frame;
+
     WriteData(pCtx, es_ptr, 1, length, pCtx->pid);
     if(end_of_frame)
     FlushFrameData(pCtx->pid, 0, 0);
@@ -1786,37 +1794,6 @@ void CDVBParseCtx::parse_dvb_subtitle(MpegTsDemuxCtx *pCtx, unsigned char *es_pt
 void CMPEG2ParseCtx::parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned int dts)
 {
 	unsigned int	i, j;
-/*
-	static int		first = TRUE;
-	static int		first_sequence = FALSE;
-	static int		first_sequence_dump = FALSE;
-	static int		look_for_gop = FALSE;
-	static int		gop_found = FALSE;
-	static unsigned int	parse = 0;
-	static unsigned int	picture_parse = 0;
-	static unsigned int	extension_parse = 0;
-	static unsigned int	picture_coding_parse = 0;
-	static unsigned int	sequence_header_parse = 0;
-	static unsigned int	sequence_extension_parse = 0;
-	static unsigned int	picture_size = 0;
-	static unsigned int	picture_count = 0;
-	static unsigned int	time_code_field = 0;
-	static unsigned int	time_code_rate = 1;
-	static long double	frame_rate = 1.0;
-	static unsigned char	header[3] = {0x0, 0x0, 0x1};
-	static unsigned char	gop_header[9] = {0xb8, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00};
-	static unsigned int	progressive_sequence;
-	static unsigned long long	first_pts;
-	static unsigned int	first_pts_count = 0;
-	static unsigned int	extra_byte = FALSE;
-	static unsigned int	last_temporal_reference = 0;
-	static unsigned int	last_gop_temporal_reference = 0;
-	static unsigned int	running_average_start = 0;
-	static unsigned int	running_average_count = 0;
-	static unsigned int	running_average_frames = 0;
-	static unsigned int	running_average_samples[1024];
-	static unsigned int	running_average_fields[1024];
-*/
 	unsigned int	temporal_reference, temp_flags;
 	unsigned int	picture_coding_type;
 	unsigned int	whole_buffer = TRUE;
@@ -1906,6 +1883,7 @@ void CMPEG2ParseCtx::parse_mpeg2_video(MpegTsDemuxCtx *pCtx, unsigned char *es_p
 				picture_count = 0;
 				time_code_field = 0;
 				first_pts_count = 2;
+                NotifyFrmatChange(pCtx, pCtx->pid, 0x80, es_ptr - 1, length - (es_ptr-start_es_ptr));
 			}
 			else  {
 				picture_count = 0;
@@ -2400,7 +2378,7 @@ void	demux_mpeg2_transport_init(MpegTsDemuxCtx *pCtx)
 	pCtx->audio_pts_parse = 0;
 	pCtx->audio_pts_dts_parse = 0;
 	pCtx->audio_lpcm_parse = 0;
-	pCtx->audio_xfer_state = FALSE;
+	//pCtx->audio_xfer_state = FALSE;
 	pCtx->audio_packet_number = 0;
 	pCtx->audio_pes_header_length = 0;
 
@@ -3226,11 +3204,12 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						pCtx->sync_state = FALSE;
 					}
 				}
-				else if (/*pCtx->pid == pCtx->audio_pid &&*/ IsSubscribed(pCtx, pCtx->pid) && pCtx->transport_scrambling_control == 0) {
-					pCtx->audio_parse = (pCtx->audio_parse << 8) + buffer[i];
-					if (pCtx->audio_xfer_state == TRUE)  {
-						if ((length - i) >= pCtx->audio_packet_length)  {
-							j = pCtx->audio_packet_length;
+				else if (/*pCtx->pid == pCtx->audio_pid &&*/ isAudioPid(pCtx, pCtx->pid) && IsSubscribed(pCtx, pCtx->pid) && pCtx->transport_scrambling_control == 0) {
+                    CParseCtx *pX = getParseCtx(pCtx, pCtx->pid);
+                    pCtx->audio_parse = (pCtx->audio_parse << 8) + buffer[i];
+					if (pX->audio_xfer_state == TRUE)  {
+						if ((length - i) >= pX->audio_packet_length)  {
+							j = pX->audio_packet_length;
 							if (pCtx->xport_packet_length <= j)  {
 								j = pCtx->xport_packet_length;
 							}
@@ -3244,7 +3223,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						xfer_length = j;
 						DBG_MSG("Burst length = %d\r\n", j);
 						if (pCtx->demux_audio == TRUE)  {
-							int end_of_frame = (pCtx->audio_packet_length == xfer_length);
+							int end_of_frame = (pX->audio_packet_length == xfer_length);
                             int streamType = getStreamType(pCtx, pCtx->pid);
 							if(streamType == 0x81)  {
 								CAC3ParseCtx *pAudParse = (CAC3ParseCtx *)getParseCtx(pCtx, pCtx->pid);
@@ -3279,13 +3258,13 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 
 							pCtx->first_audio_access_unit = FALSE;
 							i = i + xfer_length;
-							pCtx->audio_packet_length = pCtx->audio_packet_length - xfer_length;
+                            pX->audio_packet_length = pX->audio_packet_length - xfer_length;
 							pCtx->xport_packet_length = pCtx->xport_packet_length - xfer_length;
 							pCtx->pcr_bytes = pCtx->pcr_bytes + xfer_length;
 							--i;	/* adjust because of for loop */
-							if (pCtx->audio_packet_length == 0)  {
+							if (pX->audio_packet_length == 0)  {
 								DBG_MSG("End of Packet = %d\r\n",i);
-								pCtx->audio_xfer_state = FALSE;
+								pX->audio_xfer_state = FALSE;
 							}
 						}
 						else  {
@@ -3301,9 +3280,9 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								pCtx->pcr_bytes = pCtx->pcr_bytes + (length - i) - 1;
 								i = length;
 							}
-							pCtx->audio_packet_length = pCtx->audio_packet_length - j;
-							if (pCtx->audio_packet_length == 0)  {
-								pCtx->audio_xfer_state = FALSE;
+                            pX->audio_packet_length = pX->audio_packet_length - j;
+							if (pX->audio_packet_length == 0)  {
+								pX->audio_xfer_state = FALSE;
 							}
 						}
 					}
@@ -3326,13 +3305,13 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						}
 						else if (pCtx->audio_packet_length_parse == 1)  {
 							--pCtx->audio_packet_length_parse;
-							pCtx->audio_packet_length = pCtx->audio_parse & 0xffff;
-							DBG_MSG("Packet length = %d\r\n", pCtx->audio_packet_length);
+                            pX->audio_packet_length = pCtx->audio_parse & 0xffff;
+							DBG_MSG("Packet length = %d\r\n", pX->audio_packet_length);
 							pCtx->audio_packet_parse = 3;
 							pCtx->audio_pes_header[pCtx->audio_pes_header_index++] = pCtx->audio_parse & 0xff;
 						}
 						else if (pCtx->audio_packet_parse != 0)  {
-							--pCtx->audio_packet_length;
+							--pX->audio_packet_length;
 							--pCtx->audio_packet_parse;
 							switch (pCtx->audio_packet_parse)  {
 								case 2:
@@ -3353,7 +3332,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 										pCtx->audio_pts_dts_parse = 10;
 									}
 									if (pCtx->audio_pes_header_length == 0)  {
-										pCtx->audio_xfer_state = TRUE;
+										pX->audio_xfer_state = TRUE;
 										if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
 											WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 										}
@@ -3362,7 +3341,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							}
 						}
 						else if (pCtx->audio_pts_parse != 0)  {
-							--pCtx->audio_packet_length;
+							--pX->audio_packet_length;
 							--pCtx->audio_pes_header_length;
 							--pCtx->audio_pts_parse;
 							switch (pCtx->audio_pts_parse)  {
@@ -3401,7 +3380,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 											pCtx->audio_lpcm_parse = 4;
 										}
 										else  {
-											pCtx->audio_xfer_state = TRUE;
+											pX->audio_xfer_state = TRUE;
 											if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
 												WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 											}
@@ -3411,7 +3390,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							}
 						}
 						else if (pCtx->audio_pts_dts_parse != 0)  {
-							--pCtx->audio_packet_length;
+							--pX->audio_packet_length;
 							--pCtx->audio_pes_header_length;
 							--pCtx->audio_pts_dts_parse;
 							switch (pCtx->audio_pts_dts_parse)  {
@@ -3459,7 +3438,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								case 0:
 									pCtx->audio_pes_header[pCtx->audio_pes_header_index++] = pCtx->audio_parse & 0xff;
 									if (pCtx->audio_pes_header_length == 0)  {
-										pCtx->audio_xfer_state = TRUE;
+										pX->audio_xfer_state = TRUE;
 										if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
 											WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 										}
@@ -3468,7 +3447,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							}
 						}
 						else if (pCtx->audio_lpcm_parse != 0)  {
-							--pCtx->audio_packet_length;
+							--pX->audio_packet_length;
 							--pCtx->audio_lpcm_parse;
 							switch (pCtx->audio_lpcm_parse)  {
 								case 3:
@@ -3479,7 +3458,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									break;
 								case 0:
 									pCtx->audio_lpcm_header_flags = pCtx->audio_parse & 0xffff;
-									pCtx->audio_xfer_state = TRUE;
+									pX->audio_xfer_state = TRUE;
 									if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
 										WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 									}
@@ -3487,7 +3466,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							}
 						}
 						else if (pCtx->audio_pes_header_length != 0)  {
-							--pCtx->audio_packet_length;
+							--pX->audio_packet_length;
 							--pCtx->audio_pes_header_length;
 							pCtx->audio_pes_header[pCtx->audio_pes_header_index++] = pCtx->audio_parse & 0xff;
 #if 0
@@ -3496,7 +3475,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 #endif
 							switch (pCtx->audio_pes_header_length)  {
 								case 0:
-									pCtx->audio_xfer_state = TRUE;
+									pX->audio_xfer_state = TRUE;
 									if(pCtx->parse_only == FALSE && pCtx->pes_streams == TRUE)  {
 										WriteData(pCtx, &pCtx->audio_pes_header[0], 1, pCtx->audio_pes_header_index, pCtx->pid);
 									}

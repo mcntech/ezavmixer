@@ -20,6 +20,7 @@
 #include "xport.h"
 #include "h264parser.h"
 #include <time.h>
+#include <mpeg2parser.h>
 #include "json.hpp"
 
 static int modDbgLevel = CJdDbg::LVL_SETUP;
@@ -143,18 +144,23 @@ void CUdpClntBridge::UpdatePmt(int nPid, const char *pData, int len )
 
 void CUdpClntBridge::UpdateFormat(int nPid, int nCodecType, const char *pData, int len)
 {
+    if(m_pCallback == NULL)
+        return;
+
     if(nCodecType == 0x1B) {
-        if(m_pCallback) {
+
             std::string fmtString;
             strmH264FmtJson(pData, len, fmtString);
             m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
-        }
+
     } else if(nCodecType == 0x03 || nCodecType == 0x04) {
-        if(m_pCallback) {
             std::string fmtString;
             strmMP2AudFmtJson(pData, len, fmtString);
             m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
-        }
+    } else if(nCodecType == 0x01 || nCodecType == 0x02 || nCodecType == 0x80) {
+            std::string fmtString;
+            strmMP2VidFmtJson(pData, len, fmtString);
+            m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
     }
 }
 
@@ -173,6 +179,21 @@ void CUdpClntBridge::strmH264FmtJson(const char *pFmtData, int len, std::string 
 	delete mH264Parser;
 }
 
+void CUdpClntBridge::strmMP2VidFmtJson(const char *pFmtData, int len, std::string &psiString)
+{
+    json jFmt = {};
+    long lWidth = 0;
+    long lHeight = 0;
+    CMpeg2Parser *mParser = new CMpeg2Parser();
+    mParser->ParseSequenceHeader((unsigned char *)pFmtData, len, &lWidth, &lHeight);
+    if(lWidth != 0){
+        jFmt["width"] = lWidth;
+        jFmt["height"] = lHeight;
+    }
+    psiString = jFmt.dump();
+    delete mParser;
+}
+
 void CUdpClntBridge::strmMP2AudFmtJson(const char *pFmtData, int len, std::string &psiString)
 {
     json jFmt = {};
@@ -183,6 +204,7 @@ void CUdpClntBridge::strmMP2AudFmtJson(const char *pFmtData, int len, std::strin
     }
     psiString = jFmt.dump();
 }
+
 std::string StrmTypeToString(int strmType)
 {
 	std::string str;
@@ -295,7 +317,7 @@ void CUdpClntBridge::SubscribeProgram(int strmId)
     if(m_pat != NULL) {
 		DemuxSubscribeProgramPidT pgm;
 		int nPid = -1;
-		for (int i = 0; i < strmId < m_pat->number_of_programs; i++) {
+		for (int i = 0; i  < m_pat->number_of_programs; i++) {
 			if  (m_pat->program_descriptor[i].program_number == strmId) {
 				nPid = m_pat->program_descriptor[i].network_or_program_map_PID;
 				break;

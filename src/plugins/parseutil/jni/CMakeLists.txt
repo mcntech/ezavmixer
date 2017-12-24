@@ -8,4 +8,5 @@ include_directories(
      )
 add_library(parseutil STATIC
  	../src/h264parser.cpp
+ 	../src/mpeg2parser.cpp
     )

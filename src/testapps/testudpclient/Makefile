@@ -17,6 +17,7 @@ SOURCES= main.cpp \
          $(PLUGIN_OSAL)/src/JdOsal.cpp \
          $(PLUGIN_STREAMIF)/src/strmconn.c \
          $(PLUGIN_PARSEUTIL)/src/h264parser.cpp \
+         $(PLUGIN_PARSEUTIL)/src/mpeg2parser.cpp \
          $(PLUGIN_TSDEMUX)/src/TsPsi.cpp \
          $(CORE)/src/UdpClntBridge.cpp
 all:

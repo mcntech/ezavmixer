@@ -1,0 +1,14 @@
+prefix=./ffmpeg_dist/android/armeabi
+exec_prefix=${prefix}
+libdir=./ffmpeg_dist/android/armeabi/lib
+includedir=./ffmpeg_dist/android/armeabi/include
+
+Name: libpostproc
+Description: FFmpeg postprocessing library
+Version: 55.0.100
+Requires: libavutil >= 56.6.100
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lpostproc -lm
+Libs.private: 
+Cflags: -I${includedir}

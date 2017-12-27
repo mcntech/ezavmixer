@@ -34,6 +34,7 @@ android {
                 cppFlags "-std=c++11"
                 cppFlags += "-DPLATFORM_ANDROID"
                 arguments "-DANDROID_CPP_FEATURES=rtti exceptions", "-DANDROID_STL=c++_static"
+                abiFilters 'armeabi', 'armeabi-v7a', 'armeabi-v7a'
             }
         }
     }

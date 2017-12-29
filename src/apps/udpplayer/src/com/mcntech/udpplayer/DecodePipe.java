@@ -86,7 +86,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 		String codec;
 	}
 
-	ArrayList<AudDecPipe> mAudDecList;
+	ArrayList<AudDecPipeJd> mAudDecList;
 
 	public DecodePipe(Activity activity, String url, int strmId, TextureView textureView, AudRenderInterface audRender) {
 		Log.d(LOG_TAG, "DecodePipe:" + url + ":" + strmId);
@@ -106,7 +106,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 			mMaxVidWidth = 3840;
 			mMaxVidHeight = 2160;
 		}*/
-		mAudDecList = new ArrayList<AudDecPipe>();
+		mAudDecList = new ArrayList<AudDecPipeJd>();
 
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mVideoTexView.setSurfaceTextureListener(this);
@@ -147,7 +147,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 						// TODO : mRemoteNodeList.add(node);
 						Log.d(LOG_TAG, "DecodePipe::onPsiPmtChange:audcodec pid:" + nPid);
 						// start AudDecPipe
-						AudDecPipe audDec =  new AudDecPipe(mActivity, mUrl, nPid, mPcrPid, codec, mAudRender);
+						AudDecPipeJd audDec =  new AudDecPipeJd(mActivity, mUrl, nPid, mPcrPid, codec, mAudRender);
 						mAudDecList.add(audDec);
 						//mHandler.sendEmptyMessage(PLAYER_CMD_CREATE_AUDDECPIPE);
 					}

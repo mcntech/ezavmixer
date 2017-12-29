@@ -111,14 +111,13 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
     struct JAudDecApi {
         JAudDecApi(
                 JNIEnv *env, jobject thiz,
-                const char *name, bool nameIsType, bool encoder);
+                const char *name);
         status_t initCheck() const;
         void registerSelf();
         void release();
         status_t start();
         status_t stop();
         status_t reset();
-        status_t flush();
         status_t queueInputBuffer(
                 size_t index,
                 size_t offset, size_t size, int64_t timeUs, uint32_t flags);
@@ -130,7 +129,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         status_t getBuffer(
                 JNIEnv *env, bool input, size_t index, jobject *buf) const;
     protected:
-        virtual ~JAudDecApi();
+        virtual ~JAudDecApi(){return;}
     private:
         enum {
             kWhatCallbackNotify,
@@ -158,7 +157,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 */
 
         void cacheJavaObjects(JNIEnv *env);
-        void deleteJavaObjects(JNIEnv *env);
+        void deleteJavaObjects(JNIEnv *env){return ;}
         DISALLOW_EVIL_CONSTRUCTORS(JAudDecApi);
     };
 
@@ -175,7 +174,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 
     JAudDecApi::JAudDecApi(
             JNIEnv *env, jobject thiz,
-            const char *name, bool nameIsType, bool encoder)
+            const char *name)
             : mClass(NULL),
               mObject(NULL) {
         jclass clazz = env->GetObjectClass(thiz);
@@ -229,6 +228,72 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         //CHECK(mByteBufferLimitMethodID != NULL);
     }
 
+
+    status_t JAudDecApi::initCheck() const {
+        return mInitStatus;
+    }
+
+    status_t JAudDecApi::start() {
+        return 0;//mCodec->start();
+    }
+    status_t JAudDecApi::stop() {
+        return 0;//mCodec->stop();
+    }
+
+    status_t JAudDecApi::reset() {
+        return 0;//mCodec->reset();
+    }
+    status_t JAudDecApi::queueInputBuffer(
+            size_t index,
+            size_t offset, size_t size, int64_t timeUs, uint32_t flags) {
+        return 0;//mCodec->queueInputBuffer(index, offset, size, timeUs, flags, errorDetailMsg);
+    }
+
+    status_t JAudDecApi::dequeueInputBuffer(size_t *index, int64_t timeoutUs) {
+        return 0;//mCodec->dequeueInputBuffer(index, timeoutUs);
+    }
+    status_t JAudDecApi::dequeueOutputBuffer(
+            JNIEnv *env, jobject bufferInfo, size_t *index, int64_t timeoutUs) {
+        size_t size, offset;
+        int64_t timeUs;
+        uint32_t flags;
+/*
+        status_t err = mCodec->dequeueOutputBuffer(
+                index, &offset, &size, &timeUs, &flags, timeoutUs);
+        if (err != OK) {
+            return err;
+        }
+        ScopedLocalRef<jclass> clazz(
+                env, env->FindClass("android/media/MediaCodec$BufferInfo"));
+        jmethodID method = env->GetMethodID(clazz.get(), "set", "(IIJI)V");
+        env->CallVoidMethod(bufferInfo, method, (jint)offset, (jint)size, timeUs, flags);
+*/
+        return 0;//OK;
+    }
+    status_t JAudDecApi::releaseOutputBuffer(
+            size_t index, bool render, bool updatePTS, int64_t timestampNs) {
+               return 0; //: mCodec->releaseOutputBuffer(index);
+    }
+
+    status_t JAudDecApi::getBuffer(
+            JNIEnv *env, bool input, size_t index, jobject *buf) const {
+
+/*
+        sp<ABuffer> buffer;
+        status_t err =
+                input
+                ? mCodec->getInputBuffer(index, &buffer)
+                : mCodec->getOutputBuffer(index, &buffer);
+        if (err != OK) {
+            return err;
+        }
+        return createByteBufferFromABuffer(
+                env, !input , input , buffer, buf);
+*/
+
+        return 0;
+    }
+//=============
     static void Java_com_mcntech_udpplayer_AudDecApi_release(JNIEnv *env, jobject thiz) {
         //setMediaCodec(env, thiz, NULL);
     }

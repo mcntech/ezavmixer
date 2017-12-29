@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.4.1)
 
 set(LOCAL_PATH .)
 set(JD_PLUGIN_FOLDER ${LOCAL_PATH}/../../../plugins)
-set(FFMPEG_DIST_DIR /opt/mcnt/ezavmixer/src/ffmpeg_dist/android )
+set(FFMPEG_DIST_DIR /home/ramp/exp_proj/ezavmixer/src/ffmpeg_dist/android )
 
 include_directories(
      ${LOCAL_PATH}
@@ -31,7 +31,6 @@ add_subdirectory(${LOCAL_PATH}/../../../plugins/auddec/jni subproject/auddec)
 
 add_library(UdpPlayerApi SHARED
  	jUdpPlayerApi.cpp
- 	jAudDecApi.cpp
 	jUdpPlayerEvents.cpp 
 	ServerNodeBase.cpp  
 	ServerNodeUdp.cpp  
@@ -50,6 +49,13 @@ target_link_libraries(
     parseutil
     android
     log
+    )
+
+add_library(AudDecApi SHARED
+ 	jAudDecApi.cpp
+    )
+
+target_link_libraries(
+    UdpPlayerApi
     libavcodec
-    auddec
     )

@@ -3,10 +3,11 @@ package com.mcntech.udpplayer;
 import android.media.MediaFormat;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-class AudDecApi {
+public class AudDecApi {
 
     public final static class BufferInfo {
         public void set(
@@ -35,6 +36,10 @@ class AudDecApi {
     private static final int CB_ERROR = 3;
     private static final int CB_OUTPUT_FORMAT_CHANGE = 4;
 
+    public static final int INFO_TRY_AGAIN_LATER        = -1;
+    public static final int INFO_OUTPUT_FORMAT_CHANGED  = -2;
+    public static final int INFO_OUTPUT_BUFFERS_CHANGED = -3;
+
     public static AudDecApi createDecoderByType(String type)
             throws IOException {
         return new AudDecApi(type, true /* nameIsType */, false /* encoder */);
@@ -56,6 +61,35 @@ class AudDecApi {
         native_setup(name, nameIsType, encoder);
     }
 
+    public final void start() {
+        native_start();
+    }
+
+    public final void stop() {
+        native_stop();
+    }
+    public final int dequeueInputBuffer(long timeoutUs) {
+        int res = native_dequeueInputBuffer(timeoutUs);
+        return res;
+    }
+    public final void queueInputBuffer(
+            int index,
+            int offset, int size, long presentationTimeUs, int flags)
+    {
+            native_queueInputBuffer(
+                    index, offset, size, presentationTimeUs, flags);
+    }
+
+    public final int dequeueOutputBuffer(
+            BufferInfo info, long timeoutUs) {
+        int res = native_dequeueOutputBuffer(info, timeoutUs);
+        return res;
+    }
+    public final void releaseOutputBuffer(int index, boolean render) {
+        BufferInfo info = null;
+        releaseOutputBuffer(
+                index, render /* render */, true /* updatePTS */, 0);
+    }
     public final void release() {
         //freeAllTrackedBuffers(); // free buffers first
         native_release();
@@ -66,6 +100,17 @@ class AudDecApi {
         // TODO
         //native_configure(keys, values, surface, crypto, flags);
         //native_configure(keys, values);
+    }
+
+
+    public ByteBuffer getInputBuffer(int index) {
+        ByteBuffer newBuffer = getBuffer(true /* input */, index);
+        return newBuffer;
+    }
+
+    public ByteBuffer getOutputBuffer(int index) {
+        ByteBuffer newBuffer = getBuffer(false /* input */, index);
+        return newBuffer;
     }
 
     static {
@@ -82,7 +127,7 @@ class AudDecApi {
 
     private native final void native_reset();
     private native final void native_release();
-
+    private native final int native_dequeueInputBuffer(long timeoutUs);
     private native final void native_queueInputBuffer(
             int index,
             int offset, int size, long presentationTimeUs, int flags);
@@ -92,4 +137,5 @@ class AudDecApi {
 
     private native final void releaseOutputBuffer(
             int index, boolean render, boolean updatePTS, long timeNs);
+    private native final ByteBuffer getBuffer(boolean input, int index);
 }

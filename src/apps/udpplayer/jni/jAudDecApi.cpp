@@ -2,7 +2,8 @@
 #include <android/log.h>
 #include <stdio.h>
 #include "jni.h"
-
+#include "decmp2.h"
+#include "strmconn.h"
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
 TypeName(const TypeName&); \
 void operator=(const TypeName&)
@@ -118,16 +119,10 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         status_t start();
         status_t stop();
         status_t reset();
-        status_t queueInputBuffer(
-                size_t index,
-                size_t offset, size_t size, int64_t timeUs, uint32_t flags);
-        status_t dequeueInputBuffer(size_t *index, int64_t timeoutUs);
-        status_t dequeueOutputBuffer(
-                JNIEnv *env, jobject bufferInfo, size_t *index, int64_t timeoutUs);
-        status_t releaseOutputBuffer(
-                size_t index, bool render, bool updatePTS, int64_t timestampNs);
-        status_t getBuffer(
-                JNIEnv *env, bool input, size_t index, jobject *buf) const;
+        int getOutputData(char *pData, int numBytes);
+        int isInputFull();
+        status_t sendInputData(char *pData, size_t size, int64_t timeUs, uint32_t flags);
+        int isOutputEmpty();
     protected:
         virtual ~JAudDecApi(){return;}
     private:
@@ -147,17 +142,13 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         jmethodID mByteBufferAsReadOnlyBufferMethodID;
         // TODO replace with component
         //sp<MediaCodec> mCodec;
+
+        StrmCompIf *mCodec;
+        ConnCtxT *mConnIn;
+        ConnCtxT *mConnOut;
         status_t mInitStatus;
-
-/*
-        template <typename T>
-        status_t createByteBufferFromABuffer(
-                JNIEnv *env, bool readOnly, bool clearBuffer, const sp<T> &buffer,
-                jobject *buf) const;
-*/
-
-        void cacheJavaObjects(JNIEnv *env);
-        void deleteJavaObjects(JNIEnv *env){return ;}
+        long long mllOutPts;
+        unsigned long mulOutFlags;
         DISALLOW_EVIL_CONSTRUCTORS(JAudDecApi);
     };
 
@@ -181,7 +172,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         //CHECK(clazz != NULL);
         mClass = (jclass)env->NewGlobalRef(clazz);
         mObject = env->NewWeakGlobalRef(thiz);
-        cacheJavaObjects(env);
+
         //mLooper = new ALooper;
         //mLooper->setName("MediaCodec_looper");
         //mLooper->start(
@@ -192,110 +183,74 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 
         // Create Component
         //    mCodec = MediaCodec::CreateByComponentName(mLooper, name, &mInitStatus);
-
+        mCodec = decmp2Create();
+        mConnIn = CreateStrmConn(16*1024, 8);
+        mConnOut = CreateStrmConn(16 * 1024, 8);
+        mCodec->SetInputConn(mCodec, 0, mConnIn);
+        mCodec->SetOutputConn(mCodec, 0, mConnOut);
         //CHECK((mCodec != NULL) != (mInitStatus != OK));
     }
-
-    void JAudDecApi::cacheJavaObjects(JNIEnv *env) {
-        jclass clazz = (jclass)env->FindClass("java/nio/ByteBuffer");
-        mByteBufferClass = (jclass)env->NewGlobalRef(clazz);
-        //CHECK(mByteBufferClass != NULL);
-        ScopedLocalRef<jclass> byteOrderClass(
-                env, env->FindClass("java/nio/ByteOrder"));
-        //CHECK(byteOrderClass.get() != NULL);
-        jmethodID nativeOrderID = env->GetStaticMethodID(
-                byteOrderClass.get(), "nativeOrder", "()Ljava/nio/ByteOrder;");
-        //CHECK(nativeOrderID != NULL);
-        jobject nativeByteOrderObj =
-                env->CallStaticObjectMethod(byteOrderClass.get(), nativeOrderID);
-        mNativeByteOrderObj = env->NewGlobalRef(nativeByteOrderObj);
-        //CHECK(mNativeByteOrderObj != NULL);
-        env->DeleteLocalRef(nativeByteOrderObj);
-        nativeByteOrderObj = NULL;
-        mByteBufferOrderMethodID = env->GetMethodID(
-                mByteBufferClass,
-                "order",
-                "(Ljava/nio/ByteOrder;)Ljava/nio/ByteBuffer;");
-        //CHECK(mByteBufferOrderMethodID != NULL);
-        mByteBufferAsReadOnlyBufferMethodID = env->GetMethodID(
-                mByteBufferClass, "asReadOnlyBuffer", "()Ljava/nio/ByteBuffer;");
-        //CHECK(mByteBufferAsReadOnlyBufferMethodID != NULL);
-        mByteBufferPositionMethodID = env->GetMethodID(
-                mByteBufferClass, "position", "(I)Ljava/nio/Buffer;");
-        //CHECK(mByteBufferPositionMethodID != NULL);
-        mByteBufferLimitMethodID = env->GetMethodID(
-                mByteBufferClass, "limit", "(I)Ljava/nio/Buffer;");
-        //CHECK(mByteBufferLimitMethodID != NULL);
-    }
-
 
     status_t JAudDecApi::initCheck() const {
         return mInitStatus;
     }
 
     status_t JAudDecApi::start() {
-        return 0;//mCodec->start();
+        return mCodec->Start(mCodec);
     }
     status_t JAudDecApi::stop() {
-        return 0;//mCodec->stop();
+        return mCodec->Stop(mCodec);
     }
 
     status_t JAudDecApi::reset() {
         return 0;//mCodec->reset();
     }
-    status_t JAudDecApi::queueInputBuffer(
-            size_t index,
-            size_t offset, size_t size, int64_t timeUs, uint32_t flags) {
-        return 0;//mCodec->queueInputBuffer(index, offset, size, timeUs, flags, errorDetailMsg);
+    status_t JAudDecApi::sendInputData(
+            char *pData, size_t len, int64_t timeUs, uint32_t flags) {
+        //mCodec->queueInputBuffer(index, offset, size, timeUs, flags, errorDetailMsg);
+        return mConnOut->Write(mConnOut, pData, len, flags, timeUs);
     }
 
-    status_t JAudDecApi::dequeueInputBuffer(size_t *index, int64_t timeoutUs) {
-        return 0;//mCodec->dequeueInputBuffer(index, timeoutUs);
+    int JAudDecApi::getOutputData(char *pData, int numBytes) {
+        int res = 0;
+        res =  mConnOut->Read(mConnOut, pData, numBytes, &mulOutFlags, &mllOutPts);
+        return res;//OK;
     }
-    status_t JAudDecApi::dequeueOutputBuffer(
-            JNIEnv *env, jobject bufferInfo, size_t *index, int64_t timeoutUs) {
-        size_t size, offset;
-        int64_t timeUs;
-        uint32_t flags;
-/*
-        status_t err = mCodec->dequeueOutputBuffer(
-                index, &offset, &size, &timeUs, &flags, timeoutUs);
-        if (err != OK) {
-            return err;
+
+    int JAudDecApi::isInputFull() {
+        return mConnIn->IsFull(mConnIn);
+    }
+    int JAudDecApi::isOutputEmpty() {
+        return mConnOut->IsEmpty(mConnOut);
+    }
+
+    static JAudDecApi *setMediaCodec(
+            JNIEnv *env, jobject thiz, JAudDecApi *codec) {
+        JAudDecApi * old = (JAudDecApi *)env->GetLongField(thiz, gFields.context);
+#if 0
+        if (codec != NULL) {
+            codec->incStrong(thiz);
         }
-        ScopedLocalRef<jclass> clazz(
-                env, env->FindClass("android/media/MediaCodec$BufferInfo"));
-        jmethodID method = env->GetMethodID(clazz.get(), "set", "(IIJI)V");
-        env->CallVoidMethod(bufferInfo, method, (jint)offset, (jint)size, timeUs, flags);
-*/
-        return 0;//OK;
-    }
-    status_t JAudDecApi::releaseOutputBuffer(
-            size_t index, bool render, bool updatePTS, int64_t timestampNs) {
-               return 0; //: mCodec->releaseOutputBuffer(index);
-    }
-
-    status_t JAudDecApi::getBuffer(
-            JNIEnv *env, bool input, size_t index, jobject *buf) const {
-
-/*
-        sp<ABuffer> buffer;
-        status_t err =
-                input
-                ? mCodec->getInputBuffer(index, &buffer)
-                : mCodec->getOutputBuffer(index, &buffer);
-        if (err != OK) {
-            return err;
+        if (old != NULL) {
+            /* release MediaCodec and stop the looper now before decStrong.
+             * otherwise JMediaCodec::~JMediaCodec() could be called from within
+             * its message handler, doing release() from there will deadlock
+             * (as MediaCodec::release() post synchronous message to the same looper)
+             */
+            old->release();
+            old->decStrong(thiz);
         }
-        return createByteBufferFromABuffer(
-                env, !input , input , buffer, buf);
-*/
-
-        return 0;
+#endif
+        env->SetLongField(thiz, gFields.context, (jlong)codec);
+        return old;
     }
-//=============
+
+    static JAudDecApi *getMediaCodec(JNIEnv *env, jobject thiz) {
+        return (JAudDecApi *)env->GetLongField(thiz, gFields.context);
+    }
+
     static void Java_com_mcntech_udpplayer_AudDecApi_release(JNIEnv *env, jobject thiz) {
-        //setMediaCodec(env, thiz, NULL);
+        setMediaCodec(env, thiz, NULL);
     }
 
     static void Java_com_mcntech_udpplayer_AudDecApi_reset(JNIEnv *env, jobject thiz) {
@@ -347,208 +302,81 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
     }
 
     static void Java_com_mcntech_udpplayer_AudDecApi_start(JNIEnv *env, jobject thiz) {
-/*
-        ALOGV("android_media_MediaCodec_start");
-        sp<JMediaCodec> codec = getMediaCodec(env, thiz);
+
+        //ALOGV("android_media_MediaCodec_start");
+        JAudDecApi *codec = getMediaCodec(env, thiz);
         if (codec == NULL) {
-            throwExceptionAsNecessary(env, INVALID_OPERATION);
+            //throwExceptionAsNecessary(env, INVALID_OPERATION);
             return;
         }
         status_t err = codec->start();
-        throwExceptionAsNecessary(env, err, ACTION_CODE_FATAL, "start failed");
-*/
+        //throwExceptionAsNecessary(env, err, ACTION_CODE_FATAL, "start failed");
+
     }
     static void Java_com_mcntech_udpplayer_AudDecApi_stop(JNIEnv *env, jobject thiz) {
- /*       ALOGV("android_media_MediaCodec_stop");
-        sp<JMediaCodec> codec = getMediaCodec(env, thiz);
+        JAudDecApi *codec = getMediaCodec(env, thiz);
         if (codec == NULL) {
-            throwExceptionAsNecessary(env, INVALID_OPERATION);
             return;
         }
         status_t err = codec->stop();
-        throwExceptionAsNecessary(env, err);*/
     }
 
-    static void Java_com_mcntech_udpplayer_AudDecApi_queueInputBuffer(
-            JNIEnv *env,
-            jobject thiz,
-            jint index,
-            jint offset,
-            jint size,
-            jlong timestampUs,
-            jint flags) {
-/*
-        ALOGV("android_media_MediaCodec_queueInputBuffer");
-        sp<JMediaCodec> codec = getMediaCodec(env, thiz);
+    static void Java_com_mcntech_udpplayer_AudDecApi_sendInputData(
+            JNIEnv *env, jobject thiz, jobject buf, jint nBytes, jlong timestampUs, jint flags) {
+
+        JAudDecApi *codec = getMediaCodec(env, thiz);
         if (codec == NULL) {
-            throwExceptionAsNecessary(env, INVALID_OPERATION);
             return;
         }
-        AString errorDetailMsg;
-        status_t err = codec->queueInputBuffer(
-                index, offset, size, timestampUs, flags, &errorDetailMsg);
-        throwExceptionAsNecessary(
-                env, err, ACTION_CODE_FATAL, errorDetailMsg.empty() ? NULL : errorDetailMsg.c_str());
-*/
+        uint8_t* rawjBytes = static_cast<uint8_t*>(env->GetDirectBufferAddress(buf));
+        status_t err = codec->sendInputData((char *)rawjBytes, nBytes, timestampUs, flags);
     }
 
+    static int Java_com_mcntech_udpplayer_AudDecApi_isInputFull(
+            JNIEnv *env, jobject thiz) {
 
-    static jint Java_com_mcntech_udpplayer_AudDecApi_dequeueInputBuffer(
-            JNIEnv *env, jobject thiz, jlong timeoutUs) {
-  /*      ALOGV("android_media_MediaCodec_dequeueInputBuffer");
-        sp<JMediaCodec> codec = getMediaCodec(env, thiz);
+        JAudDecApi *codec = getMediaCodec(env, thiz);
+        return codec->isInputFull();
+    }
+    static jint Java_com_mcntech_udpplayer_AudDecApi_getOutputData(
+            JNIEnv *env, jobject thiz, jobject buf, jint numBytes, jlong timeoutUs) {
+        JAudDecApi *codec= getMediaCodec(env, thiz);
         if (codec == NULL) {
-            throwExceptionAsNecessary(env, INVALID_OPERATION);
-            return -1;
+           return 0;
         }
-        size_t index;
-        status_t err = codec->dequeueInputBuffer(&index, timeoutUs);
-        if (err == OK) {
-            return (jint) index;
-        }
-        return throwExceptionAsNecessary(env, err);*/
-        return 0;
-    }
-    static jint Java_com_mcntech_udpplayer_AudDecApi_dequeueOutputBuffer(
-            JNIEnv *env, jobject thiz, jobject bufferInfo, jlong timeoutUs) {
-        /*       ALOGV("android_media_MediaCodec_dequeueOutputBuffer");
-               sp<JMediaCodec> codec = getMediaCodec(env, thiz);
-               if (codec == NULL) {
-                   throwExceptionAsNecessary(env, INVALID_OPERATION);
-                   return 0;
-               }
-               size_t index;
-               status_t err = codec->dequeueOutputBuffer(
-                       env, bufferInfo, &index, timeoutUs);
-               if (err == OK) {
-                   return (jint) index;
-               }
-               return throwExceptionAsNecessary(env, err);*/
-        return 0;
-    }
-    static void Java_com_mcntech_udpplayer_AudDecApi_releaseOutputBuffer(
-            JNIEnv *env, jobject thiz,
-            jint index, jboolean render, jboolean updatePTS, jlong timestampNs) {
-        /*       ALOGV("android_media_MediaCodec_renderOutputBufferAndRelease");
-               sp<JMediaCodec> codec = getMediaCodec(env, thiz);
-               if (codec == NULL) {
-                   throwExceptionAsNecessary(env, INVALID_OPERATION);
-                   return;
-               }
-               status_t err = codec->releaseOutputBuffer(index, render, updatePTS, timestampNs);
-               throwExceptionAsNecessary(env, err);*/
+        uint8_t* rawjBytes = static_cast<uint8_t*>(env->GetDirectBufferAddress(buf));
+        int len = codec->getOutputData((char *)rawjBytes, numBytes);
+        return (jint) len;
     }
 
-    static jobject Java_com_mcntech_udpplayer_AudDecApi_getBuffer(
-            JNIEnv *env, jobject thiz, jboolean input, jint index) {
-/*
-        ALOGV("android_media_MediaCodec_getBuffer");
-        sp<JMediaCodec> codec = getMediaCodec(env, thiz);
-        if (codec == NULL) {
-            throwExceptionAsNecessary(env, INVALID_OPERATION);
-            return NULL;
-        }
-        jobject buffer;
-        status_t err = codec->getBuffer(env, input, index, &buffer);
-        if (err == OK) {
-            return buffer;
-        }
-        // if we're out of memory, an exception was already thrown
-        if (err != NO_MEMORY) {
-            throwExceptionAsNecessary(env, err);
-        }
-*/
-        return NULL;
+    static int Java_com_mcntech_udpplayer_AudDecApi_isOutputEmpty(
+            JNIEnv *env, jobject thiz) {
+
+        JAudDecApi *codec = getMediaCodec(env, thiz);
+        return codec->isOutputEmpty();
     }
 
     static void Java_com_mcntech_udpplayer_AudDecApi_native_init(JNIEnv *env) {
- /*       ScopedLocalRef<jclass> clazz(
-                env, env->FindClass("android/media/MediaCodec"));
-        CHECK(clazz.get() != NULL);
+       ScopedLocalRef<jclass> clazz(env, env->FindClass("com/mcntech/udpplayer/AudDecApi"));
+        //CHECK(clazz.get() != NULL);
         gFields.context = env->GetFieldID(clazz.get(), "mNativeContext", "J");
-        CHECK(gFields.context != NULL);
-        gFields.postEventFromNativeID =
-                env->GetMethodID(
-                        clazz.get(), "postEventFromNative", "(IIILjava/lang/Object;)V");
-        CHECK(gFields.postEventFromNativeID != NULL);
-        clazz.reset(env->FindClass("android/media/MediaCodec$CryptoInfo"));
-        CHECK(clazz.get() != NULL);
-        gFields.cryptoInfoNumSubSamplesID =
-                env->GetFieldID(clazz.get(), "numSubSamples", "I");
-        CHECK(gFields.cryptoInfoNumSubSamplesID != NULL);
-        gFields.cryptoInfoNumBytesOfClearDataID =
-                env->GetFieldID(clazz.get(), "numBytesOfClearData", "[I");
-        CHECK(gFields.cryptoInfoNumBytesOfClearDataID != NULL);
-        gFields.cryptoInfoNumBytesOfEncryptedDataID =
-                env->GetFieldID(clazz.get(), "numBytesOfEncryptedData", "[I");
-        CHECK(gFields.cryptoInfoNumBytesOfEncryptedDataID != NULL);
-        gFields.cryptoInfoKeyID = env->GetFieldID(clazz.get(), "key", "[B");
-        CHECK(gFields.cryptoInfoKeyID != NULL);
-        gFields.cryptoInfoIVID = env->GetFieldID(clazz.get(), "iv", "[B");
-        CHECK(gFields.cryptoInfoIVID != NULL);
-        gFields.cryptoInfoModeID = env->GetFieldID(clazz.get(), "mode", "I");
-        CHECK(gFields.cryptoInfoModeID != NULL);
-        clazz.reset(env->FindClass("android/media/MediaCodec$CryptoException"));
-        CHECK(clazz.get() != NULL);
-        jfieldID field;
-        field = env->GetStaticFieldID(clazz.get(), "ERROR_NO_KEY", "I");
-        CHECK(field != NULL);
-        gCryptoErrorCodes.cryptoErrorNoKey =
-                env->GetStaticIntField(clazz.get(), field);
-        field = env->GetStaticFieldID(clazz.get(), "ERROR_KEY_EXPIRED", "I");
-        CHECK(field != NULL);
-        gCryptoErrorCodes.cryptoErrorKeyExpired =
-                env->GetStaticIntField(clazz.get(), field);
-        field = env->GetStaticFieldID(clazz.get(), "ERROR_RESOURCE_BUSY", "I");
-        CHECK(field != NULL);
-        gCryptoErrorCodes.cryptoErrorResourceBusy =
-                env->GetStaticIntField(clazz.get(), field);
-        field = env->GetStaticFieldID(clazz.get(), "ERROR_INSUFFICIENT_OUTPUT_PROTECTION", "I");
-        CHECK(field != NULL);
-        gCryptoErrorCodes.cryptoErrorInsufficientOutputProtection =
-                env->GetStaticIntField(clazz.get(), field);
-        clazz.reset(env->FindClass("android/media/MediaCodec$CodecException"));
-        CHECK(clazz.get() != NULL);
-        field = env->GetStaticFieldID(clazz.get(), "ACTION_TRANSIENT", "I");
-        CHECK(field != NULL);
-        gCodecActionCodes.codecActionTransient =
-                env->GetStaticIntField(clazz.get(), field);
-        field = env->GetStaticFieldID(clazz.get(), "ACTION_RECOVERABLE", "I");
-        CHECK(field != NULL);
-        gCodecActionCodes.codecActionRecoverable =
-                env->GetStaticIntField(clazz.get(), field);*/
     }
+
     static void Java_com_mcntech_udpplayer_AudDecApi_native_setup(
-            JNIEnv *env, jobject thiz,
-            jstring name, jboolean nameIsType, jboolean encoder) {
-/*
-        if (name == NULL) {
-            jniThrowException(env, "java/lang/NullPointerException", NULL);
-            return;
-        }
+            JNIEnv *env, jobject thiz, jstring name) {
         const char *tmp = env->GetStringUTFChars(name, NULL);
         if (tmp == NULL) {
             return;
         }
-        sp<JMediaCodec> codec = new JMediaCodec(env, thiz, tmp, nameIsType, encoder);
+        JAudDecApi *codec = new JAudDecApi(env, thiz, tmp);
         const status_t err = codec->initCheck();
-        if (err == NAME_NOT_FOUND) {
-            // fail and do not try again.
-            jniThrowException(env, "java/lang/IllegalArgumentException",
-                              String8::format("Failed to initialize %s, error %#x", tmp, err));
-            env->ReleaseStringUTFChars(name, tmp);
-            return;
-        } else if (err != OK) {
-            // believed possible to try again
-            jniThrowException(env, "java/io/IOException",
-                              String8::format("Failed to find matching codec %s, error %#x", tmp, err));
+        if (err != 0) {
             env->ReleaseStringUTFChars(name, tmp);
             return;
         }
         env->ReleaseStringUTFChars(name, tmp);
-        codec->registerSelf();
+        //codec->registerSelf();
         setMediaCodec(env,thiz, codec);
-*/
     }
 
     static const JNINativeMethod gMethods[] = {
@@ -561,16 +389,14 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 
             {"native_start",                  "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_start},
             {"native_stop",                   "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_stop},
-            {"native_queueInputBuffer",       "(IIIJI)V",
-                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_queueInputBuffer},
-            {"native_dequeueInputBuffer",     "(J)I",
-                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_dequeueInputBuffer},
-            {"native_dequeueOutputBuffer",    "(Landroid/media/MediaCodec$BufferInfo;J)I",
-                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_dequeueOutputBuffer},
-            {"releaseOutputBuffer",           "(IZZJ)V",
-                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_releaseOutputBuffer},
-            {"getBuffer",                     "(ZI)Ljava/nio/ByteBuffer;",
-                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_getBuffer},
+            {"native_sendInputData",       "(JILI)V",
+                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_sendInputData},
+            {"native_isInputFull",       "()V",
+                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_isInputFull},
+            {"native_getOutputData",    "(JIL)I",
+                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_getOutputData},
+            {"native_isOutputEmpty",    "()I",
+                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_isOutputEmpty},
 
             {"native_init",                   "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_native_init},
             {"native_setup",                  "(Ljava/lang/String;ZZ)V",

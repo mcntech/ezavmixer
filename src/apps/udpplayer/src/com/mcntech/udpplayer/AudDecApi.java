@@ -68,28 +68,27 @@ public class AudDecApi {
     public final void stop() {
         native_stop();
     }
-    public final int dequeueInputBuffer(long timeoutUs) {
-        int res = native_dequeueInputBuffer(timeoutUs);
-        return res;
-    }
-    public final void queueInputBuffer(
-            int index,
-            int offset, int size, long presentationTimeUs, int flags)
+
+    public final int isInputFull()
     {
-            native_queueInputBuffer(
-                    index, offset, size, presentationTimeUs, flags);
+        return native_isInputFull();
+    }
+    public final int sendInputData(ByteBuffer buf, int numBytes, long timestampUs, int flags) {
+        int res = native_sendInputData(buf, numBytes, timestampUs, flags);
+        return res;
     }
 
-    public final int dequeueOutputBuffer(
-            BufferInfo info, long timeoutUs) {
-        int res = native_dequeueOutputBuffer(info, timeoutUs);
+    public final int isOutputEmpty()
+    {
+        return native_isOutputEmpty();
+    }
+
+    public final int getOutputData(
+            ByteBuffer buf, int nBytes) {
+        int res = native_getOutputData(buf, nBytes);
         return res;
     }
-    public final void releaseOutputBuffer(int index, boolean render) {
-        BufferInfo info = null;
-        releaseOutputBuffer(
-                index, render /* render */, true /* updatePTS */, 0);
-    }
+
     public final void release() {
         //freeAllTrackedBuffers(); // free buffers first
         native_release();
@@ -127,13 +126,10 @@ public class AudDecApi {
 
     private native final void native_reset();
     private native final void native_release();
-    private native final int native_dequeueInputBuffer(long timeoutUs);
-    private native final void native_queueInputBuffer(
-            int index,
-            int offset, int size, long presentationTimeUs, int flags);
-
-    private native final int native_dequeueOutputBuffer(
-            BufferInfo info, long timeoutUs);
+    private native final int native_sendInputData(ByteBuffer buf, int numBytes, long timestampUs, int flags);
+    private native final int native_isInputFull();
+    private native final int native_getOutputData(ByteBuffer buf, int numBytes);
+    private native final int native_isOutputEmpty();
 
     private native final void releaseOutputBuffer(
             int index, boolean render, boolean updatePTS, long timeNs);

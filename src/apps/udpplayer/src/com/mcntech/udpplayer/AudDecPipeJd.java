@@ -43,6 +43,8 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 	int							  mSamplerate;
 	ByteBuffer                    mBuff;
 	ByteBuffer                    mOutBuff;
+	ByteBuffer					  mDecInBuff;
+	ByteBuffer					  mDecOutBuff;
 	long                          mPts;
 	public  int             	  mFramesInBuff = 0;
 	public  int             	  mFramesRendered = 0;
@@ -75,6 +77,9 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 		mPcrPid = clkPid;
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mOutBuff = ByteBuffer.allocate(maxBuffSize);
+		mOutBuff = ByteBuffer.allocate(maxBuffSize);
+		mDecInBuff = ByteBuffer.allocate(maxBuffSize);
+		mDecOutBuff = ByteBuffer.allocate(maxBuffSize);
 
 		mfMp2Supported  = CodecInfo.isMimeTypeAvailable(MIMETYPE_AUDIO_MPEG);
 		mfAacSupported  = CodecInfo.isMimeTypeAvailable(MIMETYPE_AUDIO_AAC);
@@ -267,23 +272,15 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 					int inIndex;
 					
 					try {
-						//Log.d(LOG_TAG, "dequeueInputBuffer:Begin");
-						inIndex = mDecoder.dequeueInputBuffer(1000);
-						//Log.d(LOG_TAG, "dequeueInputBuffer:Begin inIndex = " + inIndex);
+						inIndex = mDecoder.isInputFull();
 					} catch (IllegalStateException e) {
 						Log.d(LOG_TAG, "Decoder IllegalStateException");
 						break;
 					}
 					//Log.d(LOG_TAG, "dequeueInputBuffer:End");
-					if (inIndex >= 0) {
+					if (inIndex > 0) {
 						ByteBuffer buffer = null;
-						if(currentapiVersion <= 20) {
-							buffer = inputBuffers[inIndex];
-						} else if (currentapiVersion >= 21) {
-							// TODO: Use reflection to use with API level <= 20
-							buffer = mDecoder.getInputBuffer(inIndex);
-						}
-						
+
 						if(fFrameAvail) {
 							fFrameAvail = false;
 						} else {
@@ -296,7 +293,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 							// flag to decoder, we will get it again from the
 							// dequeueOutputBuffer
 							Log.d(LOG_TAG, "InputBuffer BUFFER_FLAG_END_OF_STREAM");														
-							mDecoder.queueInputBuffer(inIndex, 0, 0, 0, AudDecApi.BUFFER_FLAG_END_OF_STREAM);
+							//mDecoder.sendInputData(, 0, 0, 0, AudDecApi.BUFFER_FLAG_END_OF_STREAM);
 							isEOS = true;
 						} else {	
 							mBuff.limit(sampleSize);
@@ -308,7 +305,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 							buffer.limit(sampleSize);
 														
 							try {
-								mDecoder.queueInputBuffer(inIndex, 0, sampleSize, mPts, 0);
+								mDecoder.sendInputData(buffer, sampleSize, mPts, 0);
 							} catch (IllegalStateException e) {
 								Log.d(LOG_TAG, "Decoder: queueInputBuffer: IllegalStateException");
 								break;
@@ -321,57 +318,43 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:Begin isEOS=" + isEOS + " availFrame=" + DeviceController.getNumAvailVideoFrames() + " surfacevalid=" + surface.isValid());
 				int outIndex;
 				try {
-					outIndex = mDecoder.dequeueOutputBuffer(info, 1000);
+					outIndex = mDecoder.isOutputEmpty();
 				}  catch (IllegalStateException e) {
 					Log.d(LOG_TAG, "Decoder dequeueOutputBuffer: exception: " + e);	
 					break;
 				}
 				//Log.d(LOG_TAG, "dequeueOutputBuffer:End outIndex=" + outIndex);
 				long sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
-				switch (outIndex) {
-				case AudDecApi.INFO_OUTPUT_BUFFERS_CHANGED:
-					Log.d(LOG_TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
-					//outputBuffers = mDecoder.getOutputBuffers();
-					//Log.d(LOG_TAG, "decoder getOutputBuffers");
+				if (outIndex == 0) {
 					break;
-				case AudDecApi.INFO_OUTPUT_FORMAT_CHANGED:
-					//Log.d(LOG_TAG, "New format " + mDecoder.getOutputFormat());
-					break;
-				case AudDecApi.INFO_TRY_AGAIN_LATER:
-					//Log.d(LOG_TAG, "dequeueOutputBuffer timed out!");
-					break;
-				default:
-					if(outIndex >= 0) {
-						//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);				
-						if(info.presentationTimeUs > sysclk + MAX_AUDIO_SYNC_THRESHOLD_US) {
-							Log.d(LOG_TAG, "FreeRun strm=" + mAudPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
-						} else {
-							while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
-								try {
-									sleep(10);
-								} catch (InterruptedException e) {
-									e.printStackTrace();
-									interrupt();
-									break;
-								}
-								sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
-							}
-						}
-						//Log.d(LOG_TAG, "releaseOutputBuffer:Begin surfacevalid=" + surface.isValid());
-						if(mRender != null) {
-							ByteBuffer outBuffer = mDecoder.getOutputBuffer(outIndex);
-							outBuffer.get(mOutBuff.array());
-							mRender.RenderAudio(mAudPid, outBuffer, info.presentationTimeUs);
-						}
-						mDecoder.releaseOutputBuffer(outIndex, true);
-						mFramesRendered++;
-						//Log.d(LOG_TAG, "releaseOutputBuffer:End");
+				} else if (outIndex > 0) {
+					//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);
+					if(info.presentationTimeUs > sysclk + MAX_AUDIO_SYNC_THRESHOLD_US) {
+						Log.d(LOG_TAG, "FreeRun strm=" + mAudPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
 					} else {
-						Log.d(LOG_TAG, "Invalid outIndex " + outIndex);
+						while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
+							try {
+								sleep(10);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+								interrupt();
+								break;
+							}
+							sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
+						}
 					}
-					break;
-				}
 
+					if(mRender != null) {
+						ByteBuffer outBuffer = null;
+						int len = mDecoder.getOutputData(mDecOutBuff, maxBuffSize);
+						outBuffer.get(mOutBuff.array());
+						mRender.RenderAudio(mAudPid, outBuffer, info.presentationTimeUs);
+					}
+					mFramesRendered++;
+					//Log.d(LOG_TAG, "releaseOutputBuffer:End");
+				} else {
+					Log.d(LOG_TAG, "Invalid outIndex " + outIndex);
+				}
 				// All decoded frames have been rendered, we can stop playing now
 				if ((info.flags & AudDecApi.BUFFER_FLAG_END_OF_STREAM) != 0) {
 					Log.d(LOG_TAG, "OutputBuffer BUFFER_FLAG_END_OF_STREAM");

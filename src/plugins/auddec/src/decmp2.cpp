@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern "C" {
 #include <libavutil/frame.h>
 #include <libavutil/mem.h>
-
 #include <libavcodec/avcodec.h>
+}
+
 #include "decmp2.h"
 #include "JdDbg.h"
 #include "JdOsal.h"

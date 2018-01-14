@@ -200,23 +200,6 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 			
 		}
 
-		boolean InitDecoder( AudDecApi decoder) {
-			MediaFormat format = null;
-			if (mCodec.compareToIgnoreCase("AC3") == 0)
-				format = MediaFormat.createAudioFormat(MIMETYPE_AUDIO_AC3, mSamplerate, mNumChannels);
-			else if (mCodec.compareToIgnoreCase("AAC") == 0)
-				format = MediaFormat.createAudioFormat(MIMETYPE_AUDIO_AAC, mSamplerate, mNumChannels);
-			if (mCodec.compareToIgnoreCase("MP2") == 0)
-				format = MediaFormat.createAudioFormat(MIMETYPE_AUDIO_MPEG , mSamplerate, mNumChannels);
-			Log.d(LOG_TAG, "decoder configure");
-			if (format != null) {
-				decoder.configure(format);
-			} else {
-				Log.d(LOG_TAG, "decoder configure: failed!!!");
-			}
-			return true;
-		}
-
 		@Override
 		public void run() {
 
@@ -242,9 +225,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 			}
 
 			//UdpPlayerApi.subscribeStream(mUrl, mVidPid);
-			
-			ByteBuffer[] inputBuffers = null;
-			//ByteBuffer[] outputBuffers = null;
+
 			BufferInfo info = new BufferInfo();
 			boolean isEOS = false;
 			int sampleSize = 0;
@@ -254,7 +235,6 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 				mfPlaying = true;
 				mPlayLock.notifyAll();
 			}			
-			InitDecoder(mDecoder);
 			if(!mExitPlayerLoop) {
 				try{
 					Log.d(LOG_TAG, "mDecoder.start");

@@ -42,11 +42,10 @@ public class AudDecApi {
 
     public static AudDecApi createDecoderByType(String type)
             throws IOException {
-        return new AudDecApi(type, true /* nameIsType */, false /* encoder */);
+        return new AudDecApi(type);
     }
 
-    private AudDecApi(
-            String name, boolean nameIsType, boolean encoder) {
+    private AudDecApi(String name) {
         /*
         Looper looper;
         if ((looper = Looper.myLooper()) != null) {
@@ -58,7 +57,7 @@ public class AudDecApi {
         }
         mBufferLock = new Object();
         */
-        native_setup(name, nameIsType, encoder);
+        native_setup(name);
     }
 
     public final void start() {
@@ -94,13 +93,6 @@ public class AudDecApi {
         native_release();
     }
 
-    public void configure(
-            MediaFormat format) {
-        // TODO
-        //native_configure(keys, values, surface, crypto, flags);
-        //native_configure(keys, values);
-    }
-
 
     public ByteBuffer getInputBuffer(int index) {
         ByteBuffer newBuffer = getBuffer(true /* input */, index);
@@ -116,13 +108,10 @@ public class AudDecApi {
         System.loadLibrary("AudDecApi");
     }
 
-    private native final void native_configure(
-            String[] keys,Object[] values);
     private native final void native_start();
     private native final void native_stop();
 
-    private native final void native_setup(
-            String name, boolean nameIsType, boolean encoder);
+    private native final void native_setup(String name);
 
     private native final void native_reset();
     private native final void native_release();

@@ -170,7 +170,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
               mObject(NULL) {
         jclass clazz = env->GetObjectClass(thiz);
         //CHECK(clazz != NULL);
-        mClass = (jclass)env->NewGlobalRef(clazz);
+        mClass = (jclass) env->NewGlobalRef(clazz);
         mObject = env->NewWeakGlobalRef(thiz);
 
         //mLooper = new ALooper;
@@ -178,16 +178,21 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         //mLooper->start(
         //        false,      // runOnCallingThread
         //        true,       // canCallJava
-         //       ANDROID_PRIORITY_VIDEO);
+        //       ANDROID_PRIORITY_VIDEO);
 
 
         // Create Component
         //    mCodec = MediaCodec::CreateByComponentName(mLooper, name, &mInitStatus);
-        mCodec = decmp2Create();
-        mConnIn = CreateStrmConn(16*1024, 8);
-        mConnOut = CreateStrmConn(16 * 1024, 8);
-        mCodec->SetInputConn(mCodec, 0, mConnIn);
-        mCodec->SetOutputConn(mCodec, 0, mConnOut);
+        if (strcmp(name, "MP2") == 0 || strcmp(name, "mp2") == 0) {
+            mCodec = decmp2Create();
+        }
+
+        if(mCodec != NULL) {
+            mConnIn = CreateStrmConn(16 * 1024, 8);
+            mConnOut = CreateStrmConn(16 * 1024, 8);
+            mCodec->SetInputConn(mCodec, 0, mConnIn);
+            mCodec->SetOutputConn(mCodec, 0, mConnOut);
+        }
         //CHECK((mCodec != NULL) != (mInitStatus != OK));
     }
 
@@ -261,44 +266,6 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         //    return;
         //}
         //status_t err = codec->reset();
-    }
-
-    static void Java_com_mcntech_udpplayer_AudDecApi_configure(
-            JNIEnv *env,
-            jobject thiz,
-            jobjectArray keys, jobjectArray values) {
-/*
-        sp<JMediaCodec> codec = getMediaCodec(env, thiz);
-        if (codec == NULL) {
-            throwExceptionAsNecessary(env, INVALID_OPERATION);
-            return;
-        }
-        sp<AMessage> format;
-        status_t err = ConvertKeyValueArraysToMessage(env, keys, values, &format);
-        if (err != OK) {
-            jniThrowException(env, "java/lang/IllegalArgumentException", NULL);
-            return;
-        }
-        sp<IGraphicBufferProducer> bufferProducer;
-        if (jsurface != NULL) {
-            sp<Surface> surface(android_view_Surface_getSurface(env, jsurface));
-            if (surface != NULL) {
-                bufferProducer = surface->getIGraphicBufferProducer();
-            } else {
-                jniThrowException(
-                        env,
-                        "java/lang/IllegalArgumentException",
-                        "The surface has been released");
-                return;
-            }
-        }
-        sp<ICrypto> crypto;
-        if (jcrypto != NULL) {
-            crypto = JCrypto::GetCrypto(env, jcrypto);
-        }
-        err = codec->configure(format, bufferProducer, crypto, flags);
-        throwExceptionAsNecessary(env, err);
-*/
     }
 
     static void Java_com_mcntech_udpplayer_AudDecApi_start(JNIEnv *env, jobject thiz) {
@@ -383,27 +350,23 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
             {"native_release",                "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_release},
             {"native_reset",                  "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_reset},
 
-            {"native_configure",
-                                              "([Ljava/lang/String;[Ljava/lang/Object)V",
-                                                     (void *) Java_com_mcntech_udpplayer_AudDecApi_configure},
-
             {"native_start",                  "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_start},
             {"native_stop",                   "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_stop},
-            {"native_sendInputData",       "(JILI)V",
+            {"native_sendInputData",       "(Ljava/nio/ByteBuffer;IJI)V",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_sendInputData},
-            {"native_isInputFull",       "()V",
+            {"native_isInputFull",       "(I)V",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_isInputFull},
-            {"native_getOutputData",    "(JIL)I",
+            {"native_getOutputData",    "(Ljava/nio/ByteBuffer;IJ)I",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_getOutputData},
             {"native_isOutputEmpty",    "()I",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_isOutputEmpty},
 
             {"native_init",                   "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_native_init},
-            {"native_setup",                  "(Ljava/lang/String;ZZ)V",
+            {"native_setup",                  "(Ljava/lang/String)V",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_native_setup},
     };
 
 int register_Java_com_mcntech_udpplayer_AudDecApi(JNIEnv *env) {
     return registerNativeMethods(env,
-                                 "Java/com/mcntech/udpplayer/AudDecApiMediaCodec", (JNINativeMethod*)gMethods, NELEM(gMethods));
+                                 "com/mcntech/udpplayer/AudDecApi", (JNINativeMethod*)gMethods, NELEM(gMethods));
 }

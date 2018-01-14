@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.4.1)
 
 cmake_policy(SET CMP0015 NEW)
 set(JD_PLUGIN_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins)
-set(FFMPEG_DIST_DIR /opt/mcnt/ezavmixer/src/ffmpeg_dist/android )
+set(FFMPEG_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../ffmpeg_dist/android )
 
 include_directories(
      ${CMAKE_CURRENT_SOURCE_DIR}

@@ -1,6 +1,7 @@
 #define LOG_TAG "AudDecApi"
 #include <android/log.h>
 #include <stdio.h>
+#include <string.h>
 #include "jni.h"
 #include "decmp2.h"
 #include "strmconn.h"
@@ -172,7 +173,8 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         //CHECK(clazz != NULL);
         mClass = (jclass) env->NewGlobalRef(clazz);
         mObject = env->NewWeakGlobalRef(thiz);
-
+        mCodec = NULL;
+        mInitStatus = -1;
         //mLooper = new ALooper;
         //mLooper->setName("MediaCodec_looper");
         //mLooper->start(
@@ -183,11 +185,12 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 
         // Create Component
         //    mCodec = MediaCodec::CreateByComponentName(mLooper, name, &mInitStatus);
-        if (strcmp(name, "MP2") == 0 || strcmp(name, "mp2") == 0) {
+        if (strcmp(name, "audio/mpeg") == 0 || strcmp(name, "audio/mpeg") == 0) {
             mCodec = decmp2Create();
         }
 
         if(mCodec != NULL) {
+            mInitStatus = 0;
             mConnIn = CreateStrmConn(16 * 1024, 8);
             mConnOut = CreateStrmConn(16 * 1024, 8);
             mCodec->SetInputConn(mCodec, 0, mConnIn);
@@ -288,15 +291,16 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         status_t err = codec->stop();
     }
 
-    static void Java_com_mcntech_udpplayer_AudDecApi_sendInputData(
+    static int Java_com_mcntech_udpplayer_AudDecApi_sendInputData(
             JNIEnv *env, jobject thiz, jobject buf, jint nBytes, jlong timestampUs, jint flags) {
 
         JAudDecApi *codec = getMediaCodec(env, thiz);
         if (codec == NULL) {
-            return;
+            return -1;
         }
         uint8_t* rawjBytes = static_cast<uint8_t*>(env->GetDirectBufferAddress(buf));
         status_t err = codec->sendInputData((char *)rawjBytes, nBytes, timestampUs, flags);
+        return nBytes;
     }
 
     static int Java_com_mcntech_udpplayer_AudDecApi_isInputFull(
@@ -305,8 +309,8 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         JAudDecApi *codec = getMediaCodec(env, thiz);
         return codec->isInputFull();
     }
-    static jint Java_com_mcntech_udpplayer_AudDecApi_getOutputData(
-            JNIEnv *env, jobject thiz, jobject buf, jint numBytes, jlong timeoutUs) {
+    static int Java_com_mcntech_udpplayer_AudDecApi_getOutputData(
+            JNIEnv *env, jobject thiz, jobject buf, jint numBytes) {
         JAudDecApi *codec= getMediaCodec(env, thiz);
         if (codec == NULL) {
            return 0;
@@ -323,7 +327,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         return codec->isOutputEmpty();
     }
 
-    static void Java_com_mcntech_udpplayer_AudDecApi_native_init(JNIEnv *env) {
+    static void Java_com_mcntech_udpplayer_AudDecApi_native_init(JNIEnv *env, jobject thiz) {
        ScopedLocalRef<jclass> clazz(env, env->FindClass("com/mcntech/udpplayer/AudDecApi"));
         //CHECK(clazz.get() != NULL);
         gFields.context = env->GetFieldID(clazz.get(), "mNativeContext", "J");
@@ -352,17 +356,17 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 
             {"native_start",                  "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_start},
             {"native_stop",                   "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_stop},
-            {"native_sendInputData",       "(Ljava/nio/ByteBuffer;IJI)V",
+            {"native_sendInputData",       "(Ljava/nio/ByteBuffer;IJI)I",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_sendInputData},
-            {"native_isInputFull",       "(I)V",
+            {"native_isInputFull",       "()I",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_isInputFull},
-            {"native_getOutputData",    "(Ljava/nio/ByteBuffer;IJ)I",
+            {"native_getOutputData",    "(Ljava/nio/ByteBuffer;I)I",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_getOutputData},
             {"native_isOutputEmpty",    "()I",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_isOutputEmpty},
 
             {"native_init",                   "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_native_init},
-            {"native_setup",                  "(Ljava/lang/String)V",
+            {"native_setup",                  "(Ljava/lang/String;)V",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_native_setup},
     };
 

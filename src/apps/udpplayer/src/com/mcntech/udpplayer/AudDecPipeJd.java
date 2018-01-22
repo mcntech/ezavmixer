@@ -325,10 +325,8 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 					}
 
 					if(mRender != null) {
-						ByteBuffer outBuffer = null;
 						int len = mDecoder.getOutputData(mDecOutBuff, maxBuffSize);
-						outBuffer.get(mOutBuff.array());
-						mRender.RenderAudio(mAudPid, outBuffer, info.presentationTimeUs);
+						mRender.RenderAudio(mAudPid, mDecOutBuff, info.presentationTimeUs);
 					}
 					mFramesRendered++;
 					//Log.d(LOG_TAG, "releaseOutputBuffer:End");

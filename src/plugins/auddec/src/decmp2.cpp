@@ -38,6 +38,7 @@ typedef struct
     int        nUiCmd;
     long long  llTotolRead;
     unsigned char *mPcmBuffer;
+    int         mfRun;
 } decCtx;
 
 static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame)
@@ -94,6 +95,7 @@ static void threadDecProcess(void *threadsArg)
     AVFrame *decoded_frame = NULL;
     unsigned long ulFlags;
     long long ullPts;
+    int nFrames = 0;
 
     /* register all the codecs */
     avcodec_register_all();
@@ -129,44 +131,50 @@ static void threadDecProcess(void *threadsArg)
     /* decode until eof */
     data      = inbuf;
     //data_size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
+    pCtx->mfRun = 1;
+    while(pCtx->mfRun) {
 
-    data_size = pCtx->pConnIn->Read(pCtx->pConnIn, (char *)data, READ_MAX_SIZE, &ulFlags, &ullPts);
+        data_size = pCtx->pConnIn->Read(pCtx->pConnIn, (char *) data, READ_MAX_SIZE, &ulFlags,
+                                        &ullPts);
 
-    while (data_size > 0) {
-        if (!decoded_frame) {
-            if (!(decoded_frame = av_frame_alloc())) {
-                fprintf(stderr, "Could not allocate audio frame\n");
+        if (data_size > 0) {
+            if (!decoded_frame) {
+                if (!(decoded_frame = av_frame_alloc())) {
+                    fprintf(stderr, "Could not allocate audio frame\n");
+                    exit(1);
+                }
+            }
+
+            ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
+                                   data, data_size,
+                                   AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+            if (ret < 0) {
+                fprintf(stderr, "Error while parsing\n");
                 exit(1);
             }
-        }
+            data += ret;
+            data_size -= ret;
 
-        ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
-                               data, data_size,
-                               AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-        if (ret < 0) {
-            fprintf(stderr, "Error while parsing\n");
-            exit(1);
-        }
-        data      += ret;
-        data_size -= ret;
+            if (pkt->size)
+                decode(pCtx, c, pkt, decoded_frame);
 
-        if (pkt->size)
-            decode(pCtx, c, pkt, decoded_frame);
-
-        if (data_size < AUDIO_REFILL_THRESH) {
-            memmove(inbuf, data, data_size);
-            data = inbuf;
-            //len = fread(data + data_size, 1, AUDIO_INBUF_SIZE - data_size, f);
-            len = pCtx->pConnIn->Read(pCtx->pConnIn, (char *)data + data_size, READ_MAX_SIZE, &ulFlags, &ullPts);
-            if (len > 0)
-                data_size += len;
+            if (data_size < AUDIO_REFILL_THRESH) {
+                memmove(inbuf, data, data_size);
+                data = inbuf;
+                //len = fread(data + data_size, 1, AUDIO_INBUF_SIZE - data_size, f);
+                len = pCtx->pConnIn->Read(pCtx->pConnIn, (char *) data + data_size, READ_MAX_SIZE,
+                                          &ulFlags, &ullPts);
+                if (len > 0)
+                    data_size += len;
+            }
+        } else {
+            usleep(10*1000);
         }
     }
-
     /* flush the decoder */
     pkt->data = NULL;
     pkt->size = 0;
-    decode(pCtx, c, pkt, decoded_frame);
+    //decode(pCtx, c, pkt, decoded_frame);
 
 Exit:
     if(c)

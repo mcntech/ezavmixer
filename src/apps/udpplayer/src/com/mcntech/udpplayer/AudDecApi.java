@@ -93,24 +93,15 @@ public class AudDecApi {
         native_release();
     }
 
-
-    public ByteBuffer getInputBuffer(int index) {
-        ByteBuffer newBuffer = getBuffer(true /* input */, index);
-        return newBuffer;
-    }
-
-    public ByteBuffer getOutputBuffer(int index) {
-        ByteBuffer newBuffer = getBuffer(false /* input */, index);
-        return newBuffer;
-    }
-
     static {
         System.loadLibrary("AudDecApi");
+        native_init();
     }
 
     private native final void native_start();
     private native final void native_stop();
 
+    private static native final void native_init();
     private native final void native_setup(String name);
 
     private native final void native_reset();
@@ -120,7 +111,5 @@ public class AudDecApi {
     private native final int native_getOutputData(ByteBuffer buf, int numBytes);
     private native final int native_isOutputEmpty();
 
-    private native final void releaseOutputBuffer(
-            int index, boolean render, boolean updatePTS, long timeNs);
-    private native final ByteBuffer getBuffer(boolean input, int index);
+    private long mNativeContext;
 }

@@ -94,7 +94,8 @@ jint Java_com_mcntech_udpplayer_UdpPlayerApi_startServer(JNIEnv *env, jobject se
 	CPlayerBase* pPlayer = (CPlayerBase*)ctx;
 	pPlayer->startServer(url);
 	env->ReleaseStringUTFChars(jurl, szUrl);
-    return 0;
+
+	return 0;
 }
 
 jint Java_com_mcntech_udpplayer_UdpPlayerApi_stopServer(JNIEnv *env, jobject self, jlong ctx, jstring jurl)

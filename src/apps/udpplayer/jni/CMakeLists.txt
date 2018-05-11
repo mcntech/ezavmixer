@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.4.1)
 cmake_policy(SET CMP0015 NEW)
 set(JD_PLUGIN_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins)
 set(FFMPEG_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../ffmpeg_dist/android )
+set(OPENSSL_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../extlibs//openssl_dist/android/${ANDROID_ABI} )
 
 include_directories(
      ${CMAKE_CURRENT_SOURCE_DIR}
@@ -18,6 +19,7 @@ include_directories(
      ${JD_PLUGIN_FOLDER}/configdb/include
      ${JD_PLUGIN_FOLDER}/osal/include
      ${JD_PLUGIN_FOLDER}/streamif/include
+     ${JD_PLUGIN_FOLDER}/jdwebsocket/include
      ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/include
      ${JD_PLUGIN_FOLDER}/auddec/include
      ${FFMPEG_DIST_DIR}/${ANDROID_ABI}/include
@@ -26,6 +28,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../core/jni subproject/onyxco
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins/jdudp/jni subproject/jdudp)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins/streamif/jni subproject/streamif)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins/osal/jni subproject/osal)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins/jdwebsocket/jni subproject/jdwebsocket)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins/parseutil/jni subproject/parseutil)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins/auddec/jni subproject/auddec)
 
@@ -42,6 +45,10 @@ set_target_properties( libavcodec PROPERTIES IMPORTED_LOCATION
                        ${FFMPEG_DIST_DIR}/${ANDROID_ABI}/lib/libavcodec.a )
 set_target_properties( libavutil PROPERTIES IMPORTED_LOCATION
                        ${FFMPEG_DIST_DIR}/${ANDROID_ABI}/lib/libavutil.a )
+
+add_library( libcrypto STATIC IMPORTED )
+set_target_properties( libcrypto PROPERTIES IMPORTED_LOCATION
+                       ${OPENSSL_DIST_DIR}/lib/libcrypto.a )
 
 add_library(AudDecApi SHARED
  	jAudDecApi.cpp
@@ -63,8 +70,10 @@ target_link_libraries(
     onyxcore
     jdudp
     jdosal
+    jdwebsocket
     streamif
     parseutil
+    libcrypto
     android
     log
     )

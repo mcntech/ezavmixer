@@ -63,7 +63,7 @@ public:
 
 	static void dbg_printf (const char *format, ...)
 	{
-		char buffer[1024 + 1];
+		char buffer[8196 + 1];
 		va_list arg;
 		va_start (arg, format);
 		vsprintf (buffer, format, arg);

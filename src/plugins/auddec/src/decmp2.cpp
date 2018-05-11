@@ -34,7 +34,6 @@ typedef struct
 #else
     pthread_t  thrdId;
 #endif
-    int        fStreaming;
     int        nUiCmd;
     long long  llTotolRead;
     unsigned char *mPcmBuffer;
@@ -132,7 +131,16 @@ static void threadDecProcess(void *threadsArg)
     data      = inbuf;
     //data_size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
     pCtx->mfRun = 1;
+    pCtx->nUiCmd = STRM_CMD_NONE;
+
     while(pCtx->mfRun) {
+
+        if(pCtx->nUiCmd == STRM_CMD_STOP) {
+            pCtx->mfRun =  false;
+            break;
+        } else {
+            // TODO: implement other commands
+        }
 
         data_size = pCtx->pConnIn->Read(pCtx->pConnIn, (char *) data, READ_MAX_SIZE, &ulFlags,
                                         &ullPts);
@@ -236,7 +244,6 @@ static int decStart(StrmCompIf *pComp)
 {
     int res = 0;
     decCtx *pCtx = (decCtx *)pComp->pCtx;
-    pCtx->fStreaming = 1;
 
     if(pCtx->pConnIn == NULL || pCtx->pConnOut == 0) {
         JdDbg(CJdDbg::DBGLVL_ERROR, ("Error starting file src !"));
@@ -263,12 +270,12 @@ static int decStop(StrmCompIf *pComp)
     void *ret_value;
     int nTimeOut = 1000000; // 1000 milli sec
     // Attempt closing the tthread
-    JdDbg(CJdDbg::DBGLVL_TRACE, ("Enter fStreaming=%d", pCtx->fStreaming));
+    JdDbg(CJdDbg::DBGLVL_TRACE, ("Enter fStreaming=%d", pCtx->mfRun));
 
-    if(pCtx->fStreaming) {
+    if(pCtx->mfRun) {
         pCtx->nUiCmd = STRM_CMD_STOP;
-        JdDbg(CJdDbg::DBGLVL_TRACE, ("fStreaming=%d", pCtx->fStreaming));
-        while(pCtx->fStreaming && nTimeOut > 0) {
+        JdDbg(CJdDbg::DBGLVL_TRACE, ("fStreaming=%d", pCtx->mfRun));
+        while(pCtx->mfRun && nTimeOut > 0) {
             nTimeOut -= 1000;
 #ifdef WIN32
             Sleep(1);
@@ -277,26 +284,12 @@ static int decStop(StrmCompIf *pComp)
 #endif
         }
         // If thread did not exit, force close it
-        JdDbg(CJdDbg::DBGLVL_TRACE, ("fStreaming=%d nTimeOut rem=%d", pCtx->fStreaming, nTimeOut));
+        JdDbg(CJdDbg::DBGLVL_TRACE, ("mfRun=%d nTimeOut rem=%d", pCtx->mfRun, nTimeOut));
 
     }
 
-    if(pCtx->fStreaming) {
-        // Close the file to force EoS
-        JdDbg(CJdDbg::DBGLVL_TRACE, ("Force EoS by closing source"));
-
-        nTimeOut = 1000000;
-        while(pCtx->fStreaming && nTimeOut > 0) {
-            nTimeOut -= 1000;
-#ifdef WIN32
-            Sleep(1);
-#else
-            usleep(1000);
-#endif
-        }
-    }
-
-    if(pCtx->fStreaming) {
+ /*
+    if(pCtx->mfRun) {
         JdDbg(CJdDbg::DBGLVL_SETUP, ("[Thread did nit exit. Cancelling the thread..."));
 #ifdef WIN32
 #else
@@ -305,6 +298,7 @@ static int decStop(StrmCompIf *pComp)
 #endif
         JdDbg(CJdDbg::DBGLVL_SETUP, ("Cancelling the thread: Done]"));
     }
+*/
 
     JdDbg(CJdDbg::DBGLVL_TRACE, ("Leave"));
     return 0;

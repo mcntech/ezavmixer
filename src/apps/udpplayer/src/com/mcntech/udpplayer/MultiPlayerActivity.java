@@ -2,16 +2,13 @@ package com.mcntech.udpplayer;
 import com.mcntech.udpplayer.VrRenderDb.VideoFeed;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipDescription;
 
-import android.graphics.Rect;
-
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -19,11 +16,12 @@ import android.view.DragEvent;
 import android.view.TextureView;
 import android.view.View;
 
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.mcntech.udpplayer.UdpPlayerApi.RemoteNodeHandler;
-import com.mcntech.udpplayer.VrRenderDb;
 
 public class MultiPlayerActivity  extends Activity implements AudRenderInterface, View.OnDragListener, View.OnLongClickListener  {
 
@@ -33,7 +31,8 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 	ImageView                     img;
 	int                           mLayoutId;
 
-
+	WebView mWebViewAud = null;
+	WebView mWebViewStat = null;
     //LinearLayout                     mStatsLayout;
 
 	@Override
@@ -57,6 +56,8 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 			case 1:
 			{
 				setContentView(R.layout.activity_multi_player_1_1);
+				mWebViewAud = (WebView) findViewById(R.id.multi_player_surface_1_1_webview_aud);
+				mWebViewStat = (WebView) findViewById(R.id.multi_player_surface_1_1_webview_stat);
 			}
 			break;
 			case 4:
@@ -114,6 +115,22 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 
 			}
 	 	};
+
+		if(mWebViewAud != null) {
+			WebSettings webSettings = mWebViewAud.getSettings();
+			webSettings.setJavaScriptEnabled(true);
+			//mWebViewAud.setWebViewClient(new WebViewClient());
+			mWebViewAud.setBackgroundColor(Color.TRANSPARENT);
+			mWebViewAud.loadUrl("file:///android_asset/www/aud.html");
+		}
+		if(mWebViewStat != null) {
+			WebSettings webSettings = mWebViewStat.getSettings();
+			webSettings.setJavaScriptEnabled(true);
+			//mWebViewAud.setWebViewClient(new WebViewClient());
+			mWebViewStat.setBackgroundColor(Color.TRANSPARENT);
+			mWebViewStat.setWebContentsDebuggingEnabled(true);
+			mWebViewStat.loadUrl("file:///android_asset/www/stat.html");
+		}
 
 	 	UdpPlayerApi.setDeviceHandler(mNodeHandler);
 	}

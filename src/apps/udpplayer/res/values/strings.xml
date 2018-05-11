@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">mcnt TS over UDP Player</string>
+    <string name="app_name">MCNT ATSC Analyzer</string>
     <string name="options">Options</string>    
     <string name="enable_audio">Enable Audio</string>    
     <string name="enable_video">Enable Video</string>

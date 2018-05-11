@@ -17,6 +17,7 @@ typedef __int64 int64_t;
 #include <sys/ioctl.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <set>
 #endif
 #include "JdOsal.h"
 // Undefining the following falg creates original xport binary
@@ -97,7 +98,7 @@ public:
 
 	void FlushFrameData(int nPid, int fEoS, int fDiscont)
 	{
-		JDBG_LOG(CJdDbg::LVL_SETUP, ("WriteData: strmid=%d length=%d",nPid, mWr));
+		//JDBG_LOG(CJdDbg::LVL_SETUP, ("WriteData: strmid=%d length=%d",nPid, mWr));
         if(mWr == 0)
             return;
 	#ifdef DEMUX_DUMP_OUTPUT
@@ -113,7 +114,7 @@ public:
 			if(fDiscont){
 				ulFlags |= OMX_EXT_BUFFERFLAG_DISCONT;
 			}
-			while(pConn->IsFull(pConn)){
+			while(pConn->IsFull(pConn) && mBlocking){
 				JdDbg(CJdDbg::DBGLVL_STRM,("Waiting for free buffer"))
 					JD_OAL_SLEEP(1)
 			}
@@ -134,6 +135,7 @@ public:
     unsigned int	audio_xfer_state = FALSE;
     unsigned long long crnt_vid_pts = 0;
     unsigned long long crnt_vid_dts = 0;
+    int                mBlocking = 0;
 };
 
 class CAC3ParseCtx : public CParseCtx
@@ -285,41 +287,72 @@ public:
 	void parse_h264_video(MpegTsDemuxCtx *pCtx, unsigned char *es_ptr, unsigned int length, unsigned long long pts, unsigned long long dts);
 };
 
+class CPsiSectionBuff
+{
+public:
+    CPsiSectionBuff()
+    {
+        init();
+    }
+    CPsiSectionBuff(const CPsiSectionBuff &p)
+    {
+        memcpy(mBuff,p.mBuff, p.mWr);
+        mWr = p.mWr;
+    }
+
+    unsigned char   mBuff[1024];
+    int             mWr;
+
+    void init()
+    {
+        mWr = 0;
+    }
+    void add(unsigned char *data, int len)
+    {
+        memcpy(&mBuff[mWr],data, len);
+        mWr += len;
+    }
+
+    unsigned char *getBuffer(){ return mBuff;}
+    int getLen(){ return mWr;}
+};
+
 class CPidCtx
 {
 public:
     CPidCtx()
     {
         pcr = 0;
-        sysClk = 0;
+        clkPcr = 0;
+        clkPrevPcr = 0;
+        clkPrevDiscont = 0;
+        clkPrevPcr = 0;
+        prevPcr = 0;
+        pcr_bytes = 0;
+        sizeLost = 0;
+        sizeTotal = 0;
+        stream_rate = 0;
+        mPmtBuffer = NULL;
+    }
+    CPsiSectionBuff *getPmtBuffer()
+    {
+        if(mPmtBuffer == NULL) mPmtBuffer = new  CPsiSectionBuff;
+        return mPmtBuffer;
     }
     unsigned long long	pcr;
-    unsigned long long	sysClk;
+    unsigned long long	clkPrevPcr;
+    unsigned long long	prevPcr;
+    unsigned long long	clkPcr;
+    unsigned long long	clkPrevDiscont;
+
+    unsigned long long  stream_rate;
+    unsigned long long  pcr_bytes;
+    unsigned long long	sizeLost;
+    unsigned long long	sizeTotal;
+    CPsiSectionBuff     *mPmtBuffer;
 };
 
-class CPsiSectionBuff
-{
-public:
-	CPsiSectionBuff()
-	{
-		init();
-	}
-	unsigned char   mBuff[1024];
-	int             mWr;
 
-	void init()
-	{
-		mWr = 0;
-	}
-	void add(unsigned char *data, int len)
-	{
-		memcpy(&mBuff[mWr],data, len);
-		mWr += len;
-	}
-
-	unsigned char *getBuffer(){ return mBuff;}
-	int getLen(){ return mWr;}
-};
 
 typedef struct MpegTsDemuxCtx
 {
@@ -362,8 +395,6 @@ public:
 	void               *pClk;
 	int                nUiCmd;
 
-	int                     detect_program_pids;
-	unsigned int	        program;
 	unsigned int	        video_channel;
 	unsigned int	        audio_channel;
 
@@ -381,7 +412,6 @@ public:
 	unsigned int	dump_video_pts;
 	unsigned int	timecode_mode;
 	unsigned int	dump_pids;
-	unsigned int	suppress_tsrate;
 
 	unsigned int	pes_streams;
 	unsigned int	dump_psip;
@@ -459,8 +489,6 @@ public:
 	psip_t	*psip_ptr[0x2000];
 	unsigned int	tp_extra_header_parse;
 	unsigned int	first_pat;
-	unsigned int	first_pmt;
-
 
 	unsigned int	tp_extra_header_prev;
 
@@ -581,7 +609,8 @@ public:
 
 	void           *pPsiCallbackCtx;
 	std::map<int, CParseCtx *> mParsers;
-	std::map<int, int> mPrograms;
+	std::map<int, int> mPlayingPmts;
+	std::map<int, int> mPmtPids;
     std::map<int, CPidCtx*> mPidCtxs;
 	CPsiSectionBuff mPsiSection;
 #ifdef UDP_STREAMER
@@ -590,6 +619,30 @@ public:
 } MpegTsDemuxCtx;
 
 int SetOutputConn(StrmCompIf *pComp, int nPid, int nStrmType, ConnCtxT *pConn);
+
+bool isPmtPid(MpegTsDemuxCtx *pCtx, int nPid)
+{
+	return (pCtx->mPmtPids.find( nPid ) != pCtx->mPmtPids.end());
+}
+
+void calcStreamRate(MpegTsDemuxCtx *pCtx, CPidCtx *pPidCtx)
+{
+    if(pPidCtx) {
+        unsigned long long stream_rate = 0;
+        unsigned long long saveClkPcr = pPidCtx->clkPcr;
+        pPidCtx->clkPcr = ClockGetInternalTime(pCtx->pClk);
+
+        if (pPidCtx->clkPcr > pPidCtx->clkPrevPcr)
+            stream_rate = ((pPidCtx->pcr_bytes * 27000000) /
+                           (pPidCtx->clkPcr - pPidCtx->clkPrevPcr));
+
+        pPidCtx->stream_rate = stream_rate;
+        pPidCtx->clkPrevPcr = saveClkPcr;
+        pPidCtx->pcr_bytes = 0;
+    }
+}
+
+
 
 CPidCtx *getPidCtx(MpegTsDemuxCtx *pCtx, int nPid) {
 
@@ -600,19 +653,36 @@ CPidCtx *getPidCtx(MpegTsDemuxCtx *pCtx, int nPid) {
     return pX;
 }
 
+CPsiSectionBuff *getPmtBuffer(MpegTsDemuxCtx *pCtx, int nPid)
+{
+	CPidCtx *pPidCtx = getPidCtx(pCtx, nPid);
+	return pPidCtx->getPmtBuffer();
+}
+
+
 void setPcr(MpegTsDemuxCtx *pCtx, int nPid, unsigned long long	pcr, unsigned long long sysClk)
 {
     CPidCtx *pX = getPidCtx(pCtx, nPid);
     pX->pcr = pcr;
-    pX->sysClk = sysClk;
+    pX->clkPcr = sysClk;
+}
+
+void savePmtData(MpegTsDemuxCtx *pCtx, CPsiSectionBuff *pPmt)
+{
+
+/*
+    CPsiSectionBuff *pPmtTmp = getPmtBuffer(pCtx,pCtx->pid);
+    *pPmtTmp = *pPmt;
+*/
 }
 
 void getPcr(MpegTsDemuxCtx *pCtx, int nPid, unsigned long long	*pcr, unsigned long long *sysClk)
 {
     CPidCtx *pX = getPidCtx(pCtx, nPid);
     *pcr = pX->pcr;
-    *sysClk = pX->sysClk;
+    *sysClk = pX->clkPcr;
 }
+
 
 CParseCtx *getParseCtx(MpegTsDemuxCtx *pCtx, int nPid) {
     CParseCtx *pX = NULL;
@@ -663,16 +733,16 @@ int IsSubscribed(MpegTsDemuxCtx *pCtx, int nPid)
 	return (pCtx->mParsers.find( nPid ) != pCtx->mParsers.end());
 }
 
-int IsProgramPid(MpegTsDemuxCtx *pCtx, int nPid)
+int IsPlayingPmtPid(MpegTsDemuxCtx *pCtx, int nPid)
 {
 
-	return (pCtx->mPrograms.find( nPid ) != pCtx->mPrograms.end());
+	return (pCtx->mPlayingPmts.find( nPid ) != pCtx->mPlayingPmts.end());
 }
 
 pmt_callback_t getCallback(MpegTsDemuxCtx *pCtx, int nPid)
 {
-	std::map<int, int>::iterator it = pCtx->mPrograms.find( nPid );
-	if(it != pCtx->mPrograms.end())
+	std::map<int, int>::iterator it = pCtx->mPlayingPmts.find( nPid );
+	if(it != pCtx->mPlayingPmts.end())
 		return pCtx->pPmtCallback;
 	return NULL;
 }
@@ -714,8 +784,7 @@ int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 	pCtx->AudChunkCnt = 0;
 	pCtx->stat_update_interval = TIME_SECOND;
 	// As a defualt set the auto program detection
-	pCtx->detect_program_pids = 1;
-	pCtx->program = 1;
+
 	pCtx->video_channel = 1;
 	pCtx->audio_channel = 1;
 	pCtx->pcr_pid = 0xFFFF;
@@ -735,7 +804,7 @@ int demuxOpen(StrmCompIf *pComp, const char *pszOption)
 int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
 {
 	MpegTsDemuxCtx *pCtx = (MpegTsDemuxCtx *)pComp->pCtx;
-
+    int res = 0;
 	switch(nCmd)
 	{
 		case DEMUX_CMD_SET_PAT_CALLBACK:
@@ -765,7 +834,7 @@ int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
 		{
 			DemuxSubscribeProgramPidT *pgm = (DemuxSubscribeProgramPidT *)pOptionData;
 			int nPid = pgm->nPid;
-			pCtx->mPrograms[nPid] =  1;
+			pCtx->mPlayingPmts[nPid] =  1;
 		}
 		break;
         case DEMUX_CMD_GET_PCR:
@@ -778,8 +847,30 @@ int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
             pPcr->clk = pcr / 27 + (crntClk - sysClk);
         }
         break;
+        case DEMUX_CMD_GET_PID_STAT:
+        {
+            PidStatT *pStat = (PidStatT *)pOptionData;
+            CPidCtx *pPidCtx = pCtx->mPidCtxs[pStat->nPid];
+            // TODO
+            calcStreamRate(pCtx, pPidCtx);
+            pStat->bitrate = pPidCtx->stream_rate;
+        }
+        break;
+        case DEMUX_CMD_GET_PMT_DATA:
+        {
+            PmtDataT *pmtData = (PmtDataT *)pOptionData;
+            int nPid = pmtData->nPid;
+            int nLen = pmtData->nLen;
+			CPsiSectionBuff *pPmt = getPmtBuffer(pCtx, nPid);
+			if(nLen > pPmt->getLen())
+				nLen = pPmt->getLen();
+			memcpy(pmtData->pData, pPmt->getBuffer(), nLen);
+            pmtData->nLen = nLen;
+        }
+        break;
+
 	}
-	return -1;
+	return res;
 }
 
 
@@ -926,6 +1017,8 @@ int demuxStart(StrmCompIf *pComp)
 	if (pthread_create (&pCtx->threadidDemux, NULL, (thrdStartFcnPtr)threadDemux, pCtx) != 0)	{
 		JdDbg(CJdDbg::DBGLVL_ERROR, ("Create_Task failed !"));
 		assert(0);
+	}  else {
+		pthread_setname_np(pCtx->threadidDemux, "demux");
 	}
 #endif
 	JdDbg(CJdDbg::DBGLVL_TRACE, ("Leave"));
@@ -2462,6 +2555,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 	unsigned long long	tp_extra_header_pcr_bytes;
     unsigned long long	ts_rate, pcr_ext;
     unsigned long long	pcrsave;
+    CPidCtx *pPidCtx = NULL;
 
 	if (1)  {
 		for (i = 0; i < length; i++)  {
@@ -2490,6 +2584,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							if(pCtx->dump_pids == TRUE)  {
 								DBG_MSG("  PID=%4x", pCtx->pid);
 							}
+                            pPidCtx = getPidCtx(pCtx, pCtx->pid);
+                            pPidCtx->pcr_bytes += 188; // TODO
 							break;
 						case 0:
 							temp = buffer[i];
@@ -2512,7 +2608,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							if (pCtx->pid == 0 && pCtx->payload_unit_start_indicator == 1)  {
 								pCtx->pat_section_start = TRUE;
 							}
-							if (/* pCtx->pid == pCtx->program_map_pid*/ IsProgramPid(pCtx, pCtx->pid) && pCtx->payload_unit_start_indicator == 1)  {
+							if (/* pCtx->pid == pCtx->program_map_pid*/ (IsPlayingPmtPid(pCtx, pCtx->pid) || isPmtPid(pCtx, pCtx->pid)) && pCtx->payload_unit_start_indicator == 1)  {
 								pCtx->pmt_section_start = TRUE;
 							}
 							if(pCtx->dump_psip == TRUE)  {
@@ -2550,7 +2646,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						--pCtx->pcr_parse;
 						pCtx->pcr = (pCtx->pcr << 8) + buffer[i];
 						if (pCtx->pcr_parse == 0 && pCtx->pid == pCtx->pcr_pid)  {
-							pcr_ext = pCtx->pcr & 0x1ff;
+                            //CPidCtx *pPidCtx = getPidCtx(pCtx, pCtx->pid);
+                            pcr_ext = pCtx->pcr & 0x1ff;
 							if (pCtx->dump_pcr)  {
 								DBG_MSG("pCtx->pcr = %d at packet number %d\n", (unsigned int)(pCtx->pcr >> 15), pCtx->packet_counter);
 							}
@@ -2561,36 +2658,35 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								pCtx->pcr = pCtx->pcr + (((long long)1) << 42);
 							}
 							if (pCtx->pcr - pCtx->previous_pcr != 0)  {
-								if(pCtx->suppress_tsrate == FALSE)  {
-									if (pCtx->hdmv_mode == TRUE)  {
-										if (((pCtx->pcr & 0x3fffffff) - tp_extra_header) == 0)  {
-											if(pCtx->running_average_bitrate != 0)  {
-												DBG_MSG("ts rate = unspecified, video rate = %9d\r", pCtx->running_average_bitrate);
-											}
-											else  {
-												DBG_MSG("ts rate = unspecified\r");
-											}
-										}
-										else  {
-											ts_rate = ((((pCtx->pcr_bytes - 2) - tp_extra_header_pcr_bytes) * 27000000) / ((pCtx->pcr & 0x3fffffff) - tp_extra_header));
-											if(pCtx->running_average_bitrate != 0)  {
-												DBG_MSG("ts rate = %9d, video rate = %9d\r", (unsigned int)ts_rate * 8, pCtx->running_average_bitrate);
-											}
-											else  {
-												DBG_MSG("ts rate = %9d\r", (unsigned int)ts_rate * 8);
-											}
-										}
-									}
-									else  {
-										ts_rate = ((pCtx->pcr_bytes * 27000000) / (pCtx->pcr - pCtx->previous_pcr));
-										if(pCtx->running_average_bitrate != 0)  {
-											DBG_MSG("ts rate = %9d, video rate = %9d\r", (unsigned int)ts_rate * 8, pCtx->running_average_bitrate);
-										}
-										else  {
-											DBG_MSG("ts rate = %9d\r", (unsigned int)ts_rate * 8);
-										}
-									}
-								}
+                                if (pCtx->hdmv_mode == TRUE)  {
+                                    if (((pCtx->pcr & 0x3fffffff) - tp_extra_header) == 0)  {
+                                        if(pCtx->running_average_bitrate != 0)  {
+                                            DBG_MSG("ts rate = unspecified, video rate = %9d\r", pCtx->running_average_bitrate);
+                                        }
+                                        else  {
+                                            DBG_MSG("ts rate = unspecified\r");
+                                        }
+                                    }
+                                    else  {
+                                        ts_rate = ((((pCtx->pcr_bytes - 2) - tp_extra_header_pcr_bytes) * 27000000) / ((pCtx->pcr & 0x3fffffff) - tp_extra_header));
+                                        if(pCtx->running_average_bitrate != 0)  {
+                                            DBG_MSG("ts rate = %9d, video rate = %9d\r", (unsigned int)ts_rate * 8, pCtx->running_average_bitrate);
+                                        }
+                                        else  {
+                                            DBG_MSG("ts rate = %9d\r", (unsigned int)ts_rate * 8);
+                                        }
+                                    }
+                                }
+                                else  {
+                                    ts_rate = ((pCtx->pcr_bytes * 27000000) / (pCtx->pcr - pCtx->previous_pcr));
+                                    if(pCtx->running_average_bitrate != 0)  {
+                                        DBG_MSG("ts rate = %9d, video rate = %9d\r", (unsigned int)ts_rate * 8, pCtx->running_average_bitrate);
+                                    }
+                                    else  {
+                                        DBG_MSG("ts rate = %9d\r", (unsigned int)ts_rate * 8);
+                                    }
+                                }
+
 							}
 
 							if(pCtx) {
@@ -2615,7 +2711,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						pCtx->sync_state = FALSE;
 					}
 				}
-				else if (pCtx->pid == 0 && pCtx->detect_program_pids)  {
+				else if (pCtx->pid == 0 )  {
 					if (pCtx->pat_xfer_state == TRUE)  {
 						if ((length - i) >= pCtx->pat_section_length)  {
 							j = pCtx->pat_section_length;
@@ -2645,8 +2741,14 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							pCtx->pat_xfer_state = FALSE;
 							if (pCtx->pat_section_number == pCtx->pat_last_section_number)  {
 								for (k = 0; k < (pCtx->pat_offset - 4); k+=4)  {
+									int pgm_pid = 0;
 									pCtx->program_number = pCtx->program_association_table[k] << 8;
 									pCtx->program_number |= pCtx->program_association_table[k + 1];
+									pgm_pid = pCtx->program_association_table[k+2] << 8;
+									pgm_pid |= pCtx->program_association_table[k+3];
+                                    pgm_pid &= 0x1FFF;
+									if(pgm_pid != 0 && pCtx->program_number != 0)
+										pCtx->mPmtPids[pgm_pid] = 1;
 								}
 								pCtx->first_pat = FALSE;
 							}
@@ -2723,7 +2825,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						pCtx->sync_state = FALSE;
 					}
 				}
-				else if (/*pCtx->pid == pCtx->program_map_pid*/ IsProgramPid(pCtx, pCtx->pid) && pCtx->detect_program_pids)  {
+				else if (/*pCtx->pid == pCtx->program_map_pid*/ IsPlayingPmtPid(pCtx, pCtx->pid) || isPmtPid(pCtx, pCtx->pid))  {
 
                     if (pCtx->pmt_xfer_state == TRUE)  {
 						if ((length - i) >= pCtx->pmt_section_length)  {
@@ -2776,31 +2878,17 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 												--pCtx->pmt_ES_descriptor_length_parse;
 												switch (pCtx->pmt_ES_descriptor_length_parse)  {
 													case 1:
-														//if (pCtx->first_pmt == TRUE)
-														{
-															DBG_MSG("ES descriptor for stream type 0x%02x = 0x%02x", pCtx->pmt_stream_type, pCtx->program_map_table[k+5+q]);
-														}
 														break;
 													case 0:
 														pCtx->pmt_ES_descriptor_length = pCtx->program_map_table[k+5+q];
-														//if (pCtx->first_pmt == TRUE)
-														{
-															DBG_MSG(", 0x%02x", pCtx->program_map_table[k+5+q]);
-															if (pCtx->pmt_ES_descriptor_length == 0)  {
-																DBG_MSG("\n");
-															}
-														}
+
 														break;
 												}
 											}
 											else if (pCtx->pmt_ES_descriptor_length != 0)  {
 												--pCtx->pmt_ES_descriptor_length;
-												//if (pCtx->first_pmt == TRUE)
-												{
-													DBG_MSG(", 0x%02x", pCtx->program_map_table[k+5+q]);
-												}
+
 												if (pCtx->pmt_ES_descriptor_length == 0)  {
-													//if (pCtx->first_pmt == TRUE)
 													{
 														DBG_MSG("\n");
 													}
@@ -2813,9 +2901,9 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									}
 									k += pCtx->pmt_ES_info_length;
 								}
-								pCtx->first_pmt = FALSE;
                                 pmt_callback_t pPmtCallback = getCallback(pCtx, pCtx->pid);
-                                if(pCtx->pPmtCallback)
+                                savePmtData(pCtx, &pCtx->mPsiSection);
+                                if(pCtx->pPmtCallback && IsPlayingPmtPid(pCtx, pCtx->pid))
                                     pPmtCallback(pCtx->pPsiCallbackCtx, pCtx->pid, (char *)pCtx->mPsiSection.getBuffer(), pCtx->mPsiSection.getLen());
 							}
 						}
@@ -2921,30 +3009,17 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								--pCtx->pmt_program_descriptor_length_parse;
 								switch (pCtx->pmt_program_descriptor_length_parse)  {
 									case 1:
-										if (pCtx->first_pmt == TRUE)  {
-											DBG_MSG("program descriptor = 0x%02x", buffer[i]);
-										}
 										break;
 									case 0:
 										pCtx->pmt_program_descriptor_length = buffer[i];
-										if (pCtx->first_pmt == TRUE)  {
-											DBG_MSG(", 0x%02x", buffer[i]);
-											if (pCtx->pmt_program_descriptor_length == 0)  {
-												DBG_MSG("\n");
-											}
-										}
 										break;
 								}
 							}
 							else if (pCtx->pmt_program_descriptor_length != 0)  {
 								--pCtx->pmt_program_descriptor_length;
-								if (pCtx->first_pmt == TRUE)  {
-									DBG_MSG(", 0x%02x", buffer[i]);
-								}
+
 								if (pCtx->pmt_program_descriptor_length == 0)  {
-									if (pCtx->first_pmt == TRUE)  {
-										DBG_MSG("\n");
-									}
+
 									if (pCtx->pmt_program_info_length != 0)  {
 										pCtx->pmt_program_descriptor_length_parse = 2;
 									}

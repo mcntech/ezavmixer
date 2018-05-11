@@ -165,6 +165,8 @@ int filesrcStart(StrmCompIf *pComp)
 #else
 	if (pthread_create (&pCtx->readThrdId, NULL, (thrdStartFcnPtr) threadFileSrcRead, pCtx) != 0)	{
 		JdDbg(CJdDbg::DBGLVL_ERROR, ("Create_Task failed !"));
+	} else {
+		pthread_setname_np(pCtx->readThrdId, "filesrc");
 	}
 #endif
 Exit:

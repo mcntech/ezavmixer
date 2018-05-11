@@ -48,6 +48,23 @@ typedef struct _PgmPcrT
 	unsigned long long	clk;
 } PgmPcrT;
 
+typedef struct _PmtDataT
+{
+	int nPid;
+	char *pData;
+	int  nLen;
+} PmtDataT;
+
+typedef struct _PidStatT
+{
+	int nPid;
+	unsigned long long countDrops;
+	unsigned long long sizeLost;
+	unsigned long long sizeTotal;
+	unsigned long long bitrate;
+	unsigned long long nsJitter; // nano seconds
+} PidStatT;
+
 #define DEMUX_CMD_SELECT_PROGRAM	     1
 #define DEMUX_CMD_SET_PAT_CALLBACK       2
 #define DEMUX_CMD_SET_PMT_CALLBACK       3
@@ -56,6 +73,8 @@ typedef struct _PgmPcrT
 #define DEMUX_CMD_SUBSCRIBE_ES_PID       6
 #define DEMUX_CMD_SET_FMT_CALLBACK		 7
 #define DEMUX_CMD_GET_PCR        		 8
+#define DEMUX_CMD_GET_PID_STAT           9
+#define DEMUX_CMD_GET_PMT_DATA           10
 
 #include "strmcomp.h"
 

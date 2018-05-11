@@ -347,7 +347,11 @@ int udprxStart(StrmCompIf *pSrc)
 #ifdef WIN32
 	pCtx->hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)thrdUdprxStreaming, pCtx, 0, &nThreadId);
 #else
-	pthread_create(&pCtx->hThread, NULL, thrdUdprxStreaming, pCtx);
+	if (pthread_create(&pCtx->hThread, NULL, thrdUdprxStreaming, pCtx) != 0) {
+		JdDbg(CJdDbg::DBGLVL_ERROR, ("Create_Task failed !"));
+	} else {
+		pthread_setname_np(pCtx->hThread, "udprx");
+	}
 #endif
 	(pCtx);
 	return 0;

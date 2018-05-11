@@ -22,6 +22,7 @@
 #include <time.h>
 #include <mpeg2parser.h>
 #include "json.hpp"
+#include "JdWebsocket.h"
 
 static int modDbgLevel = CJdDbg::LVL_SETUP;
 #define TRACE_ENTER 	JDBG_LOG(CJdDbg::LVL_TRACE, ("%s:Enter", __FUNCTION__));
@@ -78,6 +79,8 @@ CUdpClntBridge::CUdpClntBridge(
 	*pResult = 0;
 	strncpy(m_szRemoteHost, lpszRspServer, MAX_NAME_SIZE - 1);
 	m_pat = NULL;
+
+    m_pJdWs = CJdWs::Create(38080);
 	TRACE_LEAVE
 }
 
@@ -281,6 +284,8 @@ void CUdpClntBridge::psiPatJson(std::string &psiString)
 	psiString = jPsi.dump();
 }
 
+
+
 void CUdpClntBridge::UpdatePat(const char *pData, int len)
 {
 	if(m_pat != NULL) {
@@ -390,6 +395,8 @@ int CUdpClntBridge::StartStreaming()
 	m_srcComp->Start(m_srcComp);
 	m_demuxComp->Start(m_demuxComp);
 
+    m_pJdWs->RegisterService(this, "^/stats/?$");
+    m_pJdWs->Start();
 EXIT:
 	TRACE_LEAVE
 	return nResult;
@@ -435,6 +442,7 @@ int CUdpClntBridge::StopStreaming()
 		jdoalThreadJoin((void *)m_thrdHandle, 3000);
 	}
 
+    m_pJdWs->Stop();
 	TRACE_LEAVE
     return 0;
 }
@@ -483,4 +491,154 @@ void CUdpClntBridge::UpdateStat()
 		mDbgTotalVidPrev = mTotalVid;
 		mDbgPrevTime = now;
 	}
+}
+
+
+/*
+var testStatsObj = {action:"get_stats",
+        programs : [
+        {program_number: 1,  bitrate : 1200000,
+                    streams:[
+            {pid:21, bitrate:20000}
+            ]
+        },
+        {program_number: 2,  bitrate : 1200000,
+                    streams:[
+            {pid:31, bitrate:20000}
+            ]
+        },
+
+        ]
+};
+var testStatsResponse = JSON.stringify(testStatsObj);
+
+var testProgramsObj = {action:"get_programs",
+        programs : [
+        {program_number: 1, pid: 20,
+                    streams:[
+            {pid:21, type: 3, codec:23}
+            ]
+        },
+        {program_number: 2, pid: 30,
+                    streams:[
+            {pid:31, type: 3, codec:23}
+            ]
+        },
+
+        ]
+};
+var testProgramsResponse = JSON.stringify(testStatsObj);
+*/
+
+int CUdpClntBridge::UpdatePmtData(int nPid, struct MPEG2_PMT_SECTION &pmt) {
+    static unsigned char data[1024];
+
+    PmtDataT PmtDat;
+    PmtDat.nLen = 1024;
+    PmtDat.nPid = nPid;
+    PmtDat.pData = (char *)data;
+    if (m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PMT_DATA, (char *) &PmtDat) < 0) {
+        return -1;
+    }
+    pmt.Parse(data);
+    return 0;
+}
+
+// {action:"get_stats", programs : [{program: prgId, pid: pidnum, bitrate : kbps, streams:[{pid:pidId, type: typeId, codec:codecId, bitrate:kbps}]}]}]}
+std::string CUdpClntBridge::ProcessWsRequest(std::string request)
+{
+    std::string resp;
+    json jResp = {};
+    if(request == "get_stats") {
+        PidStatT stat;
+        int nValidPgms = 0;
+        // for each program
+        jResp.emplace("action", "get_stats");
+        for(int j=0; j< m_pat->number_of_programs ; j++) {
+
+            int nProgramBitrate = 0;
+            int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
+            int nPprogram = m_pat->program_descriptor[j].program_number;
+            json jPgmStat = {};
+
+            if(nPprogram == 0)
+                continue;   // Ignore NIT
+
+            jPgmStat["pid"] = nPid;
+            jPgmStat["program_number"] = nPprogram;
+
+            struct MPEG2_PMT_SECTION pmt;
+            if(UpdatePmtData(nPid, pmt) < 0)
+                continue; // PMT not available yet
+            stat.nPid = nPid;
+            if (m_demuxComp) {
+                m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PID_STAT, (char *) &stat);
+
+                for(int i=0; i < pmt.number_of_elementary_streams; i++) {
+                    json jEsStat = {};
+                    ELEMENTARY_STREAM_INFO *es = &pmt.elementary_stream_info[i];
+                    jEsStat.emplace("pid", es->elementary_PID);
+
+                    stat.nPid = es->elementary_PID;
+                    m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PID_STAT, (char *) &stat);
+                    jEsStat.emplace("bitrate", stat.bitrate);
+                    nProgramBitrate += stat.bitrate;
+                    // TODO es info other attributes
+                    jPgmStat["streams"][i] = jEsStat;
+
+                }
+                jPgmStat["bitrate"] = nProgramBitrate;
+                jResp["programs"][nValidPgms] = jPgmStat;
+
+                nValidPgms++;
+            }
+
+        }
+    } else if(request == "get_programs") {
+        PidStatT stat;
+        int nValidPgms = 0;
+        // for each program
+        jResp.emplace("action", "get_programs");
+        for(int j=0; j< m_pat->number_of_programs ; j++) {
+             int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
+            int nPprogram = m_pat->program_descriptor[j].program_number;
+            json jPgmStat = {};
+
+
+            if(nPprogram == 0)
+                continue;   // Ignore NIT
+
+            jPgmStat["pid"] = nPid;
+            jPgmStat["program_number"] = nPprogram;
+
+            struct MPEG2_PMT_SECTION pmt;
+            if(UpdatePmtData(nPid, pmt) < 0)
+                continue; // PMT not available yet
+
+            stat.nPid = nPid;
+            if (m_demuxComp) {
+                m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PID_STAT, (char *) &stat);
+
+                for(int i=0; i < pmt.number_of_elementary_streams; i++) {
+                    json jEsStat = {};
+                    ELEMENTARY_STREAM_INFO *es = &pmt.elementary_stream_info[i];
+                    jEsStat.emplace("pid", es->elementary_PID);
+                    jEsStat.emplace("type", es->stream_type);
+                    jEsStat.emplace("codec",StrmTypeToString(es->stream_type));
+
+                    stat.nPid = es->elementary_PID;
+                    m_demuxComp->SetOption(m_demuxComp, DEMUX_CMD_GET_PID_STAT, (char *) &stat);
+                    // TODO es info other attributes
+                    jPgmStat["streams"][i] = jEsStat;
+
+                }
+                jResp["programs"][nValidPgms] = jPgmStat;
+                nValidPgms++;
+            }
+
+        }
+
+    }
+    resp = jResp.dump();
+    return resp;
 }

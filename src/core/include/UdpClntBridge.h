@@ -7,12 +7,13 @@
 #include "UdpCallback.h"
 #include "strmcomp.h"
 #include "TsPsi.h"
+#include "JdWebsocket.h"
 
 #define  UDP_SRC_PREFIX   "udp://"
 
 #define MAX_NAME_SIZE	256
 
-class CUdpClntBridge //: public CStrmInBridgeBase
+class CUdpClntBridge : public  CJdWsService//: public CStrmInBridgeBase
 {
 public:
 	CUdpClntBridge(const char *lpszRspServer, int fEnableAud, int fEnableVid, int *pResult , CUdpServerCallback *pCallback=NULL);
@@ -34,14 +35,21 @@ public:
 	//void psiJson(std::string &psiString);
 	void psiPatJson(std::string &psiString);
 	void psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString);
+	//void statPmtJson(PgmStatT *stat, std::string &statString);
+
 	void strmH264FmtJson(const char *pFmtData, int len, std::string &psiString);
     void strmMP2VidFmtJson(const char *pFmtData, int len, std::string &psiString);
 	void strmMP2AudFmtJson(const char *pFmtData, int len, std::string &psiString);
 	unsigned long long GetPcrClock(int nPid);
 
+    // CJdWsService
+    std::string ProcessWsRequest(std::string request);
+	int UpdatePmtData(int nPid, struct MPEG2_PMT_SECTION &pmt);
 public:
 	//CJdRtspClntSession	*m_pRtspClnt;
 	CUdpServerCallback  *m_pCallback;
+    CJdWs               *m_pJdWs;
+
 	int					m_nAudCodec;
 	int					m_nVidCodec;
 	int					m_nSrcType;

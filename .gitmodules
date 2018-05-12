@@ -1,0 +1,3 @@
+[submodule "src/extlibs/Simple-WebSocket-Server"]
+	path = src/extlibs/Simple-WebSocket-Server
+	url = https://github.com/mcntech/Simple-WebSocket-Server.git

@@ -3,17 +3,21 @@ var websocket = null;
 
 var testStatsObj = {action:"get_stats",
                     programs : [
-                        {program_number: 1,  bitrate : 1200000,
+                        {program_number: 1,  bitrate : 5200000,
                             streams:[
                                 {pid:21, bitrate:20000}
                             ]
                         },
-                        {program_number: 2,  bitrate : 1200000,
+                        {program_number: 2,  bitrate : 7200000,
                             streams:[
                                 {pid:31, bitrate:20000}
                             ]
                         },
-
+                        {program_number: 3,  bitrate : 2200000,
+                            streams:[
+                                {pid:41, bitrate:20000}
+                            ]
+                        },
                     ]
                  };
 var testStatsResponse = JSON.stringify(testStatsObj);
@@ -30,7 +34,11 @@ var testProgramsObj = {action:"get_programs",
                                 {pid:31, type: 3, codec:23}
                             ]
                         },
-
+                        {program_number: 3, pid: 40,
+                            streams:[
+                                {pid:41, type: 3, codec:23}
+                            ]
+                        },
                     ]
                  };
 var testProgramsResponse = JSON.stringify(testStatsObj);
@@ -137,7 +145,7 @@ function Program(id, label) {
 
 function initWebsocket()
 {
-    console.log('Initiailizing websocket');
+    console.log('Initializing websocket');
     websocket = new WebSocket(wsUri);
     websocket.onopen = function(evt) { onOpen(evt) };
     websocket.onclose = function(evt) { onClose(evt) };
@@ -148,7 +156,7 @@ function initWebsocket()
 function onOpen(evt)
 {
     console.log("CONNECTED");
-    doGetProgramList()
+    doGetProgramList();
 }
 
 function onClose(evt)

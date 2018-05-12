@@ -333,12 +333,14 @@ public:
         sizeTotal = 0;
         stream_rate = 0;
         mPmtBuffer = NULL;
+        pmt_section_start = FALSE;
     }
     CPsiSectionBuff *getPmtBuffer()
     {
         if(mPmtBuffer == NULL) mPmtBuffer = new  CPsiSectionBuff;
         return mPmtBuffer;
     }
+    unsigned int pmt_section_start;
     unsigned long long	pcr;
     unsigned long long	clkPrevPcr;
     unsigned long long	prevPcr;
@@ -612,7 +614,7 @@ public:
 	std::map<int, int> mPlayingPmts;
 	std::map<int, int> mPmtPids;
     std::map<int, CPidCtx*> mPidCtxs;
-	CPsiSectionBuff mPsiSection;
+	//CPsiSectionBuff mPsiSection;
 #ifdef UDP_STREAMER
 	CUdpTx          *pUdpTx;
 #endif
@@ -2609,7 +2611,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 								pCtx->pat_section_start = TRUE;
 							}
 							if (/* pCtx->pid == pCtx->program_map_pid*/ (IsPlayingPmtPid(pCtx, pCtx->pid) || isPmtPid(pCtx, pCtx->pid)) && pCtx->payload_unit_start_indicator == 1)  {
-								pCtx->pmt_section_start = TRUE;
+								//pCtx->pmt_section_start = TRUE;
+                                pPidCtx->pmt_section_start = TRUE;
 							}
 							if(pCtx->dump_psip == TRUE)  {
 								if ((pCtx->pid == 0x1ffb || pCtx->pid == pCtx->ett_pid || pCtx->pid == pCtx->eit0_pid || pCtx->pid == pCtx->eit1_pid || pCtx->pid == pCtx->eit2_pid || pCtx->pid == pCtx->eit3_pid || pCtx->pid == pCtx->ett0_pid || pCtx->pid == pCtx->ett1_pid || pCtx->pid == pCtx->eit2_pid || pCtx->pid == pCtx->eit3_pid) && pCtx->payload_unit_start_indicator == 1) {
@@ -2826,7 +2829,7 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 					}
 				}
 				else if (/*pCtx->pid == pCtx->program_map_pid*/ IsPlayingPmtPid(pCtx, pCtx->pid) || isPmtPid(pCtx, pCtx->pid))  {
-
+                    CPsiSectionBuff *psiSection = getPmtBuffer(pCtx, pCtx->pid);
                     if (pCtx->pmt_xfer_state == TRUE)  {
 						if ((length - i) >= pCtx->pmt_section_length)  {
 							j = pCtx->pmt_section_length;
@@ -2845,7 +2848,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 							pCtx->program_map_table[pCtx->pmt_offset] = buffer[i];
 							DBG_MSG("PMT byte %d = 0x%02x\n", pCtx->pmt_offset, buffer[i]);
 							pCtx->pmt_offset++;
-                            pCtx->mPsiSection.add(&buffer[i], 1);
+                           // pCtx->mPsiSection.add(&buffer[i], 1);
+                            psiSection->add(&buffer[i], 1);
                             i++;
 
 							--pCtx->pmt_section_length;
@@ -2863,11 +2867,11 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pCtx->pmt_elementary_pid = (pCtx->program_map_table[k+1] & 0x1f) << 8;
 									pCtx->pmt_elementary_pid |= pCtx->program_map_table[k+2];
 									if (pCtx->pmt_stream_type == 0x1 || pCtx->pmt_stream_type == 0x2 || (pCtx->pmt_stream_type == 0x80 && pCtx->hdmv_mode == FALSE) || pCtx->pmt_stream_type == 0x1b || pCtx->pmt_stream_type == 0xea)  {
-                                        setStreamType(pCtx, pCtx->pmt_elementary_pid, pCtx->pmt_stream_type);
+                                        if(IsPlayingPmtPid(pCtx, pCtx->pid)) setStreamType(pCtx, pCtx->pmt_elementary_pid, pCtx->pmt_stream_type);
 									}
 									else if (pCtx->pmt_stream_type == 0x3 || pCtx->pmt_stream_type == 0x4 || pCtx->pmt_stream_type == 0x80 || pCtx->pmt_stream_type == 0x81 || pCtx->pmt_stream_type == 0x6 || pCtx->pmt_stream_type == 0x82 || pCtx->pmt_stream_type == 0x83 || pCtx->pmt_stream_type == 0x84 || pCtx->pmt_stream_type == 0x85 || pCtx->pmt_stream_type == 0x86 || pCtx->pmt_stream_type == 0xa1 || pCtx->pmt_stream_type == 0xa2 || pCtx->pmt_stream_type == 0x11 ||  pCtx->pmt_stream_type == 0x0F)  {
 
-                                        setStreamType(pCtx,  pCtx->pmt_elementary_pid, pCtx->pmt_stream_type);
+                                        if(IsPlayingPmtPid(pCtx, pCtx->pid)) setStreamType(pCtx,  pCtx->pmt_elementary_pid, pCtx->pmt_stream_type);
 									}
 									pCtx->pmt_ES_info_length = (pCtx->program_map_table[k+3] & 0xf) << 8;
 									pCtx->pmt_ES_info_length |= pCtx->program_map_table[k+4];
@@ -2902,21 +2906,25 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									k += pCtx->pmt_ES_info_length;
 								}
                                 pmt_callback_t pPmtCallback = getCallback(pCtx, pCtx->pid);
-                                savePmtData(pCtx, &pCtx->mPsiSection);
-                                if(pCtx->pPmtCallback && IsPlayingPmtPid(pCtx, pCtx->pid))
-                                    pPmtCallback(pCtx->pPsiCallbackCtx, pCtx->pid, (char *)pCtx->mPsiSection.getBuffer(), pCtx->mPsiSection.getLen());
+                                //savePmtData(pCtx, &pCtx->mPsiSection);
+                                if(pCtx->pPmtCallback && IsPlayingPmtPid(pCtx, pCtx->pid)) {
+                                        pPmtCallback(pCtx->pPsiCallbackCtx, pCtx->pid,
+                                                 //(char *) pCtx->mPsiSection.getBuffer(), pCtx->mPsiSection.getLen(
+                                                (char *) psiSection->getBuffer(), psiSection->getLen()
+                                        );
+                                    }
 							}
 						}
 					}
 					else  {
 						--pCtx->xport_packet_length;
 						pCtx->pcr_bytes++;
-						if (pCtx->pmt_section_start == TRUE)  {
+						if (/*pCtx->*/pPidCtx->pmt_section_start == TRUE)  {
 							pCtx->pmt_pointer_field = buffer[i];
 							if (pCtx->pmt_pointer_field == 0)  {
 								pCtx->pmt_section_length_parse = 3;
 							}
-							pCtx->pmt_section_start = FALSE;
+							/*pCtx->*/pPidCtx->pmt_section_start = FALSE;
 						}
 						else if (pCtx->pmt_pointer_field != 0)  {
 							--pCtx->pmt_pointer_field;
@@ -2936,19 +2944,22 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 										//pmt_callback_t pPmtCallback = getCallback(pCtx, pCtx->pid);
 										//if(pCtx->pPmtCallback)
 										//	pPmtCallback(pCtx->pPsiCallbackCtx, pCtx->pid, (char *)(&buffer[i]), pCtx->xport_packet_length);
-										pCtx->mPsiSection.init();
-										pCtx->mPsiSection.add(&buffer[i], 1);
+										//pCtx->mPsiSection.init();
+										//pCtx->mPsiSection.add(&buffer[i], 1);
+                                        psiSection->init();
+                                        psiSection->add(&buffer[i], 1);
 									}
 									break;
 								case 1:
 									pCtx->pmt_section_length = (buffer[i] & 0xf) << 8;
-									pCtx->mPsiSection.add(&buffer[i], 1);
+									//pCtx->mPsiSection.add(&buffer[i], 1);
+                                    psiSection->add(&buffer[i], 1);
 									break;
 								case 0:
 									pCtx->pmt_section_length |= buffer[i];
 
-									pCtx->mPsiSection.add(&buffer[i], 1);
-
+									//pCtx->mPsiSection.add(&buffer[i], 1);
+                                    psiSection->add(&buffer[i], 1);
 									DBG_MSG("Section length = %d\r\n", pCtx->pmt_section_length);
 									if (pCtx->pmt_section_length > MAX_PSI_SECTION_LENGTH)  {
 										DBG_MSG("PMT Section length excedds max(%d) = %d\r\n", MAX_PSI_SECTION_LENGTH, pCtx->pmt_section_length);
@@ -2963,7 +2974,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						else if (pCtx->pmt_section_parse != 0)  {
 							--pCtx->pmt_section_length;
 							--pCtx->pmt_section_parse;
-							pCtx->mPsiSection.add(&buffer[i], 1);
+							//pCtx->mPsiSection.add(&buffer[i], 1);
+                            psiSection->add(&buffer[i], 1);
 							switch (pCtx->pmt_section_parse)  {
 								case 8:
 									break;
@@ -3004,7 +3016,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 						else if (pCtx->pmt_program_info_length != 0)  {
 							--pCtx->pmt_section_length;
 							--pCtx->pmt_program_info_length;
-							pCtx->mPsiSection.add(&buffer[i], 1);
+							//pCtx->mPsiSection.add(&buffer[i], 1);
+                            psiSection->add(&buffer[i], 1);
 							if (pCtx->pmt_program_descriptor_length_parse != 0)  {
 								--pCtx->pmt_program_descriptor_length_parse;
 								switch (pCtx->pmt_program_descriptor_length_parse)  {

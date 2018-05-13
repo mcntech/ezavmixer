@@ -8,12 +8,12 @@ var testStatsObj = {action:"get_stats",
                                 {pid:21, bitrate:20000}
                             ]
                         },
-                        {program_number: 2,  bitrate : 7200000,
+                        {program_number: 2,  bitrate : 4200000,
                             streams:[
                                 {pid:31, bitrate:20000}
                             ]
                         },
-                        {program_number: 3,  bitrate : 2200000,
+                        {program_number: 3,  bitrate : 5200000,
                             streams:[
                                 {pid:41, bitrate:20000}
                             ]
@@ -54,7 +54,8 @@ var testProgramsResponse = JSON.stringify(testStatsObj);
     Spectrum.prototype =
     {
         addMuxrate : function(program, value){
-            this.muxrate[program].shift();
+            if(this.muxrate[program].length >= this.histroy_depth)
+                this.muxrate[program].shift();
             this.muxrate[program].push(value);
         }
     };
@@ -67,12 +68,12 @@ function initSpectrum(obj)
     for (var i in obj.programs) {
         var program = obj.programs[i];
         obj.muxrate[program.program_number] = []; // Initialize inner array
-        for (var j = 0; j < obj.histroy_depth; j++) { // i++ needs to be j++
-            obj.muxrate[program.program_number][j] = Math.random();
-        }
+        //for (var j = 0; j < obj.histroy_depth; j++) { // i++ needs to be j++
+        //    obj.muxrate[program.program_number][j] = Math.random();
+        //}
     }
 
-    obj.fillStyle = ["#FF0000", "#00FF00", "#0000FF", "#0F0000", "#000F0000", "#00000F", "#F00000", "#00F000", "#0000F0", "#F0F0F0", "#0F0F0F=", "#00F0F0", "#00F0F0", "#F0F000", "#0F00F0", "#F0000F"];
+    obj.fillStyle = ["#FF0000", "#00FF00", "#0000FF", "#0F0000", "#F00F00", "#00000F", "#F00000", "#00F000", "#0000F0", "#F0F0F0", "#0F0F0F=", "#00F0F0", "#00F0F0", "#F0F000", "#0F00F0", "#F0000F"];
 }
 
 function resizeDrawingArea()
@@ -86,27 +87,66 @@ function drawSpectrum() {
 
     var programs = spectrum.programs;
     var histroy_depth = spectrum.histroy_depth;
-    var canvasEl = document.getElementById( 'fft' )
+    var canvasEl = document.getElementById( 'fft' );
 
     var fillStyle = spectrum.fillStyle;
     var muxrate = spectrum.muxrate; // Initialize array
+    var ctx     = canvasEl.getContext( '2d' );
+    var h       = canvasEl.height;
+    var w       = canvasEl.width;
 
-    ctx     = canvasEl.getContext( '2d' ),
-    h       = canvasEl.height,
-    w       = canvasEl.width,
+    var borderW = w * 0.1;
+    var borderH = h * 0.1;
+    var labelW = w * 0.1;
+    var labelH = h * 0.1;
 
-    spacing = w / histroy_depth,
-    width   = spacing,
-    height  = h ;
+    var drawW = w - 2 * borderW - labelW;
+    var drawH = h - 2* borderH - labelH;
+    var darwXstart = borderW + labelW;
+    var drawYstart = borderH + labelH;
+    spacing = drawW / histroy_depth;
+    stackWidth   = spacing;
+    stackHeight  = drawH ;
 
     ctx.clearRect( 0, 0, w, h );
+
+    // Draw Y Label
+    ctx.font = "20px Arial";
+    var y = drawYstart;
+    var x = borderW;
+    // Draw stacked bar
+    for ( var i in programs ) {
+        var program = programs[i];
+        var barBitrate = muxrate[program.program_number][0] * stackHeight / spectrum.maxbitrate;
+        ctx.fillStyle = fillStyle[program.program_number];// "#FF0000";
+        ctx.fillText('program:' + program.program_number , 0, stackHeight - y - barBitrate / 2 );
+        y = y +  barBitrate;
+    }
+
+    // Draw X Label
+
+    // Draw Y Label
+    ctx.font = "20px Arial";
+    var y = h;
+    // Draw stacked bar
+    ctx.fillStyle = "#FF0000";
+    for ( k=0; k < histroy_depth; k++ ) {
+        var x = darwXstart + k * spacing;
+        ctx.fillText(k , x, h - labelH );
+    }
+
+
+    // Draw bar chart
     for (var j=0; j < histroy_depth; j++) {
-        var y = 0;
+        var y = drawYstart;
+        var x = darwXstart + j * spacing;
+        // Draw stacked bar
         for ( var i in programs ) {
             var program = programs[i];
-            var barBitrate = muxrate[program.program_number][j] * height / spectrum.maxbitrate;
+            var barBitrate = muxrate[program.program_number][j] * stackHeight / spectrum.maxbitrate;
             ctx.fillStyle = fillStyle[program.program_number];// "#FF0000";
-            ctx.fillRect( j * spacing, h - y, width, barBitrate );
+
+            ctx.fillRect(x , stackHeight - y - barBitrate, stackWidth, barBitrate );
             y = y +  barBitrate;
         }
     }

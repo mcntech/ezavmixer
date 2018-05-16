@@ -37,9 +37,9 @@ int CUdpMultiPlayer::addServer(std::string url)
 {
 	int nResult = 0;
 	TRACE_ENTER
-	CUdpClntBridge *pRtspClntBridge = new  CUdpClntBridge(url.c_str(), 1/*pInputStream->fEnableAud*/, 1/*pInputStream->fEnableVid*/, &nResult, this);
+	CUdpClntBridge *pClntBridge = new  CUdpClntBridge(url.c_str(), 1/*pInputStream->fEnableAud*/, 1/*pInputStream->fEnableVid*/, &nResult, this);
 
-	CUdpServerNode *pServerNode = new CUdpServerNode(pRtspClntBridge);
+	CUdpServerNode *pServerNode = new CUdpServerNode(pClntBridge);
 	m_ServerList[url] = pServerNode;
 	TRACE_LEAVE
 	return 0;

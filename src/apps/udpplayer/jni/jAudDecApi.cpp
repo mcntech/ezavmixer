@@ -121,11 +121,14 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         status_t stop();
         status_t reset();
         int getOutputData(char *pData, int numBytes);
+        int getFreqData(char *pData, int numBytes);
         int isInputFull();
         status_t sendInputData(char *pData, size_t size, int64_t timeUs, uint32_t flags);
         int isOutputEmpty();
+
     protected:
         virtual ~JAudDecApi(){return;}
+
     private:
         enum {
             kWhatCallbackNotify,
@@ -147,6 +150,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         StrmCompIf *mCodec;
         ConnCtxT *mConnIn;
         ConnCtxT *mConnOut;
+        ConnCtxT *mConnFreq;
         status_t mInitStatus;
         long long mllOutPts;
         unsigned long mulOutFlags;
@@ -193,8 +197,10 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
             mInitStatus = 0;
             mConnIn = CreateStrmConn(16 * 1024, 8);
             mConnOut = CreateStrmConn(16 * 1024, 8);
+            mConnFreq = CreateStrmConn(4 * 1024, 8);
             mCodec->SetInputConn(mCodec, 0, mConnIn);
             mCodec->SetOutputConn(mCodec, 0, mConnOut);
+            mCodec->SetOutputConn(mCodec, 16, mConnFreq);
         }
         //CHECK((mCodec != NULL) != (mInitStatus != OK));
     }
@@ -222,6 +228,12 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
     int JAudDecApi::getOutputData(char *pData, int numBytes) {
         int res = 0;
         res =  mConnOut->Read(mConnOut, pData, numBytes, &mulOutFlags, &mllOutPts);
+        return res;//OK;
+    }
+
+    int JAudDecApi::getFreqData(char *pData, int numBytes) {
+        int res = 0;
+        res =  mConnFreq->Read(mConnFreq, pData, numBytes, &mulOutFlags, &mllOutPts);
         return res;//OK;
     }
 

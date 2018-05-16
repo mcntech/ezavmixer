@@ -18,6 +18,7 @@ typedef __int64 int64_t;
 #include <pthread.h>
 #include <unistd.h>
 #include <set>
+#include <mutex>
 #endif
 #include "JdOsal.h"
 // Undefining the following falg creates original xport binary
@@ -333,12 +334,25 @@ public:
         sizeTotal = 0;
         stream_rate = 0;
         mPmtBuffer = NULL;
+        mSavedPmtBuffer = NULL;
         pmt_section_start = FALSE;
     }
     CPsiSectionBuff *getPmtBuffer()
     {
-        if(mPmtBuffer == NULL) mPmtBuffer = new  CPsiSectionBuff;
+        if(mPmtBuffer == NULL) {
+            mPmtBuffer = new  CPsiSectionBuff;
+            mSavedPmtBuffer = new  CPsiSectionBuff;
+        }
         return mPmtBuffer;
+    }
+    CPsiSectionBuff *getSavedPmtBuffer()
+    {
+         return mSavedPmtBuffer;
+    }
+    void Save()
+    {
+        if(mPmtBuffer && mSavedPmtBuffer)
+            *mSavedPmtBuffer = *mPmtBuffer;
     }
     unsigned int pmt_section_start;
     unsigned long long	pcr;
@@ -352,6 +366,7 @@ public:
     unsigned long long	sizeLost;
     unsigned long long	sizeTotal;
     CPsiSectionBuff     *mPmtBuffer;
+    CPsiSectionBuff     *mSavedPmtBuffer;
 };
 
 
@@ -618,6 +633,7 @@ public:
 #ifdef UDP_STREAMER
 	CUdpTx          *pUdpTx;
 #endif
+    std::mutex mMutex;
 } MpegTsDemuxCtx;
 
 int SetOutputConn(StrmCompIf *pComp, int nPid, int nStrmType, ConnCtxT *pConn);
@@ -635,7 +651,7 @@ void calcStreamRate(MpegTsDemuxCtx *pCtx, CPidCtx *pPidCtx)
         pPidCtx->clkPcr = ClockGetInternalTime(pCtx->pClk);
 
         if (pPidCtx->clkPcr > pPidCtx->clkPrevPcr)
-            stream_rate = ((pPidCtx->pcr_bytes * 27000000) /
+            stream_rate = ((pPidCtx->pcr_bytes * 8 * TIME_SECOND) /
                            (pPidCtx->clkPcr - pPidCtx->clkPrevPcr));
 
         pPidCtx->stream_rate = stream_rate;
@@ -661,6 +677,11 @@ CPsiSectionBuff *getPmtBuffer(MpegTsDemuxCtx *pCtx, int nPid)
 	return pPidCtx->getPmtBuffer();
 }
 
+CPsiSectionBuff *getSavedPmtBuffer(MpegTsDemuxCtx *pCtx, int nPid)
+{
+    CPidCtx *pPidCtx = getPidCtx(pCtx, nPid);
+    return pPidCtx->getSavedPmtBuffer();
+}
 
 void setPcr(MpegTsDemuxCtx *pCtx, int nPid, unsigned long long	pcr, unsigned long long sysClk)
 {
@@ -860,14 +881,20 @@ int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
         break;
         case DEMUX_CMD_GET_PMT_DATA:
         {
+
             PmtDataT *pmtData = (PmtDataT *)pOptionData;
             int nPid = pmtData->nPid;
             int nLen = pmtData->nLen;
-			CPsiSectionBuff *pPmt = getPmtBuffer(pCtx, nPid);
-			if(nLen > pPmt->getLen())
-				nLen = pPmt->getLen();
-			memcpy(pmtData->pData, pPmt->getBuffer(), nLen);
-            pmtData->nLen = nLen;
+			CPsiSectionBuff *pPmt = getSavedPmtBuffer(pCtx, nPid);
+
+            if(pPmt) {
+                if (nLen > pPmt->getLen())
+                    nLen = pPmt->getLen();
+                memcpy(pmtData->pData, pPmt->getBuffer(), nLen);
+                pmtData->nLen = nLen;
+            } else {
+                return -1;
+            }
         }
         break;
 
@@ -2829,7 +2856,9 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 					}
 				}
 				else if (/*pCtx->pid == pCtx->program_map_pid*/ IsPlayingPmtPid(pCtx, pCtx->pid) || isPmtPid(pCtx, pCtx->pid))  {
+
                     CPsiSectionBuff *psiSection = getPmtBuffer(pCtx, pCtx->pid);
+
                     if (pCtx->pmt_xfer_state == TRUE)  {
 						if ((length - i) >= pCtx->pmt_section_length)  {
 							j = pCtx->pmt_section_length;
@@ -2905,6 +2934,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									}
 									k += pCtx->pmt_ES_info_length;
 								}
+
+                                pPidCtx->Save();
                                 pmt_callback_t pPmtCallback = getCallback(pCtx, pCtx->pid);
                                 //savePmtData(pCtx, &pCtx->mPsiSection);
                                 if(pCtx->pPmtCallback && IsPlayingPmtPid(pCtx, pCtx->pid)) {

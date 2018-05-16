@@ -27,7 +27,8 @@ typedef struct
 {
     int        fpIn;
     ConnCtxT   *pConnIn;
-    ConnCtxT   *pConnOut;
+    ConnCtxT   *pConnOutPcm;
+    ConnCtxT   *pConnOutFreq;
     int        nBlockSize;
 #ifdef WIN32
     HANDLE     thrdId;
@@ -75,7 +76,14 @@ static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame
                 pcmLen += data_size;
 
             }
-        pCtx->pConnOut->Write(pCtx->pConnOut, (char *)pOut, pcmLen,  0/*pkt->flags*/, pkt->pts * 1000 / 90);
+        if(pCtx->pConnOutPcm)
+            pCtx->pConnOutPcm->Write(pCtx->pConnOutPcm, (char *)pOut, pcmLen,  0/*pkt->flags*/, pkt->pts * 1000 / 90);
+
+        if(pCtx->pConnOutFreq) {
+            // TODO : Retrieve Freq Data
+            pCtx->pConnOutFreq->Write(pCtx->pConnOutFreq, (char *) pOut, 64*2, 0/*pkt->flags*/,
+                                     pkt->pts * 1000 / 90);
+        }
     }
 }
 
@@ -230,7 +238,11 @@ static int decSetInputConn(struct _StrmCompIf *pComp, int nConnNum, ConnCtxT *pC
 static int decSetOutputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn)
 {
     decCtx *pCtx = (decCtx *)pComp->pCtx;
-    pCtx->pConnOut = pConn;
+    if(nConnNum == 16)
+        pCtx->pConnOutPcm = pConn;
+    else
+        pCtx->pConnOutFreq = pConn;
+
     return 0;
 }
 
@@ -245,7 +257,7 @@ static int decStart(StrmCompIf *pComp)
     int res = 0;
     decCtx *pCtx = (decCtx *)pComp->pCtx;
 
-    if(pCtx->pConnIn == NULL || pCtx->pConnOut == 0) {
+    if(pCtx->pConnIn == NULL || pCtx->pConnOutPcm == 0) {
         JdDbg(CJdDbg::DBGLVL_ERROR, ("Error starting file src !"));
         res = -1;
         goto Exit;

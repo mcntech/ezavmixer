@@ -88,6 +88,12 @@ public class AudDecApi {
         return res;
     }
 
+    public final int getFreqData(
+            ByteBuffer buf, int nBytes) {
+        int res = native_getFreqData(buf, nBytes);
+        return res;
+    }
+
     public final void release() {
         //freeAllTrackedBuffers(); // free buffers first
         native_release();
@@ -109,6 +115,7 @@ public class AudDecApi {
     private native final int native_sendInputData(ByteBuffer buf, int numBytes, long timestampUs, int flags);
     private native final int native_isInputFull();
     private native final int native_getOutputData(ByteBuffer buf, int numBytes);
+    private native final int native_getFreqData(ByteBuffer buf, int numBytes);
     private native final int native_isOutputEmpty();
 
     private long mNativeContext;

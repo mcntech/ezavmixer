@@ -8,4 +8,5 @@ import java.nio.ByteBuffer;
 
 public interface AudRenderInterface {
     void RenderAudio(int strmId, ByteBuffer buffer, long pts);
+    void RenderFreqData(int strmId, ByteBuffer buffer, long pts);
 }

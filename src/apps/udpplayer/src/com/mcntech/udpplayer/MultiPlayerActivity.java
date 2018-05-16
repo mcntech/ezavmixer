@@ -2,6 +2,7 @@ package com.mcntech.udpplayer;
 import com.mcntech.udpplayer.VrRenderDb.VideoFeed;
 
 import java.nio.ByteBuffer;
+import java.util.Random;
 
 
 import android.app.Activity;
@@ -23,7 +24,7 @@ import android.widget.Toast;
 
 import com.mcntech.udpplayer.UdpPlayerApi.RemoteNodeHandler;
 
-public class MultiPlayerActivity  extends Activity implements AudRenderInterface, View.OnDragListener, View.OnLongClickListener  {
+public class MultiPlayerActivity  extends Activity implements AudRenderInterface, View.OnDragListener, View.OnLongClickListener, AudFreqWbApp.AudFreqCallback  {
 
 	public final String LOG_TAG = MainActivity.LOG_TAG;
 	RemoteNodeHandler             mNodeHandler;
@@ -121,6 +122,7 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 			webSettings.setJavaScriptEnabled(true);
 			//mWebViewAud.setWebViewClient(new WebViewClient());
 			mWebViewAud.setBackgroundColor(Color.TRANSPARENT);
+			mWebViewAud.addJavascriptInterface(new AudFreqWbApp(this, this), "AudFreqData");
 			mWebViewAud.loadUrl("file:///android_asset/www/aud.html");
 		}
 		if(mWebViewStat != null) {
@@ -129,6 +131,8 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 			//mWebViewAud.setWebViewClient(new WebViewClient());
 			mWebViewStat.setBackgroundColor(Color.TRANSPARENT);
 			mWebViewStat.setWebContentsDebuggingEnabled(true);
+			mWebViewStat.getSettings().setLoadWithOverviewMode(true);
+			mWebViewStat.getSettings().setUseWideViewPort(true);
 			mWebViewStat.loadUrl("file:///android_asset/www/stat.html");
 		}
 
@@ -294,6 +298,35 @@ public boolean onDrag(View v, DragEvent event) {
 
 	@Override
 	public void RenderAudio(int strmId, ByteBuffer buffer, long pts) {
-
+		Log.d(LOG_TAG, "RenderAudio : strmId= " + strmId);
 	}
+
+	@Override
+	public void RenderFreqData(int strmId, ByteBuffer buffer, long pts) {
+		Log.d(LOG_TAG, "RenderFreqData : strmId= " + strmId);
+	}
+
+
+	@Override
+	public int getNumChannels(int program, int stream)
+	{
+		return 2;
+	}
+
+	@Override
+	public int getNumStreams(int program)
+	{
+		return 2;
+	}
+
+	@Override
+	public int getData(int program, int stream, byte data[])
+	{
+		Random rand = new Random();
+
+		rand.nextBytes(data);
+		return 0;
+	}
+
+
 }

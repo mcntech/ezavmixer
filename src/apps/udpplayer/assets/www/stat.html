@@ -1,14 +1,22 @@
 <!DOCTYPE html>
+
 <html>
+<style>
+body {
+width: 100%;
+height: 100%;
+margin: 0px;
+padding: 0;
+overflow: hidden;
+}
+</style>
 <head>
 
     <script src="statgraph.js"></script>
 
 </head>
-<body onload = "initWebsocket(); resizeDrawingArea(); doGetProgramList();">
-
-<p>Mux Rate</p>
-<canvas id="fft" height="400" width="512"></canvas>
+<body onload = "initWebsocket();resizeDrawingArea();">
+<canvas id="fft" height="320" width="640"></canvas>
 
 <srcipt>
 

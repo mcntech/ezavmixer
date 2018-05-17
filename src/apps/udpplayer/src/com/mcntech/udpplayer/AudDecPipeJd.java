@@ -42,9 +42,10 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 	int							  mNumChannels;
 	int							  mSamplerate;
 	ByteBuffer                    mBuff;
-	ByteBuffer                    mOutBuff;
+
 	ByteBuffer					  mDecInBuff;
 	ByteBuffer					  mDecOutBuff;
+	ByteBuffer					  mFreqOutBuff;
 	long                          mPts;
 	public  int             	  mFramesInBuff = 0;
 	public  int             	  mFramesRendered = 0;
@@ -76,11 +77,10 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 		mAudPid = strmPid;
 		mPcrPid = clkPid;
 		mBuff = ByteBuffer.allocateDirect(maxBuffSize);
-		mOutBuff = ByteBuffer.allocate(maxBuffSize);
-		mOutBuff = ByteBuffer.allocate(maxBuffSize);
-		mDecInBuff = ByteBuffer.allocate(maxBuffSize);
-		mDecOutBuff = ByteBuffer.allocate(maxBuffSize);
 
+		mDecInBuff = ByteBuffer.allocateDirect(maxBuffSize);
+		mDecOutBuff = ByteBuffer.allocateDirect(maxBuffSize);
+		mFreqOutBuff = ByteBuffer.allocateDirect(maxBuffSize);
 		mfMp2Supported  = CodecInfo.isMimeTypeAvailable(MIMETYPE_AUDIO_MPEG);
 		mfAacSupported  = CodecInfo.isMimeTypeAvailable(MIMETYPE_AUDIO_AAC);
 		mfAc3Supported  = CodecInfo.isMimeTypeAvailable(MIMETYPE_AUDIO_AC3);
@@ -246,26 +246,25 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 			}
 			
 			while (!Thread.interrupted() && !mExitPlayerLoop) {
+
 				mFramesInBuff = UdpPlayerApi.getNumAvailAudioFrames(mUrl, mAudPid);
+				Log.d(LOG_TAG, "getNumAvailAudioFrames " + mFramesInBuff);
 				if (!isEOS && mFramesInBuff > 0) {
 
-					int inIndex;
+					boolean fInputFull;
 					
 					try {
-						inIndex = mDecoder.isInputFull();
+						fInputFull = mDecoder.isInputFull() == 1;
 					} catch (IllegalStateException e) {
-						Log.d(LOG_TAG, "Decoder IllegalStateException");
+						Log.d(LOG_TAG, "Decoder IllegalStateException" + e);
 						break;
 					}
-					//Log.d(LOG_TAG, "dequeueInputBuffer:End");
-					if (inIndex > 0) {
-						ByteBuffer buffer = null;
-
+					Log.d(LOG_TAG, "fInputFull=" + fInputFull);
+					if (!fInputFull) {
 						if(fFrameAvail) {
 							fFrameAvail = false;
 						} else {
 							sampleSize = UdpPlayerApi.getAudioFrame(mUrl, mAudPid,  mBuff, mBuff.capacity(),  100 * 1000);
-							sampleSize = 480;
 						}
 						mPts = UdpPlayerApi.getAudioPts(mUrl, mAudPid);// + 500000; // video pipeline delay
 						if (sampleSize <= 0) {
@@ -275,17 +274,18 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 							Log.d(LOG_TAG, "InputBuffer BUFFER_FLAG_END_OF_STREAM");														
 							//mDecoder.sendInputData(, 0, 0, 0, AudDecApi.BUFFER_FLAG_END_OF_STREAM);
 							isEOS = true;
-						} else {	
+						} else {
+							Log.d(LOG_TAG, "sampleSize = " + sampleSize);
 							mBuff.limit(sampleSize);
-							mBuff.position(0);
-							buffer.clear();
-							buffer.put(mBuff.array(), 0, sampleSize);
+							mDecInBuff.position(0);
+							mDecInBuff.clear();
+							mDecInBuff.put(mBuff.array(), 0, sampleSize);
 							//buffer.put(mBuff, 0, sampleSize);
-							buffer.position(0);
-							buffer.limit(sampleSize);
+							mDecInBuff.position(0);
+							mDecInBuff.limit(sampleSize);
 														
 							try {
-								mDecoder.sendInputData(buffer, sampleSize, mPts, 0);
+								mDecoder.sendInputData(mDecInBuff, sampleSize, mPts, 0);
 							} catch (IllegalStateException e) {
 								Log.d(LOG_TAG, "Decoder: queueInputBuffer: IllegalStateException");
 								break;
@@ -295,43 +295,53 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 					
 				}
 
-				//Log.d(LOG_TAG, "dequeueOutputBuffer:Begin isEOS=" + isEOS + " availFrame=" + DeviceController.getNumAvailVideoFrames() + " surfacevalid=" + surface.isValid());
-				int outIndex;
+				Log.d(LOG_TAG, "isOutputEmpty=" + mExitPlayerLoop);
+				boolean fOutPcmEmpty;
 				try {
-					outIndex = mDecoder.isOutputEmpty();
+					fOutPcmEmpty = mDecoder.isOutputEmpty() == 1;
 				}  catch (IllegalStateException e) {
-					Log.d(LOG_TAG, "Decoder dequeueOutputBuffer: exception: " + e);	
+					Log.d(LOG_TAG, "Decoder isOutputEmpty: exception: " + e);
 					break;
 				}
-				//Log.d(LOG_TAG, "dequeueOutputBuffer:End outIndex=" + outIndex);
+				Log.d(LOG_TAG, "isOutputEmpty=" + fOutPcmEmpty);
 				long sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
-				if (outIndex == 0) {
-					break;
-				} else if (outIndex > 0) {
+
+				if (!fOutPcmEmpty) {
 					//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);
 					if(info.presentationTimeUs > sysclk + MAX_AUDIO_SYNC_THRESHOLD_US) {
 						Log.d(LOG_TAG, "FreeRun strm=" + mAudPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
 					} else {
-						while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
+						//while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop)
+						{
 							try {
 								sleep(10);
 							} catch (InterruptedException e) {
 								e.printStackTrace();
-								interrupt();
+								//interrupt();
+								Log.d(LOG_TAG, "InterruptedException" + e);
 								break;
 							}
-							sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
+							//sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
 						}
+
 					}
 
 					if(mRender != null) {
+						mDecOutBuff.position(0);
 						int len = mDecoder.getOutputData(mDecOutBuff, maxBuffSize);
+						mDecOutBuff.limit(len);
 						mRender.RenderAudio(mAudPid, mDecOutBuff, info.presentationTimeUs);
+						if( mDecoder.isFreqEmpty() != 1) {
+							mFreqOutBuff.position(0);
+							int nFreqLen = mDecoder.getFreqData(mFreqOutBuff, maxBuffSize);
+							mFreqOutBuff.limit(nFreqLen);
+							mRender.RenderFreqData(mAudPid, mFreqOutBuff, info.presentationTimeUs);
+						}
 					}
 					mFramesRendered++;
-					//Log.d(LOG_TAG, "releaseOutputBuffer:End");
+					Log.d(LOG_TAG, "mFramesRendered:" + mFramesRendered);
 				} else {
-					Log.d(LOG_TAG, "Invalid outIndex " + outIndex);
+					Log.d(LOG_TAG, " fOutPcmEmpty= " + fOutPcmEmpty);
 				}
 				// All decoded frames have been rendered, we can stop playing now
 				if ((info.flags & AudDecApi.BUFFER_FLAG_END_OF_STREAM) != 0) {
@@ -339,7 +349,8 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 					break;
 				}
 			}
-			Log.d(LOG_TAG, "Exiting PlayerThread...");
+			boolean thrstate = Thread.interrupted();
+			Log.d(LOG_TAG, "Exiting PlayerThread...thread int state = " + thrstate + " mExitPlayerLoop=" + mExitPlayerLoop);
 			try {
 				mDecoder.stop();
 			} catch (IllegalStateException e) {

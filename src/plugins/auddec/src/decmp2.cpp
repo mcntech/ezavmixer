@@ -6,6 +6,7 @@ extern "C" {
 #include <libavutil/frame.h>
 #include <libavutil/mem.h>
 #include <libavcodec/avcodec.h>
+#include <libavcodec/avfft.h>
 }
 
 #include "decmp2.h"
@@ -13,6 +14,8 @@ extern "C" {
 #include "JdOsal.h"
 #include "unistd.h"
 
+#define MP2_FRAME_SIZE   1152
+#define MP2_MAX_CHAN     6
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
 
@@ -38,10 +41,13 @@ typedef struct
     int        nUiCmd;
     long long  llTotolRead;
     unsigned char *mPcmBuffer;
+
+    float     *mFreqInBuffer;
+    unsigned short *mFreqOutBuffer;
     int         mfRun;
 } decCtx;
 
-static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame)
+static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame, FFTContext *s)
 {
     int i, ch;
     int ret, data_size;
@@ -60,8 +66,8 @@ static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
             return ret;
         else if (ret < 0) {
-            fprintf(stderr, "Error during decoding\n");
-            exit(1);
+            JDBG_LOG(CJdDbg::LVL_ERR, ("Error during decoding"));
+            return ret; // TODO Error recovery
         }
         data_size = av_get_bytes_per_sample(dec_ctx->sample_fmt);
         if (data_size < 0) {
@@ -70,21 +76,39 @@ static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame
             return ret;
         }
         pcmLen = 0;
-        for (i = 0; i < frame->nb_samples; i++)
+        for (i = 0; i < frame->nb_samples; i++) {
             for (ch = 0; ch < dec_ctx->channels; ch++) {
-                memcpy(&pOut[pcmLen], frame->data[ch] + data_size*i, data_size);
+                memcpy(&pOut[pcmLen], frame->data[ch] + data_size * i, data_size);
                 pcmLen += data_size;
 
             }
-        if(pCtx->pConnOutPcm)
-            pCtx->pConnOutPcm->Write(pCtx->pConnOutPcm, (char *)pOut, pcmLen,  0/*pkt->flags*/, pkt->pts * 1000 / 90);
-
-        if(pCtx->pConnOutFreq) {
-            // TODO : Retrieve Freq Data
-            pCtx->pConnOutFreq->Write(pCtx->pConnOutFreq, (char *) pOut, 64*2, 0/*pkt->flags*/,
+        }
+        if (pCtx->pConnOutPcm)
+            pCtx->pConnOutPcm->Write(pCtx->pConnOutPcm, (char *) pOut, pcmLen, 0/*pkt->flags*/,
                                      pkt->pts * 1000 / 90);
+
+        if (pCtx->pConnOutFreq) {
+            unsigned short *pOutFreq = pCtx->mFreqOutBuffer;
+            float *sample_buffer = (float *) pCtx->mFreqInBuffer;
+            int n = frame->nb_samples;
+
+            for (int ch = 0; ch < dec_ctx->channels; ch++) {
+
+                for (int i = 0; i < n; i++)
+                    sample_buffer[i] = frame->data[ch][i];//get_vlc2(&q->gb, q->vlc_table.table, vlc_table.bits, 3);  //read about the arguments in bitstream.h
+
+                av_fft_permute(s, (FFTComplex *) sample_buffer);
+                av_fft_calc(s, (FFTComplex *) sample_buffer);
+
+                for (i = 0; i < n; i++)
+                    pOutFreq[i + ch * n] = (unsigned short) sample_buffer[i];
+            }
+            int lenFreqBytes = n * dec_ctx->channels * sizeof(unsigned short);
+            pCtx->pConnOutFreq->Write(pCtx->pConnOutFreq, (char *) pOutFreq,lenFreqBytes,
+                                       0, pkt->pts * 1000 / 90);
         }
     }
+
 }
 
 static void threadDecProcess(void *threadsArg)
@@ -93,11 +117,19 @@ static void threadDecProcess(void *threadsArg)
     const AVCodec *codec;
     AVCodecContext *c= NULL;
     AVCodecParserContext *parser = NULL;
+
+    FFTContext *s= NULL;
+    float      *sample_buffer;
+
     int len, ret;
     uint8_t *inbuf = (uint8_t *)malloc(READ_MAX_SIZE);
     pCtx->mPcmBuffer = (unsigned char*)malloc(AUDIO_OUTBUF_SIZE);
+
+    pCtx->mFreqInBuffer = (float *)malloc(MP2_FRAME_SIZE * sizeof(float) * MP2_MAX_CHAN);   // TODO
+    pCtx->mFreqOutBuffer = (unsigned short *)malloc(MP2_FRAME_SIZE * sizeof(unsigned short) * MP2_MAX_CHAN); // TODO
+
     uint8_t *data;
-    size_t   data_size;
+    size_t   data_size = 0;
     AVPacket *pkt = NULL;
     AVFrame *decoded_frame = NULL;
     unsigned long ulFlags;
@@ -135,9 +167,25 @@ static void threadDecProcess(void *threadsArg)
     }
 
 
+    s = av_fft_init(8, 0);
+    if (!s) {
+        JDBG_LOG(CJdDbg::LVL_ERR, ( "av_fft_init : failed\n"));
+        goto Exit;
+    }
+    sample_buffer = (float*)av_mallocz(sizeof(float)*1024);
+    if (!sample_buffer) {
+        JDBG_LOG(CJdDbg::LVL_ERR, ( "av_mallocz : failed\n"));
+        goto Exit;
+    }
+
+    if (!decoded_frame) {
+        if (!(decoded_frame = av_frame_alloc())) {
+            fprintf(stderr, "Could not allocate audio frame\n");
+            goto Exit;
+        }
+    }
     /* decode until eof */
     data      = inbuf;
-    //data_size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
     pCtx->mfRun = 1;
     pCtx->nUiCmd = STRM_CMD_NONE;
 
@@ -149,39 +197,28 @@ static void threadDecProcess(void *threadsArg)
         } else {
             // TODO: implement other commands
         }
-
-        data_size = pCtx->pConnIn->Read(pCtx->pConnIn, (char *) data, READ_MAX_SIZE, &ulFlags,
+        if (data_size < AUDIO_REFILL_THRESH) {
+            int nReadLen = pCtx->pConnIn->Read(pCtx->pConnIn, (char *) data, READ_MAX_SIZE - data_size, &ulFlags,
                                         &ullPts);
-
+            data_size += nReadLen;
+        }
         if (data_size > 0) {
-            if (!decoded_frame) {
-                if (!(decoded_frame = av_frame_alloc())) {
-                    fprintf(stderr, "Could not allocate audio frame\n");
-                    exit(1);
-                }
-            }
 
             ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
-                                   data, data_size,
-                                   AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+                                   data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
             if (ret < 0) {
                 fprintf(stderr, "Error while parsing\n");
-                exit(1);
+                goto Exit; // Recovery
             }
             data += ret;
             data_size -= ret;
 
             if (pkt->size)
-                decode(pCtx, c, pkt, decoded_frame);
+                decode(pCtx, c, pkt, decoded_frame,s);
 
-            if (data_size < AUDIO_REFILL_THRESH) {
+            if (data_size > 0) {
                 memmove(inbuf, data, data_size);
                 data = inbuf;
-                //len = fread(data + data_size, 1, AUDIO_INBUF_SIZE - data_size, f);
-                len = pCtx->pConnIn->Read(pCtx->pConnIn, (char *) data + data_size, READ_MAX_SIZE,
-                                          &ulFlags, &ullPts);
-                if (len > 0)
-                    data_size += len;
             }
         } else {
             usleep(10*1000);
@@ -239,9 +276,9 @@ static int decSetOutputConn(StrmCompIf *pComp, int nConnNum, ConnCtxT *pConn)
 {
     decCtx *pCtx = (decCtx *)pComp->pCtx;
     if(nConnNum == 16)
-        pCtx->pConnOutPcm = pConn;
-    else
         pCtx->pConnOutFreq = pConn;
+    else
+        pCtx->pConnOutPcm = pConn;
 
     return 0;
 }

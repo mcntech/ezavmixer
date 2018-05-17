@@ -12,4 +12,5 @@ add_library(auddec STATIC
  	../src/decac3.cpp
  	../src/decaac.cpp
  	../src/decmp2.cpp
+ 	 ../src/audfft.cpp
     )

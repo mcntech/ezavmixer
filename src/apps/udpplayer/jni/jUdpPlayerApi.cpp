@@ -10,7 +10,7 @@ static int  modDbgLevel = CJdDbg::LVL_TRACE;
 CUdpPlayerEvents	*g_pEventHandler = NULL;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-extern int register_Java_com_mcntech_udpplayer_AudDecApi(JNIEnv *env);
+extern int register_Java_com_mcntech_udpplayer_AudDecApi(JavaVM* vm, JNIEnv *env);
 
 extern "C" {
 
@@ -26,7 +26,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 		//ALOGE("ERROR: GetEnv failed\n");
 		goto bail;
 	}
-	register_Java_com_mcntech_udpplayer_AudDecApi(env);
+	register_Java_com_mcntech_udpplayer_AudDecApi(vm, env);
 	result = JNI_VERSION_1_6;
 
 bail:

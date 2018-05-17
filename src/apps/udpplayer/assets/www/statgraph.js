@@ -113,7 +113,7 @@ function drawSpectrum() {
     stackHeight  = drawH ;
 
     ctx.clearRect( 0, 0, w, h );
-    console.log('spectrum w=' + w + ' h=' + h + ' stackWidth=' + spacing + ' stackHeight' + stackHeight);
+    //console.log('spectrum w=' + w + ' h=' + h + ' stackWidth=' + spacing + ' stackHeight' + stackHeight);
     // Draw Y Label
     ctx.font = "20px Arial";
     var y = drawYstart;
@@ -151,7 +151,7 @@ function drawSpectrum() {
             ctx.fillStyle = fillStyle[program.program_number];// "#FF0000";
 
             ctx.fillRect(x , stackHeight - y - barBitrate, stackWidth, barBitrate );
-            console.log('bar x=' + x + 'y= ' + 'stackHeight - y - barBitrate= ' + stackHeight - y - barBitrate + ' stackWidth = ' + stackWidth + ' barBitrate=' + barBitrate);
+            //console.log('bar x=' + x + 'y= ' + 'stackHeight - y - barBitrate= ' + stackHeight - y - barBitrate + ' stackWidth = ' + stackWidth + ' barBitrate=' + barBitrate);
             y = y +  barBitrate;
         }
     }
@@ -244,7 +244,7 @@ function updatePrograms(resp)
 
 function onMessage(evt)
 {
-    console.log("onMessage: " + evt.data);
+    //console.log("onMessage: " + evt.data);
     try {
         var obj = JSON.parse(evt.data);
         if(obj.hasOwnProperty('action')  && obj.action == "get_programs"){
@@ -287,6 +287,6 @@ function doGetStats()
     var obj = { "action":"get_stats"};
 
     var msg = JSON.stringify(obj);
-    console.log("SENT: " + msg);
+    //console.log("SENT: " + msg);
     websocket.send(msg);
 }

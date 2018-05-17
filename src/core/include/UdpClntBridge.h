@@ -46,7 +46,6 @@ public:
     std::string ProcessWsRequest(std::string request);
 	int UpdatePmtData(int nPid, struct MPEG2_PMT_SECTION &pmt);
 
-	std::string ProcessWsAudRequest(std::string request);
 public:
 	//CJdRtspClntSession	*m_pRtspClnt;
 	CUdpServerCallback  *m_pCallback;

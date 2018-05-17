@@ -124,13 +124,13 @@ function drawAudioSpectrum(spectrum_id, chan_data) {
     //var canvas = document.getElementById( 'fft' );
     // Testing
     //chan_data = Array.from({length: 48}, () => Math.random());
-    console.log("drawAudioSpectrum: " + chan_data);
+    //console.log("drawAudioSpectrum: " + chan_data);
     drawSpectrum(spectrum_id, chan_data);
 }
 
 function drawSpectrums(resp)
 {
-    console.log("drawSpectrums: ");
+    //console.log("drawSpectrums: ");
     var programs = resp.programs;
     for (i in programs) {
         var program = programs[i];
@@ -158,18 +158,18 @@ function drawSpectrums(resp)
 
 function updateData(resp)
 {
-    console.log("updateData: " + JSON.stringify(resp));
+    //console.log("updateData: " + JSON.stringify(resp));
     drawSpectrums(resp);
     setTimeout(doGetData, 1000);
 }
 
 function doGetData()
 {
-    console.log("doGetData: ");
+    //console.log("doGetData: ");
 
     if("AudFreqData" in window) {
         var data = AudFreqData.getData(1);
-        console.log("doGetData: " + data);
+        //console.log("doGetData: " + data);
         var obj = JSON.parse(data);
         updateData(obj);
     } else {

@@ -73,13 +73,13 @@ int CJdWsImplement::RegisterService(CJdWsService *pService, std::string name)
         std::string update_msg;
 
         std::string command = message->string();
-        JDBG_LOG(CJdDbg::LVL_TRACE, ("CJdWsImplement::service.on_open request=%s", command.c_str()));
+        //JDBG_LOG(CJdDbg::LVL_TRACE, ("CJdWsImplement::service.on_open request=%s", command.c_str()));
         json j = json::parse(command);
 
-        JDBG_LOG(CJdDbg::LVL_TRACE, ("CJdWsImplement::service.on_message request=%s", command.c_str()));
+        //JDBG_LOG(CJdDbg::LVL_TRACE, ("CJdWsImplement::service.on_message request=%s", command.c_str()));
         //auto message_str = reply_msg;
         auto message_str = pService->ProcessWsRequest(j.value("action", "none"));
-        JDBG_LOG(CJdDbg::LVL_TRACE, ("CJdWsImplement::service.on_message respone=%s", message_str.c_str()));
+        //JDBG_LOG(CJdDbg::LVL_TRACE, ("CJdWsImplement::service.on_message respone=%s", message_str.c_str()));
 
         auto send_stream = make_shared<WsServer::SendStream>();
         *send_stream << message_str;

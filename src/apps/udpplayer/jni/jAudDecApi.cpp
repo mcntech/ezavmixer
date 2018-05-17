@@ -5,6 +5,10 @@
 #include "jni.h"
 #include "decmp2.h"
 #include "strmconn.h"
+#include "JdDbg.h"
+
+static int  modDbgLevel = CJdDbg::LVL_TRACE;
+
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
 TypeName(const TypeName&); \
 void operator=(const TypeName&)
@@ -17,6 +21,8 @@ typedef int status_t;
 #ifndef NELEM
 # define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
 #endif
+
+JavaVM* g_vm = NULL;
 
 // A smart pointer that deletes a JNI local reference when it goes out of scope.
 template<typename T>
@@ -125,6 +131,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         int isInputFull();
         status_t sendInputData(char *pData, size_t size, int64_t timeUs, uint32_t flags);
         int isOutputEmpty();
+        int isFreqEmpty();
 
     protected:
         virtual ~JAudDecApi(){return;}
@@ -196,8 +203,8 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         if(mCodec != NULL) {
             mInitStatus = 0;
             mConnIn = CreateStrmConn(16 * 1024, 8);
-            mConnOut = CreateStrmConn(16 * 1024, 8);
-            mConnFreq = CreateStrmConn(4 * 1024, 8);
+            mConnOut = CreateStrmConn(32 * 1024, 8);
+            mConnFreq = CreateStrmConn(32 * 1024, 8);
             mCodec->SetInputConn(mCodec, 0, mConnIn);
             mCodec->SetOutputConn(mCodec, 0, mConnOut);
             mCodec->SetOutputConn(mCodec, 16, mConnFreq);
@@ -222,18 +229,21 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
     status_t JAudDecApi::sendInputData(
             char *pData, size_t len, int64_t timeUs, uint32_t flags) {
         //mCodec->queueInputBuffer(index, offset, size, timeUs, flags, errorDetailMsg);
-        return mConnOut->Write(mConnOut, pData, len, flags, timeUs);
+        JDBG_LOG(CJdDbg::LVL_TRACE, ("JAudDecApi::sendInputData %d", len));
+        return mConnIn->Write(mConnIn, pData, len, flags, timeUs);
     }
 
     int JAudDecApi::getOutputData(char *pData, int numBytes) {
         int res = 0;
         res =  mConnOut->Read(mConnOut, pData, numBytes, &mulOutFlags, &mllOutPts);
+        JDBG_LOG(CJdDbg::LVL_TRACE, ("JAudDecApi::getOutputData %d", res));
         return res;//OK;
     }
 
     int JAudDecApi::getFreqData(char *pData, int numBytes) {
         int res = 0;
         res =  mConnFreq->Read(mConnFreq, pData, numBytes, &mulOutFlags, &mllOutPts);
+        JDBG_LOG(CJdDbg::LVL_TRACE, ("JAudDecApi::getFreqData %d", res));
         return res;//OK;
     }
 
@@ -243,7 +253,9 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
     int JAudDecApi::isOutputEmpty() {
         return mConnOut->IsEmpty(mConnOut);
     }
-
+    int JAudDecApi::isFreqEmpty() {
+        return mConnFreq->IsEmpty(mConnFreq);
+    }
     static JAudDecApi *setMediaCodec(
             JNIEnv *env, jobject thiz, JAudDecApi *codec) {
         JAudDecApi * old = (JAudDecApi *)env->GetLongField(thiz, gFields.context);
@@ -265,8 +277,18 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         return old;
     }
 
-    static JAudDecApi *getMediaCodec(JNIEnv *env, jobject thiz) {
+
+    static JAudDecApi * getCodec(JNIEnv *env, jobject thiz)
+    {
+        // double check it's all ok
+        jclass cls = env->FindClass("com/mcntech/udpplayer/AudDecApi");
+        jfieldID fieldId = env->GetFieldID(cls, "mNativeContext", "J");
         return (JAudDecApi *)env->GetLongField(thiz, gFields.context);
+    }
+
+    static JAudDecApi *getMediaCodec(JNIEnv *env, jobject thiz) {
+        //return (JAudDecApi *)env->GetLongField(thiz, gFields.context);
+        return getCodec(env, thiz);
     }
 
     static void Java_com_mcntech_udpplayer_AudDecApi_release(JNIEnv *env, jobject thiz) {
@@ -332,6 +354,17 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         return (jint) len;
     }
 
+    static int Java_com_mcntech_udpplayer_AudDecApi_getFreqData(
+            JNIEnv *env, jobject thiz, jobject buf, jint numBytes) {
+        JAudDecApi *codec= getMediaCodec(env, thiz);
+        if (codec == NULL) {
+            return 0;
+        }
+        uint8_t* rawjBytes = static_cast<uint8_t*>(env->GetDirectBufferAddress(buf));
+        int len = codec->getFreqData((char *)rawjBytes, numBytes);
+        return (jint) len;
+    }
+
     static int Java_com_mcntech_udpplayer_AudDecApi_isOutputEmpty(
             JNIEnv *env, jobject thiz) {
 
@@ -339,6 +372,12 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
         return codec->isOutputEmpty();
     }
 
+    static int Java_com_mcntech_udpplayer_AudDecApi_isFreqEmpty(
+            JNIEnv *env, jobject thiz) {
+
+        JAudDecApi *codec = getMediaCodec(env, thiz);
+        return codec->isFreqEmpty();
+    }
     static void Java_com_mcntech_udpplayer_AudDecApi_native_init(JNIEnv *env, jobject thiz) {
        ScopedLocalRef<jclass> clazz(env, env->FindClass("com/mcntech/udpplayer/AudDecApi"));
         //CHECK(clazz.get() != NULL);
@@ -374,15 +413,20 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_isInputFull},
             {"native_getOutputData",    "(Ljava/nio/ByteBuffer;I)I",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_getOutputData},
+            {"native_getFreqData",    "(Ljava/nio/ByteBuffer;I)I",
+                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_getFreqData},
             {"native_isOutputEmpty",    "()I",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_isOutputEmpty},
+            {"native_isFreqEmpty",    "()I",
+                    (void *) Java_com_mcntech_udpplayer_AudDecApi_isFreqEmpty},
 
             {"native_init",                   "()V", (void *) Java_com_mcntech_udpplayer_AudDecApi_native_init},
             {"native_setup",                  "(Ljava/lang/String;)V",
                                                      (void *) Java_com_mcntech_udpplayer_AudDecApi_native_setup},
     };
 
-int register_Java_com_mcntech_udpplayer_AudDecApi(JNIEnv *env) {
+int register_Java_com_mcntech_udpplayer_AudDecApi(JavaVM* vm, JNIEnv *env) {
+    g_vm = vm;
     return registerNativeMethods(env,
                                  "com/mcntech/udpplayer/AudDecApi", (JNINativeMethod*)gMethods, NELEM(gMethods));
 }

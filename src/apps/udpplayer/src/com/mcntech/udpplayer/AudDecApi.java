@@ -82,6 +82,11 @@ public class AudDecApi {
         return native_isOutputEmpty();
     }
 
+    public final int isFreqEmpty()
+    {
+        return native_isFreqEmpty();
+    }
+
     public final int getOutputData(
             ByteBuffer buf, int nBytes) {
         int res = native_getOutputData(buf, nBytes);
@@ -117,6 +122,6 @@ public class AudDecApi {
     private native final int native_getOutputData(ByteBuffer buf, int numBytes);
     private native final int native_getFreqData(ByteBuffer buf, int numBytes);
     private native final int native_isOutputEmpty();
-
+    private native final int native_isFreqEmpty();
     private long mNativeContext;
 }

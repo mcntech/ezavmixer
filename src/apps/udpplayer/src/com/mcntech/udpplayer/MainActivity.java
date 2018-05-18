@@ -375,6 +375,8 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 						}
 					}
 				}).start();
-	        }
+	        } else {
+	        	System.exit(0);
+			}
 	    }
 }

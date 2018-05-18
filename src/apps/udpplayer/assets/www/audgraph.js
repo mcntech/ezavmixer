@@ -165,13 +165,17 @@ function updateData(resp)
 
 function doGetData()
 {
-    //console.log("doGetData: ");
+    console.log("doGetData: ");
 
     if("AudFreqData" in window) {
-        var data = AudFreqData.getData(1);
-        //console.log("doGetData: " + data);
-        var obj = JSON.parse(data);
-        updateData(obj);
+        try{
+            var data = AudFreqData.getData();
+            console.log("doGetData: " + data);
+            var obj = JSON.parse(data);
+            updateData(obj);
+        } catch (err) {
+            console.log("audgraph " + err);
+        }
     } else {
         updateData(testDataObj); // For Testing
     }
@@ -196,7 +200,12 @@ function doGetInfo()
 {
     console.log("doGetInfo: ");
     if("AudFreqData" in window) {
-        var data = AudFreqData.getInfo(1);
+
+        if(!AudFreqData.isReady()){
+            setTimeout(doGetInfo, 1000);
+        }
+
+        var data = AudFreqData.getInfo();
         console.log("doGetInfo: data " + data);
         var obj = JSON.parse(data);
         updateInfo(obj);

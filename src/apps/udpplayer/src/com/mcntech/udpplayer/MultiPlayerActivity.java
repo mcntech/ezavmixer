@@ -117,13 +117,18 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 			}
 	 	};
 
-		if(mWebViewAud != null) {
-			WebSettings webSettings = mWebViewAud.getSettings();
-			webSettings.setJavaScriptEnabled(true);
-			//mWebViewAud.setWebViewClient(new WebViewClient());
-			mWebViewAud.setBackgroundColor(Color.TRANSPARENT);
-			mWebViewAud.addJavascriptInterface(new AudFreqWbApp(this, this), "AudFreqData");
-			mWebViewAud.loadUrl("file:///android_asset/www/aud.html");
+		switch(mLayoutId) {
+			case 1:
+				if (mWebViewAud != null) {
+					WebSettings webSettings = mWebViewAud.getSettings();
+					webSettings.setJavaScriptEnabled(true);
+					//mWebViewAud.setWebViewClient(new WebViewClient());
+					mWebViewAud.setBackgroundColor(Color.TRANSPARENT);
+					mWebViewAud.addJavascriptInterface(new AudFreqWbApp(this, this, 0), "AudFreqData");
+					mWebViewAud.loadUrl("file:///android_asset/www/aud.html");
+				}
+				break;
+
 		}
 		if(mWebViewStat != null) {
 			WebSettings webSettings = mWebViewStat.getSettings();

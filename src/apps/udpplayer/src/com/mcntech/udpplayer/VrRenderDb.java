@@ -70,22 +70,18 @@ public class VrRenderDb  {
 
 	public static AudDecPipeBase getAudDecPipe(int program, int stream){
 		AudDecPipeBase audDecPipe = null;
-    	for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
-			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
-			if(videoFeed.mRemoteNode.mProgram == program) {
-				audDecPipe = videoFeed.decodePipe.getAudDecPipeBase(stream);
-			}
+		if(program < VrRenderDb.mVideoFeeds.size()){
+			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(program);
+			audDecPipe = videoFeed.decodePipe.getAudDecPipeBase(stream);
 		}
 		return audDecPipe;
 	}
 
 	public static int getNumAudDecPipes(int program){
 		AudDecPipeBase audDecPipe = null;
-		for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
-			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
-			if(videoFeed.mRemoteNode.mProgram == program) {
-				return videoFeed.decodePipe.getNumAudDecPipes();
-			}
+		if(program < VrRenderDb.mVideoFeeds.size()){
+			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(program);
+			return videoFeed.decodePipe.getNumAudDecPipes();
 		}
 		return 0;
 	}

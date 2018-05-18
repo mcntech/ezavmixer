@@ -94,9 +94,9 @@ static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame
 
             for (int ch = 0; ch < dec_ctx->channels; ch++) {
 
-                for (int i = 0; i < n; i++)
-                    sample_buffer[i] = frame->data[ch][i];//get_vlc2(&q->gb, q->vlc_table.table, vlc_table.bits, 3);  //read about the arguments in bitstream.h
-
+                for (int i = 0; i < n; i++) {
+                    sample_buffer[i] = (unsigned short) frame->data[ch][2*i] << 8 | frame->data[ch][2*i+1];//get_vlc2(&q->gb, q->vlc_table.table, vlc_table.bits, 3);  //read about the arguments in bitstream.h
+                }
                 av_fft_permute(s, (FFTComplex *) sample_buffer);
                 av_fft_calc(s, (FFTComplex *) sample_buffer);
 

@@ -2,6 +2,7 @@ package com.mcntech.udpplayer;
 
 import android.content.Context;
 import android.os.Build;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.widget.Toast;
 import org.json.JSONArray;
@@ -23,30 +24,31 @@ public class AudFreqWbApp {
     }
     Context mContext;
     AudFreqCallback mCallback;
+    int mProgram = 0;
     // Instantiate the interface and set the context
-    AudFreqWbApp(Context c, AudFreqCallback audFreqCallback) {
+    AudFreqWbApp(Context c, AudFreqCallback audFreqCallback, int program) {
         mContext = c;
         mCallback = audFreqCallback;
-    }
-
-    // Show a toast from the web page
-    @JavascriptInterface
-    public void showToast(String toast) {
-        Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show();
+        mProgram = program;
     }
 
     @JavascriptInterface
-    public int getAndroidVersion() {
-        return android.os.Build.VERSION.SDK_INT;
+    public boolean isReady() {
+        int numChannels = 0;
+        int numStreams = mCallback.getNumStreams(mProgram);
+        if(numStreams == 0)
+            return false;
+
+        for (int i = 0; i < numStreams; i++) {
+            numChannels = mCallback.getNumChannels(mProgram, i);
+            if(numChannels == 0)
+                return false;
+        }
+        return true;
     }
 
     @JavascriptInterface
-    public void showAndroidVersion(String versionName) {
-        Toast.makeText(mContext, versionName, Toast.LENGTH_SHORT).show();
-    }
-
-    @JavascriptInterface
-    public String getInfo(int program_number) {
+    public String getInfo() {
         JSONObject Info = new JSONObject();
         JSONArray arProgram = new JSONArray();
         JSONObject Program = new JSONObject();
@@ -54,13 +56,13 @@ public class AudFreqWbApp {
             Info.put("action", "get_info");
             JSONObject Streams = new JSONObject();
             JSONArray arStream = new JSONArray();
-            int numStreams = mCallback.getNumStreams(program_number);
+            int numStreams = mCallback.getNumStreams(mProgram);
             for (int i = 0; i < numStreams; i++) {
                 JSONObject Stream = new JSONObject();
 
 
                 JSONArray arChannel = new JSONArray();
-                int numChannels = mCallback.getNumChannels(program_number, i);
+                int numChannels = mCallback.getNumChannels(mProgram, i);
                 String[] channelLabels = {"left", "right", "center", "sub", "sleft", "sright"};
                 for (int k = 0; k < numChannels; k++) {
                     JSONObject label = new JSONObject();
@@ -72,7 +74,7 @@ public class AudFreqWbApp {
             }
 
             Program.put("streams", arStream);
-            Program.put("program_number", program_number);
+            Program.put("program", mProgram);
 
             // We have only one program for now
             arProgram.put(Program);
@@ -80,29 +82,30 @@ public class AudFreqWbApp {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        Log.d("AudFreqWbAp ",  Info.toString());
         return Info.toString();
     }
 
     @JavascriptInterface
-    public String getData(int program_number) {
+    public String getData() {
         JSONObject Info = new JSONObject();
         JSONArray arProgram = new JSONArray();
         JSONObject Program = new JSONObject();
         short []freqData = new short[FFT_SIZE*6];
 
         try {
-            Info.put("action", "get_info");
+            Info.put("action", "get_data");
             JSONObject Streams = new JSONObject();
             JSONArray arStream = new JSONArray();
-            int numStreams = mCallback.getNumStreams(program_number);
+            int numStreams = mCallback.getNumStreams(mProgram);
             for (int i = 0; i < numStreams; i++) {
                 JSONObject Stream = new JSONObject();
 
                 JSONArray arChannel = new JSONArray();
-                int numChannels = mCallback.getNumChannels(program_number, i);
+                int numChannels = mCallback.getNumChannels(mProgram, i);
                 String[] channelLabels = {"left", "right"};
 
-                mCallback.getData(program_number, i, freqData, FFT_SIZE);
+                mCallback.getData(mProgram, i, freqData, FFT_SIZE);
                 for (int k = 0; k < numChannels; k++) {
                     JSONObject data = new JSONObject();
                     JSONArray arData = new JSONArray();
@@ -119,7 +122,7 @@ public class AudFreqWbApp {
 
 
             Program.put("streams", arStream);
-            Program.put("program_number", program_number);
+            Program.put("program", mProgram);
 
             // We have only one program for now
             arProgram.put(Program);

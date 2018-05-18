@@ -16,6 +16,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Random;
 
 import static android.media.MediaFormat.MIMETYPE_AUDIO_AAC;
@@ -249,7 +250,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 			while (!Thread.interrupted() && !mExitPlayerLoop) {
 
 				mFramesInBuff = UdpPlayerApi.getNumAvailAudioFrames(mUrl, mAudPid);
-				Log.d(LOG_TAG, "getNumAvailAudioFrames " + mFramesInBuff);
+				//Log.d(LOG_TAG, "getNumAvailAudioFrames " + mFramesInBuff);
 				if (!isEOS && mFramesInBuff > 0) {
 
 					boolean fInputFull;
@@ -260,7 +261,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 						Log.d(LOG_TAG, "Decoder IllegalStateException" + e);
 						break;
 					}
-					Log.d(LOG_TAG, "fInputFull=" + fInputFull);
+					//Log.d(LOG_TAG, "fInputFull=" + fInputFull);
 					if (!fInputFull) {
 						if(fFrameAvail) {
 							fFrameAvail = false;
@@ -276,7 +277,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 							//mDecoder.sendInputData(, 0, 0, 0, AudDecApi.BUFFER_FLAG_END_OF_STREAM);
 							isEOS = true;
 						} else {
-							Log.d(LOG_TAG, "sampleSize = " + sampleSize);
+							//Log.d(LOG_TAG, "sampleSize = " + sampleSize);
 							mBuff.limit(sampleSize);
 							mDecInBuff.position(0);
 							mDecInBuff.clear();
@@ -296,7 +297,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 					
 				}
 
-				Log.d(LOG_TAG, "isOutputEmpty=" + mExitPlayerLoop);
+				//Log.d(LOG_TAG, "isOutputEmpty=" + mExitPlayerLoop);
 				boolean fOutPcmEmpty;
 				try {
 					fOutPcmEmpty = mDecoder.isOutputEmpty() == 1;
@@ -304,13 +305,13 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 					Log.d(LOG_TAG, "Decoder isOutputEmpty: exception: " + e);
 					break;
 				}
-				Log.d(LOG_TAG, "isOutputEmpty=" + fOutPcmEmpty);
+				//Log.d(LOG_TAG, "isOutputEmpty=" + fOutPcmEmpty);
 				long sysclk = UdpPlayerApi.getClockUs(mUrl, mPcrPid);
 
 				if (!fOutPcmEmpty) {
 					//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);
 					if(info.presentationTimeUs > sysclk + MAX_AUDIO_SYNC_THRESHOLD_US) {
-						Log.d(LOG_TAG, "FreeRun strm=" + mAudPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
+						//Log.d(LOG_TAG, "FreeRun strm=" + mAudPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
 					} else {
 						//while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop)
 						{
@@ -332,17 +333,11 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 						int len = mDecoder.getOutputData(mDecOutBuff, maxBuffSize);
 						mDecOutBuff.limit(len);
 						mRender.RenderAudio(mAudPid, mDecOutBuff, info.presentationTimeUs);
-						if( mDecoder.isFreqEmpty() != 1) {
-							mFreqOutBuff.position(0);
-							int nFreqLen = mDecoder.getFreqData(mFreqOutBuff, maxBuffSize);
-							mFreqOutBuff.limit(nFreqLen);
-							mRender.RenderFreqData(mAudPid, mFreqOutBuff, info.presentationTimeUs);
-						}
 					}
 					mFramesRendered++;
-					Log.d(LOG_TAG, "mFramesRendered:" + mFramesRendered);
+					//Log.d(LOG_TAG, "mFramesRendered:" + mFramesRendered);
 				} else {
-					Log.d(LOG_TAG, " fOutPcmEmpty= " + fOutPcmEmpty);
+					//Log.d(LOG_TAG, " fOutPcmEmpty= " + fOutPcmEmpty);
 				}
 				// All decoded frames have been rendered, we can stop playing now
 				if ((info.flags & AudDecApi.BUFFER_FLAG_END_OF_STREAM) != 0) {
@@ -389,13 +384,14 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 	{
 		//Random rand = new Random();
 		//rand.nextBytes(data);
-		if( mDecoder.isFreqEmpty() != 1) {
+		if( mDecoder != null && mDecoder.isFreqEmpty() != 1) {
 			mFreqOutBuff.position(0);
 			int nFreqLen = mDecoder.getFreqData(mFreqOutBuff, maxBuffSize);
 			mFreqOutBuff.limit(nFreqLen);
 			//mFreqOutBuff.get(data, 0, data.length	);
 			int j = 0;
 			int scale = (nFreqLen/2) / (spectWidth * mNumChannels);;
+			mFreqOutBuff.order(ByteOrder.LITTLE_ENDIAN);
 			for(int i=0; i < spectWidth * mNumChannels && i < nFreqLen / 2 && j <  nFreqLen/2; i++) {
 				data[i] = mFreqOutBuff.getShort(j);
 				 j += scale;

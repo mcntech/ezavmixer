@@ -29,7 +29,7 @@ public class VrRenderDb  {
 	{
 		public int getStreamId();
 		public int getNumChannels();
-		public int getFreqData(byte data[]);
+		public int getFreqData(short data[], int spectWidth);
 	}
 
     public static class VideoFeed

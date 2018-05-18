@@ -19,7 +19,7 @@ public class AudFreqWbApp {
     {
         int getNumChannels(int program, int stream);
         int getNumStreams(int program);
-        int getData(int program, int stream, byte data[]);
+        int getData(int program, int stream, short data[], int spectWidth);
     }
     Context mContext;
     AudFreqCallback mCallback;
@@ -88,7 +88,7 @@ public class AudFreqWbApp {
         JSONObject Info = new JSONObject();
         JSONArray arProgram = new JSONArray();
         JSONObject Program = new JSONObject();
-        byte []freqData = new byte[FFT_SIZE*MAX_CHAN];
+        short []freqData = new short[FFT_SIZE*6];
 
         try {
             Info.put("action", "get_info");
@@ -102,7 +102,7 @@ public class AudFreqWbApp {
                 int numChannels = mCallback.getNumChannels(program_number, i);
                 String[] channelLabels = {"left", "right"};
 
-                mCallback.getData(program_number, i, freqData);
+                mCallback.getData(program_number, i, freqData, FFT_SIZE);
                 for (int k = 0; k < numChannels; k++) {
                     JSONObject data = new JSONObject();
                     JSONArray arData = new JSONArray();

@@ -324,11 +324,11 @@ public boolean onDrag(View v, DragEvent event) {
 	}
 
 	@Override
-	public int getData(int program, int streamId, byte data[])
+	public int getData(int program, int streamId, short data[], int spectWidth)
 	{
 		VrRenderDb.AudDecPipeBase audDecPipe = VrRenderDb.getAudDecPipe(program, streamId);
 		if(audDecPipe != null) {
-			audDecPipe.getFreqData(data);
+			audDecPipe.getFreqData(data, spectWidth);
 		}
 		//Random rand = new Random();
 		//rand.nextBytes(data);

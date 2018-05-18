@@ -385,7 +385,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 	}
 
 	@Override
-	public int getFreqData(byte data[])
+	public int getFreqData(short data[], int spectWidth)
 	{
 		//Random rand = new Random();
 		//rand.nextBytes(data);
@@ -393,8 +393,13 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
 			mFreqOutBuff.position(0);
 			int nFreqLen = mDecoder.getFreqData(mFreqOutBuff, maxBuffSize);
 			mFreqOutBuff.limit(nFreqLen);
-			//mRender.RenderFreqData(mAudPid, mFreqOutBuff, 0);
-			mFreqOutBuff.get(data, 0, data.length	);
+			//mFreqOutBuff.get(data, 0, data.length	);
+			int j = 0;
+			int scale = (nFreqLen/2) / (spectWidth * mNumChannels);;
+			for(int i=0; i < spectWidth * mNumChannels && i < nFreqLen / 2 && j <  nFreqLen/2; i++) {
+				data[i] = mFreqOutBuff.getShort(j);
+				 j += scale;
+			}
 		}
 		return 0;
 	}

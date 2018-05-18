@@ -160,7 +160,7 @@ function updateData(resp)
 {
     //console.log("updateData: " + JSON.stringify(resp));
     drawSpectrums(resp);
-    setTimeout(doGetData, 1000);
+    setTimeout(doGetData, 100);
 }
 
 function doGetData()

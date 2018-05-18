@@ -10,6 +10,6 @@ function drawSpectrum(canvas_name, spectrum) {
 
     ctx.clearRect( 0, 0, w, h );
     for ( var i = 0, l = spectrum.length; i < l; i++ ) {
-        ctx.fillRect( i * spacing, h, width, -spectrum[ i ] * height / 2 / 256 );
+        ctx.fillRect( i * spacing, h, width, -spectrum[ i ] * height / 64000 );
     }
 }

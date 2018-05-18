@@ -87,7 +87,7 @@ static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame
             pCtx->pConnOutPcm->Write(pCtx->pConnOutPcm, (char *) pOut, pcmLen, 0/*pkt->flags*/,
                                      pkt->pts * 1000 / 90);
 
-        if (pCtx->pConnOutFreq) {
+        if (pCtx->pConnOutFreq && pCtx->pConnOutFreq->IsEmpty(pCtx->pConnOutFreq)) {
             unsigned short *pOutFreq = pCtx->mFreqOutBuffer;
             float *sample_buffer = (float *) pCtx->mFreqInBuffer;
             int n = frame->nb_samples;

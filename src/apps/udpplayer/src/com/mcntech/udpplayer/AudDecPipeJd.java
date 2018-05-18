@@ -16,13 +16,14 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Random;
 
 import static android.media.MediaFormat.MIMETYPE_AUDIO_AAC;
 import static android.media.MediaFormat.MIMETYPE_AUDIO_AC3;
 import static android.media.MediaFormat.MIMETYPE_AUDIO_MPEG;
 
 
-public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
+public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudDecPipeBase {
 
 	public final int PLAYER_CMD_RUN = 1;
 	public final int PLAYER_CMD_STOP = 2;
@@ -35,7 +36,7 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 	public final String LOG_TAG = "AudDecPipe";
 	String                        mUrl;
 	String 						  mCodec = null;
-	int                           mAudPid = 0;
+	public int                    mAudPid = 0;
 	int                           mPcrPid = 0;
 	private PlayerThread          mPlayerThrd = null;
 	Handler                       mHandler = null;
@@ -371,4 +372,30 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler {
 		return mHandler;
 	}
 
+	@Override
+	public int getStreamId()
+	{
+		return mAudPid;
+	}
+
+	@Override
+	public int getNumChannels()
+	{
+		return mNumChannels;
+	}
+
+	@Override
+	public int getFreqData(byte data[])
+	{
+		//Random rand = new Random();
+		//rand.nextBytes(data);
+		if( mDecoder.isFreqEmpty() != 1) {
+			mFreqOutBuff.position(0);
+			int nFreqLen = mDecoder.getFreqData(mFreqOutBuff, maxBuffSize);
+			mFreqOutBuff.limit(nFreqLen);
+			//mRender.RenderFreqData(mAudPid, mFreqOutBuff, 0);
+			mFreqOutBuff.get(data, 0, data.length	);
+		}
+		return 0;
+	}
 }

@@ -21,7 +21,16 @@ public class VrRenderDb  {
 		final int                        PLAYER_CMD_CREATE_AUDDECPIPE = 6;
 		public Handler getHandler();
     	public SurfaceTexture getSurfaceTexture();
+    	public AudDecPipeBase getAudDecPipeBase(int stream);
+		public int getNumAudDecPipes();
     }
+
+	public interface AudDecPipeBase
+	{
+		public int getStreamId();
+		public int getNumChannels();
+		public int getFreqData(byte data[]);
+	}
 
     public static class VideoFeed
     {
@@ -59,7 +68,29 @@ public class VrRenderDb  {
     	mVideoFeeds.add(videoFeed);
     }
 
-    public static int getFeedCountForEye(int nIdEye){
+	public static AudDecPipeBase getAudDecPipe(int program, int stream){
+		AudDecPipeBase audDecPipe = null;
+    	for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
+			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
+			if(videoFeed.mRemoteNode.mProgram == program) {
+				audDecPipe = videoFeed.decodePipe.getAudDecPipeBase(stream);
+			}
+		}
+		return audDecPipe;
+	}
+
+	public static int getNumAudDecPipes(int program){
+		AudDecPipeBase audDecPipe = null;
+		for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++){
+			VideoFeed videoFeed = VrRenderDb.mVideoFeeds.get(i);
+			if(videoFeed.mRemoteNode.mProgram == program) {
+				return videoFeed.decodePipe.getNumAudDecPipes();
+			}
+		}
+		return 0;
+	}
+
+	public static int getFeedCountForEye(int nIdEye){
     	int numFeeds = 0;
     	for(VideoFeed videoFeed : mVideoFeeds){
     		if ((videoFeed.mIdEye & nIdEye) != 0)

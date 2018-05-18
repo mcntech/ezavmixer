@@ -308,25 +308,30 @@ public boolean onDrag(View v, DragEvent event) {
 
 
 	@Override
-	public int getNumChannels(int program, int stream)
+	public int getNumChannels(int program, int streamId)
 	{
+		VrRenderDb.AudDecPipeBase audDecPipe = VrRenderDb.getAudDecPipe(program, streamId);
+		if(audDecPipe != null) {
+			audDecPipe.getNumChannels();
+		}
 		return 2;
 	}
 
 	@Override
 	public int getNumStreams(int program)
 	{
-		return 2;
+		return VrRenderDb.getNumAudDecPipes(program);
 	}
 
 	@Override
-	public int getData(int program, int stream, byte data[])
+	public int getData(int program, int streamId, byte data[])
 	{
-		Random rand = new Random();
-
-		rand.nextBytes(data);
+		VrRenderDb.AudDecPipeBase audDecPipe = VrRenderDb.getAudDecPipe(program, streamId);
+		if(audDecPipe != null) {
+			audDecPipe.getFreqData(data);
+		}
+		//Random rand = new Random();
+		//rand.nextBytes(data);
 		return 0;
 	}
-
-
 }

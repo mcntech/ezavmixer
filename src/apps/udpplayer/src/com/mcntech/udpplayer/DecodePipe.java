@@ -603,4 +603,18 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 		return null;
 	}
 
+	@Override
+	public VrRenderDb.AudDecPipeBase getAudDecPipeBase(int streamId) {
+		if(streamId < mAudDecList.size()) {
+			VrRenderDb.AudDecPipeBase audDecPipe = mAudDecList.get(streamId);
+			return audDecPipe;
+		}
+		return null;
+	}
+
+	@Override
+	public int getNumAudDecPipes()
+	{
+		return mAudDecList.size();
+	}
 }

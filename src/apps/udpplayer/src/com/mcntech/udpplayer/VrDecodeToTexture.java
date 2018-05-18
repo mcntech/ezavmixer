@@ -470,4 +470,15 @@ public class VrDecodeToTexture implements DecPipeBase {
 		}
 		return arCsd0;
 	}
+
+	@Override
+	public VrRenderDb.AudDecPipeBase getAudDecPipeBase(int stream) {
+		return null;
+	}
+
+	@Override
+	public int getNumAudDecPipes()
+	{
+		return 0;
+	}
 }

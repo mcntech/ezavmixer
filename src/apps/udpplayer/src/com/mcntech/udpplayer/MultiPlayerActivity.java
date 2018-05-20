@@ -131,7 +131,7 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 				webView.addJavascriptInterface(new AudFreqWbApp(this, this, i), "AudFreqData");
 				webView.loadUrl("file:///android_asset/www/aud.html");
 			} else if(webView != null) {
-				webView.setVisibility(View.GONE);
+				webView.setVisibility(View.INVISIBLE);
 			}
 		}
 
@@ -147,7 +147,7 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 				mWebViewStat.getSettings().setUseWideViewPort(true);
 				mWebViewStat.loadUrl("file:///android_asset/www/stat.html");
 			} else {
-				mWebViewStat.setVisibility(View.GONE);
+				mWebViewStat.setVisibility(View.INVISIBLE);
 			}
 		}
 

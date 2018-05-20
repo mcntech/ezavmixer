@@ -318,6 +318,9 @@ public:
     int getLen(){ return mWr;}
 };
 
+#define PID_TYPE_UNDEFINED   0
+#define PID_TYPE_PMT         2
+
 class CPidCtx
 {
 public:
@@ -336,6 +339,8 @@ public:
         mPmtBuffer = NULL;
         mSavedPmtBuffer = NULL;
         pmt_section_start = FALSE;
+        pid_type = PID_TYPE_UNDEFINED;
+        is_playing = 0;
     }
     CPsiSectionBuff *getPmtBuffer()
     {
@@ -354,6 +359,9 @@ public:
         if(mPmtBuffer && mSavedPmtBuffer)
             *mSavedPmtBuffer = *mPmtBuffer;
     }
+
+    int                 pid_type;
+    int                 is_playing;
     unsigned int pmt_section_start;
     unsigned long long	pcr;
     unsigned long long	clkPrevPcr;
@@ -626,9 +634,10 @@ public:
 
 	void           *pPsiCallbackCtx;
 	std::map<int, CParseCtx *> mParsers;
-	std::map<int, int> mPlayingPmts;
-	std::map<int, int> mPmtPids;
-    std::map<int, CPidCtx*> mPidCtxs;
+	//std::map<int, int> mPlayingPmts;
+	//std::map<int, int> mPmtPids;
+    //std::map<int, CPidCtx*> mPidCtxs;
+	CPidCtx *mPidCtxs[0x2000];
 	//CPsiSectionBuff mPsiSection;
 #ifdef UDP_STREAMER
 	CUdpTx          *pUdpTx;
@@ -638,10 +647,19 @@ public:
 
 int SetOutputConn(StrmCompIf *pComp, int nPid, int nStrmType, ConnCtxT *pConn);
 
-bool isPmtPid(MpegTsDemuxCtx *pCtx, int nPid)
+/*bool isPmtPid(MpegTsDemuxCtx *pCtx, int nPid)
 {
 	return (pCtx->mPmtPids.find( nPid ) != pCtx->mPmtPids.end());
+}*/
+
+
+bool isPmtPid(MpegTsDemuxCtx *pCtx, int nPid)
+{
+
+    //assert(pCtx->mPidCtxs[nPid])
+    return (pCtx->mPidCtxs[nPid]->pid_type);
 }
+
 
 void calcStreamRate(MpegTsDemuxCtx *pCtx, CPidCtx *pPidCtx)
 {
@@ -662,13 +680,35 @@ void calcStreamRate(MpegTsDemuxCtx *pCtx, CPidCtx *pPidCtx)
 
 
 
-CPidCtx *getPidCtx(MpegTsDemuxCtx *pCtx, int nPid) {
+/*CPidCtx *getPidCtx(MpegTsDemuxCtx *pCtx, int nPid) {
 
     if ( pCtx->mPidCtxs.find(nPid) == pCtx->mPidCtxs.end()) {
         pCtx->mPidCtxs[nPid] = new CPidCtx;
     }
     CPidCtx *pX = pCtx->mPidCtxs[nPid];
     return pX;
+}*/
+
+CPidCtx *getPidCtx(MpegTsDemuxCtx *pCtx, int nPid) {
+
+	if ( pCtx->mPidCtxs[nPid] == NULL) {
+		pCtx->mPidCtxs[nPid] = new CPidCtx;
+	}
+	return pCtx->mPidCtxs[nPid];
+}
+
+void setPidType(MpegTsDemuxCtx *pCtx, int nPid, int pid_type)
+{
+    CPidCtx *pidCtx = getPidCtx(pCtx, nPid);
+    //assert(pCtx->mPidCtxs[nPid])
+    pidCtx->pid_type = pid_type;
+}
+
+void setPidPlaying(MpegTsDemuxCtx *pCtx, int nPid, int fPlaying)
+{
+    CPidCtx *pidCtx = getPidCtx(pCtx, nPid);
+    //assert(pCtx->mPidCtxs[nPid])
+    pidCtx->is_playing= fPlaying;
 }
 
 CPsiSectionBuff *getPmtBuffer(MpegTsDemuxCtx *pCtx, int nPid)
@@ -756,17 +796,28 @@ int IsSubscribed(MpegTsDemuxCtx *pCtx, int nPid)
 	return (pCtx->mParsers.find( nPid ) != pCtx->mParsers.end());
 }
 
-int IsPlayingPmtPid(MpegTsDemuxCtx *pCtx, int nPid)
+/*int IsPlayingPmtPid(MpegTsDemuxCtx *pCtx, int nPid)
 {
 
 	return (pCtx->mPlayingPmts.find( nPid ) != pCtx->mPlayingPmts.end());
+}*/
+
+int IsPlayingPmtPid(MpegTsDemuxCtx *pCtx, int nPid)
+{
+
+    //return (pCtx->mPlayingPmts.find( nPid ) != pCtx->mPlayingPmts.end());
+    CPidCtx *pidCtx = getPidCtx(pCtx, nPid);
+    //assert(pCtx->mPidCtxs[nPid])
+    return pidCtx->is_playing;
 }
 
 pmt_callback_t getCallback(MpegTsDemuxCtx *pCtx, int nPid)
 {
-	std::map<int, int>::iterator it = pCtx->mPlayingPmts.find( nPid );
-	if(it != pCtx->mPlayingPmts.end())
+	//std::map<int, int>::iterator it = pCtx->mPlayingPmts.find( nPid );
+	//if(it != pCtx->mPlayingPmts.end())
+    if(IsPlayingPmtPid(pCtx, nPid))
 		return pCtx->pPmtCallback;
+
 	return NULL;
 }
 
@@ -857,7 +908,8 @@ int demuxSetOption(StrmCompIf *pComp, int nCmd, char *pOptionData)
 		{
 			DemuxSubscribeProgramPidT *pgm = (DemuxSubscribeProgramPidT *)pOptionData;
 			int nPid = pgm->nPid;
-			pCtx->mPlayingPmts[nPid] =  1;
+			//pCtx->mPlayingPmts[nPid] =  1;
+            setPidPlaying(pCtx, nPid, 1);
 		}
 		break;
         case DEMUX_CMD_GET_PCR:
@@ -2778,7 +2830,8 @@ void	demux_mpeg2_transport(MpegTsDemuxCtx *pCtx, unsigned int length, unsigned c
 									pgm_pid |= pCtx->program_association_table[k+3];
                                     pgm_pid &= 0x1FFF;
 									if(pgm_pid != 0 && pCtx->program_number != 0)
-										pCtx->mPmtPids[pgm_pid] = 1;
+										//pCtx->mPmtPids[pgm_pid] = 1;
+                                        setPidType(pCtx, pgm_pid, PID_TYPE_PMT);
 								}
 								pCtx->first_pat = FALSE;
 							}

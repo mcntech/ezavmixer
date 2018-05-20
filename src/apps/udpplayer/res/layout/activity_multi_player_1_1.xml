@@ -23,7 +23,7 @@
 		android:layout_marginTop="160dp">
 
 		<WebView
-			android:id="@+id/multi_player_surface_1_1_webview_aud"
+			android:id="@+id/multi_player_webview_1_1"
 			android:layout_width="0dp"
 			android:layout_height="match_parent"
 			android:layout_margin="10dp"
@@ -31,7 +31,7 @@
 			android:alpha="0.5" />
 
 		<WebView
-			android:id="@+id/multi_player_surface_1_1_webview_stat"
+			android:id="@+id/multi_player_webview_stat_1_1"
 			android:layout_width="0dp"
 			android:layout_height="match_parent"
 			android:layout_margin="10dp"

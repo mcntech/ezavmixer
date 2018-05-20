@@ -1,10 +1,6 @@
 <resources>
     <string name="app_name">MCNT ATSC Analyzer</string>
     <string name="options">Options</string>    
-    <string name="enable_audio">Enable Audio</string>    
-    <string name="enable_video">Enable Video</string>
-    <string name="enable_auto_start">Auto Start</string>      
-    <string name="enable_logo">Enable Logo</string>  
-   <string name="aud_delay">Audio Delay (micro seconds)</string>                 
+    <string name="enable_audio_spectrum">Audio Spectrum</string>
     <string name="settings_title">Settings</string>      
 </resources>

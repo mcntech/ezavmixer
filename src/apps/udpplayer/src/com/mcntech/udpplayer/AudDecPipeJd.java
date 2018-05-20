@@ -154,10 +154,8 @@ public class AudDecPipeJd implements UdpPlayerApi.FormatHandler, VrRenderDb.AudD
  				new Thread(new Runnable() {
 					@Override
 					public void run() {
-			 			if(Configure.mEnableVideo) {
-			 				mExitPlayerLoop = true;
-							waitForPlayStop();
-			 			}
+						mExitPlayerLoop = true;
+						waitForPlayStop();
 						//OnyxPlayerApi.deinitialize();
 					}
  				}).start();

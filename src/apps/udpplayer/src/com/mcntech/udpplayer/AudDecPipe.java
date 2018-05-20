@@ -148,10 +148,8 @@ public class AudDecPipe implements UdpPlayerApi.FormatHandler {
  				new Thread(new Runnable() {
 					@Override
 					public void run() {
-			 			if(Configure.mEnableVideo) {
 			 				mExitPlayerLoop = true;
 							waitForPlayStop();
-			 			}
 						//OnyxPlayerApi.deinitialize();
 					}
  				}).start();

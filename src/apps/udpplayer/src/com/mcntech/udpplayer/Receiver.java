@@ -13,16 +13,16 @@ public class Receiver extends BroadcastReceiver {
         //if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) 
 		SharedPreferences sharedPreferences = PreferenceManager
 				.getDefaultSharedPreferences(context);
-		boolean mEnableAutoStart = sharedPreferences.getBoolean(Configure.KEY_ENABLE_AUTO_START, true);
+
 		
 		if (intent.getAction().equals(
 	            android.net.ConnectivityManager.CONNECTIVITY_ACTION))	
         {
-			if(mEnableAutoStart) {
+			//if(mEnableAutoStart) {
 	            //Intent serviceIntent = new Intent(context, SinglePlayerActivity.class);
 	            //serviceIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 	            //context.startActivity(serviceIntent);
-			}
+			//}
         }
 	}
 }

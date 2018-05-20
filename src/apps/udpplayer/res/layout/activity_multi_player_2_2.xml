@@ -15,10 +15,23 @@
             android:layout_height="fill_parent"
             android:layout_weight="1" >
 
-            <TextureView
-                android:id="@+id/multi_player_surface_2_2_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextureView
+                    android:id="@+id/multi_player_surface_2_2_1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <WebView
+                    android:id="@+id/multi_player_webview_2_2_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="100dp" />
+
+            </FrameLayout>
+
         </LinearLayout>
 
         <LinearLayout
@@ -26,10 +39,22 @@
             android:layout_height="fill_parent"
             android:layout_weight="1" >
 
-            <TextureView
-                android:id="@+id/multi_player_surface_2_2_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextureView
+                    android:id="@+id/multi_player_surface_2_2_2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <WebView
+                    android:id="@+id/multi_player_webview_2_2_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="100dp" />
+            </FrameLayout>
+
         </LinearLayout>
     </LinearLayout>
 
@@ -44,10 +69,22 @@
             android:layout_height="fill_parent"
             android:layout_weight="1" >
 
-            <TextureView
-                android:id="@+id/multi_player_surface_2_2_3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextureView
+                    android:id="@+id/multi_player_surface_2_2_3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <WebView
+                    android:id="@+id/multi_player_webview_2_2_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="100dp" />
+            </FrameLayout>
+
         </LinearLayout>
 
         <LinearLayout
@@ -55,10 +92,31 @@
             android:layout_height="fill_parent"
             android:layout_weight="1" >
 
-            <TextureView
-                android:id="@+id/multi_player_surface_2_2_4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextureView
+                    android:id="@+id/multi_player_surface_2_2_4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <WebView
+                    android:id="@+id/multi_player_webview_stat_2_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginBottom="100dp" />
+
+                <WebView
+                    android:id="@+id/multi_player_webview_2_2_4"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="100dp" >
+
+                </WebView>
+
+            </FrameLayout>
+
         </LinearLayout>
     </LinearLayout>
 

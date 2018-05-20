@@ -115,12 +115,10 @@ public class VrDecodeToTexture implements DecPipeBase {
 			if(what == PLAYER_CMD_RUN) {
 				if(!mfPlaying) {
 					mExitPlayerLoop = false;
-					if(Configure.mEnableVideo) {
-	 			    	mVidPlayer = new PlayerThread();
-	 			    	mVidPlayer.AttachSurface(mVideoSurface);
-	 			    	mVidPlayer.start();
-					}
-	 				Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN");	 				
+					mVidPlayer = new PlayerThread();
+					mVidPlayer.AttachSurface(mVideoSurface);
+					mVidPlayer.start();
+	 				Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN");
 				} else {
 					Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN ignored...");
 				}
@@ -146,10 +144,10 @@ public class VrDecodeToTexture implements DecPipeBase {
  				new Thread(new Runnable() {
 					@Override
 					public void run() {
-			 			if(Configure.mEnableVideo) {
-			 				mExitPlayerLoop = true;
-			 				waitForVideoStop();
-			 			}
+
+						mExitPlayerLoop = true;
+						waitForVideoStop();
+
 						UdpPlayerApi.deinitialize();
 					}
  				}).start();

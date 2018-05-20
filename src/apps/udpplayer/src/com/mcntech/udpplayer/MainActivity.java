@@ -44,22 +44,20 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 	
 	final int PICKFILE_RESULT_CODE = 1;
 	Uri mUri = null;
-	CheckBox mEnLogoCheckBox;
-	CheckBox mEnStatsCheckBox;
-	//EditText mRtspUrl1;
-	
+
+	String mUrl = null;
+	int mPlayOption = 0;
+
 	RemoteNodeHandler mNodeHandler;
 	public static ListView mRemoteNodeListView = null;
 	public static ArrayList<RemoteNode> mRemoteNodeList = null;
 	public static ArrayAdapter<RemoteNode> mListAdapter = null;
 	
-	/*EditText mAudDealy;*/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
     	int i;
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-       
 
         mRemoteNodeList = new ArrayList<RemoteNode>(); //CodecModel.mOnyxRemoteNodeList;
 		mRemoteNodeListView =  (ListView)findViewById(R.id.listRemoteNodes);
@@ -79,7 +77,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		    }
 		});
 
-        getServer();	
+
 		mNodeHandler = new RemoteNodeHandler(){
 			@Override
 			public void onPsiPatChange(String url, String message) {
@@ -129,75 +127,35 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 
 			}
 	 	};
-	 	
 
-			
-		boolean isSystemApp = (getApplicationInfo().flags
-				  & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
-        Configure.loadSavedPreferences(this, isSystemApp);
-                
- /*        Stats Enable 
-        mEnStatsCheckBox = (CheckBox) findViewById(R.id.enable_stats);
-        mEnStatsCheckBox.setOnClickListener(new OnClickListener() {
-		        public void onClick(View v) {
-		        	 Configure.mEnableStats = mEnStatsCheckBox.isChecked();
-		        	 Configure.savePreferences(getApplicationContext(), Configure.KEY_ENABLE_STATS, Configure.mEnableStats);
-		        }
-        	}); 
-        mEnStatsCheckBox.setChecked(Configure.mEnableStats);*/
-        
-/*        
-        mAudDealy = (EditText) findViewById(R.id.editAudDelay);
-        mAudDealy.setText(String.valueOf(Configure.mAudioDelay));
-        mAudDealy.setOnEditorActionListener( new DoneOnEditorActionListener());
-*/        
- /*       mRtspUrl1 = (EditText) findViewById(R.id.editRtspUrl1);
-        mRtspUrl1.setText(String.valueOf(Configure.mRtspUrl1));
-        mRtspUrl1.setOnEditorActionListener( new DoneOnEditorUrlListener());
-        */
+        Configure.loadSavedPreferences(this, false);
+
+		Bundle b = getIntent().getExtras();
+
+		if(b != null) {
+			mPlayOption = b.getInt("option");
+			if(mPlayOption == 1) // Play URL
+				mUrl = b.getString("url");
+		}
+
 	 	UdpPlayerApi.setDeviceHandler(mNodeHandler);	
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				UdpPlayerApi.initialize();
+
+				if(mPlayOption ==1 && mUrl != null) {
+					UdpPlayerApi.addServer(mUrl);
+					UdpPlayerApi.startServer(mUrl);
+				}
 			}
 		}).start();
-  
+
+		if(mPlayOption == 0) {
+			chooseFile();
+		}
      }
 
-     class DoneOnEditorActionListener implements OnEditorActionListener {
-			@Override
-			public boolean onEditorAction(TextView v, int actionId,
-					KeyEvent event) {
-               if (actionId == EditorInfo.IME_ACTION_DONE) {
-                   InputMethodManager imm = (InputMethodManager)v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                   imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-            	   if(v.getText().length() > 0) {
-            		   Configure.mAudioDelay = Integer.parseInt(v.getText().toString());
-            		   Configure.savePreferences(getApplicationContext(), Configure.KEY_AUDIO_DELAY, Configure.mAudioDelay);
-            	   }
-                   return true;
-               }
-				return false;
-			}
-     }    
-/*     class DoneOnEditorUrlListener implements OnEditorActionListener {
-			@Override
-			public boolean onEditorAction(TextView v, int actionId,
-					KeyEvent event) {
-               if (actionId == EditorInfo.IME_ACTION_DONE) {
-                   InputMethodManager imm = (InputMethodManager)v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                   imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-            	   if(v.getText().length() > 0) {
-            		   Configure.mRtspUrl1 = v.getText().toString();
-            		   Configure.savePreferences(getApplicationContext(), Configure.KEY_RTSP_URL_1, Configure.mRtspUrl1);
-            	   }
-                   return true;
-               }
-				return false;
-			}
-     }    
-*/     
 	public void selfRestart(View v) {
 		System.exit(2);
 	}
@@ -323,7 +281,7 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 		   System.exit(2);
 	   }
 	   
-	   void getServer()
+	   void chooseFile()
 	   {
 	       Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
 		   intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -338,10 +296,6 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 				cursor = getContentResolver().query(uri, null, null, null, null);
 				if (cursor != null && cursor.moveToFirst()) {
 					String displayName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-					//int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
-
-					//int column_index = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA);
-					//return cursor.getString(column_index);
 					File storage = getExternalStorageDirectory();
 					if(storage != null) {
 						//String path = storage.getAbsolutePath() + "/" + displayName;

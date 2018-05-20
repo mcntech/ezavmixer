@@ -201,11 +201,9 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 			if(what == PLAYER_CMD_RUN) {
 				if(!mfPlaying) {
 					mExitPlayerLoop = false;
-					if(Configure.mEnableVideo) {
 	 			    	mVidPlayer = new PlayerThread();
 	 			    	mVidPlayer.AttachSurface(mVideoSurface);
 	 			    	mVidPlayer.start();
-					}
 	 				Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN");
 				} else {
 					Log.d(LOG_TAG, "transition:PLAYER_CMD_RUN ignored...");
@@ -228,10 +226,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
  				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						if(Configure.mEnableVideo) {
 							mExitPlayerLoop = true;
 							waitForVideoStop();
-						}
 						//OnyxPlayerApi.deinitialize();
 					}
  				}).start();

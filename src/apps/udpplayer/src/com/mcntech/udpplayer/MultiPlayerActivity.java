@@ -32,7 +32,6 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 	ImageView                     img;
 	int                           mLayoutId;
 
-	WebView mWebViewAud = null;
 	WebView mWebViewStat = null;
     //LinearLayout                     mStatsLayout;
 
@@ -57,13 +56,13 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 			case 1:
 			{
 				setContentView(R.layout.activity_multi_player_1_1);
-				mWebViewAud = (WebView) findViewById(R.id.multi_player_surface_1_1_webview_aud);
-				mWebViewStat = (WebView) findViewById(R.id.multi_player_surface_1_1_webview_stat);
+				mWebViewStat = (WebView) findViewById(R.id.multi_player_webview_stat_1_1);
 			}
 			break;
 			case 4:
 			{
 				setContentView(R.layout.activity_multi_player_2_2);
+				mWebViewStat = (WebView) findViewById(R.id.multi_player_webview_stat_2_2);
 			}
 				break;
 
@@ -93,6 +92,7 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 			toast.show();
 		}
 
+/*
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -100,6 +100,7 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 				//OnyxPlayerApi.onvifDiscvrStart(0);
 			}
 		}).start();
+*/
 
 		mNodeHandler = new RemoteNodeHandler(){
 
@@ -117,28 +118,37 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 			}
 	 	};
 
-		switch(mLayoutId) {
-			case 1:
-				if (mWebViewAud != null) {
-					WebSettings webSettings = mWebViewAud.getSettings();
-					webSettings.setJavaScriptEnabled(true);
-					//mWebViewAud.setWebViewClient(new WebViewClient());
-					mWebViewAud.setBackgroundColor(Color.TRANSPARENT);
-					mWebViewAud.addJavascriptInterface(new AudFreqWbApp(this, this, 0), "AudFreqData");
-					mWebViewAud.loadUrl("file:///android_asset/www/aud.html");
-				}
-				break;
 
+
+
+		for(int i=0; i < VrRenderDb.mVideoFeeds.size(); i++) {
+			WebView webView = getWebView(mLayoutId, i);
+			if(webView != null && Configure.mEnableAudioSpect) {
+				WebSettings webSettings = webView.getSettings();
+				webSettings.setJavaScriptEnabled(true);
+				//mWebViewAud.setWebViewClient(new WebViewClient());
+				webView.setBackgroundColor(Color.TRANSPARENT);
+				webView.addJavascriptInterface(new AudFreqWbApp(this, this, i), "AudFreqData");
+				webView.loadUrl("file:///android_asset/www/aud.html");
+			} else if(webView != null) {
+				webView.setVisibility(View.GONE);
+			}
 		}
-		if(mWebViewStat != null) {
-			WebSettings webSettings = mWebViewStat.getSettings();
-			webSettings.setJavaScriptEnabled(true);
-			//mWebViewAud.setWebViewClient(new WebViewClient());
-			mWebViewStat.setBackgroundColor(Color.TRANSPARENT);
-			mWebViewStat.setWebContentsDebuggingEnabled(true);
-			mWebViewStat.getSettings().setLoadWithOverviewMode(true);
-			mWebViewStat.getSettings().setUseWideViewPort(true);
-			mWebViewStat.loadUrl("file:///android_asset/www/stat.html");
+
+
+		if (mWebViewStat != null) {
+			if(Configure.mEnableStats) {
+				WebSettings webSettings = mWebViewStat.getSettings();
+				webSettings.setJavaScriptEnabled(true);
+				//mWebViewAud.setWebViewClient(new WebViewClient());
+				mWebViewStat.setBackgroundColor(Color.TRANSPARENT);
+				mWebViewStat.setWebContentsDebuggingEnabled(true);
+				mWebViewStat.getSettings().setLoadWithOverviewMode(true);
+				mWebViewStat.getSettings().setUseWideViewPort(true);
+				mWebViewStat.loadUrl("file:///android_asset/www/stat.html");
+			} else {
+				mWebViewStat.setVisibility(View.GONE);
+			}
 		}
 
 	 	UdpPlayerApi.setDeviceHandler(mNodeHandler);
@@ -224,7 +234,28 @@ public class MultiPlayerActivity  extends Activity implements AudRenderInterface
 		return null;
 	}
 
-    void makeStreamVisible(String url) {
+	WebView getWebView(int layoutId, int windowId) {
+		switch(layoutId) {
+			case 1:
+			{
+
+				return (WebView) findViewById(R.id.multi_player_webview_1_1);
+			}
+			case 4:
+			{
+				switch(windowId){
+					case 0: return (WebView) findViewById(R.id.multi_player_webview_2_2_1);
+					case 1: return (WebView) findViewById(R.id.multi_player_webview_2_2_2);
+					case 2: return (WebView) findViewById(R.id.multi_player_webview_2_2_3);
+					case 3: return (WebView) findViewById(R.id.multi_player_webview_2_2_4);
+				}
+			}
+
+		}
+		return null;
+	}
+
+	void makeStreamVisible(String url) {
     	// Get Current Visibe
 
     	// Start Playing url

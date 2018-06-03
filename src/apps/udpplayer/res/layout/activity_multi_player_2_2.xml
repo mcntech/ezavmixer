@@ -28,7 +28,8 @@
                     android:id="@+id/multi_player_webview_2_2_1"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_marginTop="100dp" />
+                    android:layout_marginTop="180dp"
+                    android:alpha="0.5" />
 
             </FrameLayout>
 
@@ -52,7 +53,8 @@
                     android:id="@+id/multi_player_webview_2_2_2"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_marginTop="100dp" />
+                    android:layout_marginTop="180dp"
+                    android:alpha="0.5" />
             </FrameLayout>
 
         </LinearLayout>
@@ -82,7 +84,8 @@
                     android:id="@+id/multi_player_webview_2_2_3"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_marginTop="100dp" />
+                    android:layout_marginTop="180dp"
+                    android:alpha="0.5" />
             </FrameLayout>
 
         </LinearLayout>
@@ -105,13 +108,16 @@
                     android:id="@+id/multi_player_webview_stat_2_2"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_marginBottom="100dp" />
+                    android:layout_marginBottom="100dp"
+                    android:layout_marginTop="80dp"
+                    android:alpha="0.5" />
 
                 <WebView
                     android:id="@+id/multi_player_webview_2_2_4"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_marginTop="100dp" >
+                    android:layout_marginTop="180dp"
+                    android:alpha="0.5">
 
                 </WebView>
 

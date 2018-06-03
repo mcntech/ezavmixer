@@ -33,8 +33,47 @@ typedef struct
 	int        nUiCmd;
 	long long  llTotolRead;
 	int        fLoop;
+	unsigned long long rate_control_prev_ts;
 } FileSrcCtx;
 
+
+unsigned long long ClockGetSystemTime()
+{
+#ifdef WIN32
+	return (1000 * (int64_t)GetTickCount());
+#else
+	struct timeval   tv;
+	gettimeofday(&tv,NULL);
+	unsigned long long Timestamp =  ((int64_t)tv.tv_sec)*1000000 + tv.tv_usec;
+	return (Timestamp);
+#endif
+}
+
+void RateControl(FileSrcCtx  *self, int crntSize)
+{
+	double time_elapsed;
+	double time_estimate;
+	double ts_rate = 0;
+	int64_t clockDiff;
+	unsigned long long current_ts  = ClockGetSystemTime();
+
+	if(self->rate_control_prev_ts == 0 ) {
+		self->rate_control_prev_ts = current_ts;
+		return;
+	}
+	//ts_rate = self->current_tsrate;
+	if(ts_rate == 0)
+		ts_rate = 19000000.0 / 8;
+
+	time_elapsed = (double) (current_ts - self->rate_control_prev_ts) / 1000000;
+	time_estimate = (double) crntSize / ts_rate;
+
+	if (time_estimate > time_elapsed){
+		clockDiff = (int64_t) ((time_estimate - time_elapsed) * 1000 * 1000);
+		usleep(clockDiff);
+	}
+	self->rate_control_prev_ts = current_ts;
+}
 
 static void threadFileSrcRead(void *threadsArg)
 {
@@ -83,6 +122,8 @@ static void threadFileSrcRead(void *threadsArg)
 			pCtx->fStreaming = 0;
 			break;
 		}
+
+		RateControl(pCtx, ret);
 	}
 	free(pData);
 	JdDbg(CJdDbg::DBGLVL_TRACE, ("Leave"));

@@ -2,38 +2,39 @@ var wsUri = "ws://localhost:38080/audspectrum";
 var websocket = null;
 
 
-
-
+function getTestDataObj()
+{
 var testDataObj = {action:"get_data",
                     programs : [
                         {program_number: 1,
                             streams:[
-                                {pid:21, channels:[{data:[1,2,3]}, {data:[1,2,3]}]},
-                                {pid:22, channels:[{data:[1,2,3]}, {data:[1,2,3]}]}
+                                {pid:21, channels:[{data:Array.from({length: 40}, () => Math.floor(Math.random() * 64000))}, {data:Array.from({length: 40}, () => Math.floor(Math.random() * 64000))}]},
+                                {pid:22, channels:[{data:Array.from({length: 40}, () => Math.floor(Math.random() * 64000))}, {data:Array.from({length: 40}, () => Math.floor(Math.random() * 64000))}]}
                             ]
                         },
                         {program_number: 2,
                             streams:[
-                                {pid:31, channels:[{data:[1,2,3]}, {data:[1,2,3]}, {data:[1,2,3]}, {data:[1,2,3]}, {data:[1,2,3]}, {data:[1,2,3]}]}
+                                {pid:31, channels:[{data:[4000,32000,5000]}, {data:[4000,32000,5000]}, {data:[4000,32000,5000]}, {data:[4000,32000,5000]}, {data:[4000,32000,5000]}, {data:[4000,32000,5000]}]}
                             ]
                         },
                         {program_number: 3,
                             streams:[
-                                {pid:41, channels:[{data:[1,2,3]}, {data:[1,2,3]}]}
+                                {pid:41, channels:[{data:[4000,32000,5000]}, {data:[4000,32000,5000]}]}
                             ]
                         },
                     ]
                  };
-
+    return testDataObj;
+}
 var testInfoObj = {action:"get_info",
                     programs : [
                         {program_number: 1, pid: 20,
                             streams:[
                                 {pid:21, type: 3, codec:2,  channels:[{label:"left"},{label:"right"}]},
-                                {pid:22, type: 3, codec:3,  channels:[{label:"left"},{label:"right"}]}
+                                //{pid:22, type: 3, codec:3,  channels:[{label:"left"},{label:"right"}]}
                             ]
                         },
-                        {program_number: 2, pid: 30,
+ /*                       {program_number: 2, pid: 30,
                             streams:[
                                 {pid:31, type: 3, codec:2, channels:[{label:"left"},{label:"right"},{label:"center"},{label:"sub"},{label:"sleft"},{label:"sright"}]}
                             ]
@@ -42,7 +43,7 @@ var testInfoObj = {action:"get_info",
                             streams:[
                                 {pid:41, type: 3, codec:3, channels:[{label:"left"},{label:"right"}]}
                             ]
-                        },
+                        },*/
                     ]
                  };
 
@@ -67,13 +68,13 @@ var testInfoObj = {action:"get_info",
 
 function resizeCanvas(cavas_id, w, h)
 {
-   var canvas = document.getElementById( cavas_id )
-          var ctx     = canvas.getContext( '2d' );
+    var canvas = document.getElementById( cavas_id )
+    var ctx     = canvas.getContext( '2d' );
 
-          //canvas.style.width ='100%';
-          //canvas.style.height='100%';
-          ctx.canvas.width  = w;
-          ctx.canvas.height = h;
+    //canvas.style.width ='100%';
+    //canvas.style.height='100%';
+    ctx.canvas.width  = w - 40; // 30% marign
+    ctx.canvas.height = h; // 20% marign
  }
 
 function resizeDrawingArea()
@@ -83,11 +84,13 @@ function resizeDrawingArea()
     }
 }
 
-function initAudioSpectrum(spectrum_id) {
+function initAudioSpectrum(spectrum_id, stream, channel) {
+
         var canvas = document.createElement("canvas");
         canvas.className  = "spectrumChan";
         canvas.id = spectrum_id;
         document.getElementsByTagName('body')[0].appendChild(canvas);
+
         var br = document.createElement("br");
         document.getElementsByTagName('body')[0].appendChild(br);
 }
@@ -108,7 +111,7 @@ function initAudioSpectrums()
                         var channel = channels[k];
 
                         var spectrum_id = "fft" + i + j + k;
-                        initAudioSpectrum(spectrum_id);
+                        initAudioSpectrum(spectrum_id, j, k);
                         spectrum.spectrum_ids[spectrum.num_chan] = spectrum_id;
                         spectrum.chan_data[spectrum.num_chan]=[];
                         spectrum.num_chan++;
@@ -120,12 +123,12 @@ function initAudioSpectrums()
     resizeDrawingArea();
 }
 
-function drawAudioSpectrum(spectrum_id, chan_data) {
+function drawAudioSpectrum(spectrum_id, chan_data, label) {
     //var canvas = document.getElementById( 'fft' );
     // Testing
     //chan_data = Array.from({length: 48}, () => Math.random());
     //console.log("drawAudioSpectrum: " + chan_data);
-    drawSpectrum(spectrum_id, chan_data);
+    drawSpectrum(spectrum_id, chan_data, label);
 }
 
 function drawSpectrums(resp)
@@ -144,7 +147,7 @@ function drawSpectrums(resp)
                         var channel = channels[k];
                         if(channel.hasOwnProperty("data")) {
                             var spectrum_id = "fft" + i + j + k;
-                            drawAudioSpectrum(spectrum_id, channel.data);
+                            drawAudioSpectrum(spectrum_id, channel.data, "Program:" + i + " Stream:" + j + " Chan:" + k);
                         }
                     }
                 }
@@ -177,7 +180,7 @@ function doGetData()
             console.log("audgraph " + err);
         }
     } else {
-        updateData(testDataObj); // For Testing
+        updateData(getTestDataObj()); // For Testing
     }
 
 }

@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">MCNT ATSC Analyzer</string>
-    <string name="options">Options</string>    
+    <string name="app_name">ATSC Analyzer</string>
+    <string name="options">ATSC Analyzer</string>
     <string name="enable_audio_spectrum">Audio Spectrum</string>
-    <string name="settings_title">Settings</string>      
+    <string name="settings_title">ATSC Analyzer</string>
 </resources>

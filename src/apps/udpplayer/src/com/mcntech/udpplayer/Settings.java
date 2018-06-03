@@ -12,6 +12,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -45,6 +46,8 @@ public class Settings extends Activity implements OnItemSelectedListener {
         	});
         mEnAudSpectCheckBox.setChecked(Configure.mEnableAudioSpect);
 
+		Button browseBtn = (Button)findViewById(R.id.select_file);
+		browseBtn.requestFocus();
 
         /* Stats Enable */
         mEnStatsCheckBox = (CheckBox) findViewById(R.id.enable_stats);

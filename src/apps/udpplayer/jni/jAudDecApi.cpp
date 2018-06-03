@@ -196,8 +196,8 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 
         // Create Component
         //    mCodec = MediaCodec::CreateByComponentName(mLooper, name, &mInitStatus);
-        if (strcmp(name, "audio/mpeg") == 0 || strcmp(name, "audio/mpeg") == 0) {
-            mCodec = decmp2Create();
+        if (strcmp(name, "audio/mpeg") == 0 || strcmp(name, "audio/ac3") == 0 || strcmp(name, "audio/mp4a-latm") == 0) {
+            mCodec = decmp2Create(name);
         }
 
         if(mCodec != NULL) {

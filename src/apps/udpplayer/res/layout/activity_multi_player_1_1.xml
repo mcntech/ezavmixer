@@ -20,7 +20,7 @@
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:layout_marginBottom="8dp"
-		android:layout_marginTop="160dp">
+		android:layout_marginTop="360dp">
 
 		<WebView
 			android:id="@+id/multi_player_webview_1_1"

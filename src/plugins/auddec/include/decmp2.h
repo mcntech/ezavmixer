@@ -3,6 +3,6 @@
 
 #include "strmcomp.h"
 
-StrmCompIf *decmp2Create();
+StrmCompIf *decmp2Create(const char *name);
 
 #endif //__DEC_MP2_H__

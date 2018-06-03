@@ -39,7 +39,7 @@ public:
 
 	void strmH264FmtJson(const char *pFmtData, int len, std::string &psiString);
     void strmMP2VidFmtJson(const char *pFmtData, int len, std::string &psiString);
-	void strmMP2AudFmtJson(const char *pFmtData, int len, std::string &psiString);
+	void strmAudFmtJson(const char *pFmtData, int len, std::string &psiString);
 	unsigned long long GetPcrClock(int nPid);
 
     // CJdWsService

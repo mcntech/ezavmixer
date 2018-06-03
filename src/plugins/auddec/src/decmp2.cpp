@@ -15,8 +15,11 @@ extern "C" {
 #include "unistd.h"
 
 #define MP2_FRAME_SIZE   1152
-#define MP2_MAX_CHAN     6
-#define AUDIO_INBUF_SIZE 20480
+#define AC3_FRAME_SIZE   1152
+#define AAC_FRAME_SIZE   1152
+
+#define MAX_CHAN            6
+#define AUDIO_INBUF_SIZE    20480
 #define AUDIO_REFILL_THRESH 4096
 
 #define READ_MAX_SIZE (AUDIO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE)
@@ -41,10 +44,11 @@ typedef struct
     int        nUiCmd;
     long long  llTotolRead;
     unsigned char *mPcmBuffer;
-
     float     *mFreqInBuffer;
     unsigned short *mFreqOutBuffer;
     int         mfRun;
+    enum AVCodecID mCodecID;
+    int            mFrameSize;
 } decCtx;
 
 static int  decode(decCtx *pCtx, AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame, FFTContext *s)
@@ -125,8 +129,8 @@ static void threadDecProcess(void *threadsArg)
     uint8_t *inbuf = (uint8_t *)malloc(READ_MAX_SIZE);
     pCtx->mPcmBuffer = (unsigned char*)malloc(AUDIO_OUTBUF_SIZE);
 
-    pCtx->mFreqInBuffer = (float *)malloc(MP2_FRAME_SIZE * sizeof(float) * MP2_MAX_CHAN);   // TODO
-    pCtx->mFreqOutBuffer = (unsigned short *)malloc(MP2_FRAME_SIZE * sizeof(unsigned short) * MP2_MAX_CHAN); // TODO
+    pCtx->mFreqInBuffer = (float *)malloc(pCtx->mFrameSize * sizeof(float) * MAX_CHAN);   // TODO
+    pCtx->mFreqOutBuffer = (unsigned short *)malloc(pCtx->mFrameSize * sizeof(unsigned short) * MAX_CHAN); // TODO
 
     uint8_t *data;
     size_t   data_size = 0;
@@ -142,15 +146,15 @@ static void threadDecProcess(void *threadsArg)
     pkt = av_packet_alloc();
 
     /* find the MPEG audio decoder */
-    codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
+    codec = avcodec_find_decoder(pCtx->mCodecID);
     if (!codec) {
-        JDBG_LOG(CJdDbg::LVL_ERR,("Codec not found\n"));
+        JDBG_LOG(CJdDbg::LVL_ERR,("Codec not found id=%d\n",pCtx->mCodecID));
         goto Exit;
     }
 
     parser = av_parser_init(codec->id);
     if (!parser) {
-        JDBG_LOG(CJdDbg::LVL_ERR, ("Parser not found\n"));
+        JDBG_LOG(CJdDbg::LVL_ERR, ("Parser not found id=\n", codec->id));
         goto Exit;
     }
 
@@ -191,6 +195,14 @@ static void threadDecProcess(void *threadsArg)
 
     while(pCtx->mfRun) {
 
+        while(pCtx->pConnIn->IsEmpty(pCtx->pConnIn) && pCtx->nUiCmd != STRM_CMD_STOP){
+            //JdDbg(CJdDbg::DBGLVL_WARN,("start=%d end=%d",pCtx->pConnSrc->pdpCtx->start, pCtx->pConnSrc->pdpCtx->end))
+#ifdef WIN32
+            Sleep(1);
+#else
+            usleep(30 * 1000);
+#endif
+        }
         if(pCtx->nUiCmd == STRM_CMD_STOP) {
             pCtx->mfRun =  false;
             break;
@@ -248,8 +260,21 @@ Exit:
         free(pCtx->mPcmBuffer);
 }
 
-static int DecInit(decCtx *pCtx)
+static int DecInit(decCtx *pCtx, enum AVCodecID codecId)
 {
+    pCtx->mCodecID = codecId;
+    switch(codecId) {
+        case AV_CODEC_ID_MP2:
+            pCtx->mFrameSize = MP2_FRAME_SIZE;
+            break;
+        case AV_CODEC_ID_AC3:
+            pCtx->mFrameSize = AC3_FRAME_SIZE;
+            break;
+        case AV_CODEC_ID_AAC:
+            pCtx->mFrameSize = AAC_FRAME_SIZE;
+            break;
+
+    }
     pCtx->nBlockSize = (21 * 188);
     return 0;
 }
@@ -362,13 +387,20 @@ static void decDelete(struct _StrmCompIf *pComp)
 }
 
 StrmCompIf *
-decmp2Create()
-{
-    StrmCompIf *pComp = (StrmCompIf *)malloc(sizeof(StrmCompIf));
+decmp2Create(const char *name) {
+    StrmCompIf *pComp = (StrmCompIf *) malloc(sizeof(StrmCompIf));
+    enum AVCodecID codecID;
     pComp->pCtx = malloc(sizeof(decCtx));
     memset(pComp->pCtx, 0x00, sizeof(decCtx));
 
-    DecInit((decCtx *)pComp->pCtx);
+    if (strcmp(name, "audio/mpeg") == 0){
+        codecID = AV_CODEC_ID_MP2;
+    } else if (strcmp(name, "audio/ac3") == 0){
+        codecID = AV_CODEC_ID_AC3;
+    } else if (strcmp(name, "audio/mp4a-latm") == 0) {
+        codecID = AV_CODEC_ID_AAC;
+    }
+    DecInit((decCtx *)pComp->pCtx, codecID);
 
     pComp->Open= decOpen;
     pComp->SetOption = decSetOption;

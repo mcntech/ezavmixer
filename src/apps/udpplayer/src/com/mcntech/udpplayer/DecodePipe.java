@@ -58,8 +58,8 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 	//Video Parameters
 	int                              maxBuffSize = (4 * 1024 * 1024);
 	private MediaCodec               mDecoder = null;
-	final long                       MAX_VIDEO_SYNC_THRESHOLD_US = 10000000;
-	final long                       MAX_AUDIO_SYNC_THRESHOLD_US = 10000000;
+	final long                       MAX_VIDEO_SYNC_THRESHOLD_US = 2000000;
+	final long                       MAX_AUDIO_SYNC_THRESHOLD_US = 2000000;
 	
 
     private boolean                  mfPlaying = false;
@@ -78,7 +78,6 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 
 	Activity mActivity = null;
 	ProgramHandler mProgramHandler;
-
 
 	class AudioStream
 	{
@@ -141,7 +140,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 						UdpPlayerApi.subscribeStream(mUrl, mVidPid);
 						mHandler.sendEmptyMessage(PLAYER_CMD_INIT);
 					} else if(codec.compareToIgnoreCase("aac") == 0 ||
-							codec.compareToIgnoreCase("ac2") == 0 ||
+							codec.compareToIgnoreCase("ac3") == 0 ||
 							codec.compareToIgnoreCase("mp2") == 0){
 						// Todo : set codec type and post msg to start decode;
 						// TODO : mRemoteNodeList.add(node);
@@ -482,13 +481,15 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 					break;
 				default:
 					if(outIndex >= 0) {
-						//Log.v(LOG_TAG, " presentationTime= " + (info.presentationTimeUs / 1000) + " fcvclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);				
+						int maxAvSycWait = 200;
+						Log.v(LOG_TAG, "PCR_PID=" + mPcrPid +  " presentationTime= " + (info.presentationTimeUs / 1000) + " mPts=" + mPts + " sysclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);
 						if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
 							Log.d(LOG_TAG, "FreeRun strm=" + mVidPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
 						} else {
-							while ((info.presentationTimeUs  > sysclk) && !Thread.interrupted() && !mExitPlayerLoop) {
+							while ((info.presentationTimeUs  > sysclk) && maxAvSycWait > 0 && !Thread.interrupted() && !mExitPlayerLoop) {
 								try {
 									sleep(10);
+									maxAvSycWait -= 10;
 								} catch (InterruptedException e) {
 									e.printStackTrace();
 									interrupt();

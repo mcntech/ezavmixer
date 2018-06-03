@@ -17,7 +17,6 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Random;
 
 import static android.media.MediaFormat.MIMETYPE_AUDIO_AAC;
 import static android.media.MediaFormat.MIMETYPE_AUDIO_AC3;

@@ -49,7 +49,7 @@ var testProgramsResponse = JSON.stringify(testStatsObj);
         this.programs = [];
         this.histroy_depth = 24;
         this.muxrate = [];
-        this.maxbitrate = 24000000;
+        this.maxbitrate = 54000000;
         this.sample_count = 0;
         this.sample_time = 1000;
     };
@@ -73,7 +73,7 @@ function initSpectrum(obj)
         obj.muxrate[program.program_number] = []; // Initialize inner array
     }
 
-    obj.fillStyle = ["#FF0000", "#00FF00", "#0000FF", "#0F0000", "#F00F00", "#00000F", "#F00000", "#00F000", "#0000F0", "#F0F0F0", "#0F0F0F=", "#00F0F0", "#00F0F0", "#F0F000", "#0F00F0", "#F0000F"];
+    obj.fillStyle = ["#FF0000", "#00FF00", "#0000FF", "#0F0000", "#F00F00", "#00007F", "#F00000", "#00F000", "#0000F0", "#F0F0F0", "#0F0F0F=", "#00F0F0", "#00F0F0", "#F0F000", "#0F00F0", "#F0000F"];
 }
 
 function resizeDrawingArea()

@@ -156,9 +156,9 @@ void CUdpClntBridge::UpdateFormat(int nPid, int nCodecType, const char *pData, i
             strmH264FmtJson(pData, len, fmtString);
             m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
 
-    } else if(nCodecType == 0x03 || nCodecType == 0x04) {
+    } else if(nCodecType == 0x03 || nCodecType == 0x04 || nCodecType == 0x0f || nCodecType == 0x81) {
             std::string fmtString;
-            strmMP2AudFmtJson(pData, len, fmtString);
+            strmAudFmtJson(pData, len, fmtString);
             m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
     } else if(nCodecType == 0x01 || nCodecType == 0x02 || nCodecType == 0x80) {
             std::string fmtString;
@@ -197,7 +197,7 @@ void CUdpClntBridge::strmMP2VidFmtJson(const char *pFmtData, int len, std::strin
     delete mParser;
 }
 
-void CUdpClntBridge::strmMP2AudFmtJson(const char *pFmtData, int len, std::string &psiString)
+void CUdpClntBridge::strmAudFmtJson(const char *pFmtData, int len, std::string &psiString)
 {
     json jFmt = {};
     AudParam *audParam = (AudParam *)pFmtData;
@@ -602,6 +602,7 @@ std::string CUdpClntBridge::ProcessWsRequest(std::string request)
         for(int j=0; j< m_pat->number_of_programs ; j++) {
              int nPid = m_pat->program_descriptor[j].network_or_program_map_PID;
             int nPprogram = m_pat->program_descriptor[j].program_number;
+
             json jPgmStat = {};
 
 
@@ -614,6 +615,8 @@ std::string CUdpClntBridge::ProcessWsRequest(std::string request)
             struct MPEG2_PMT_SECTION pmt;
             if(UpdatePmtData(nPid, pmt) < 0)
                 continue; // PMT not available yet
+
+			jPgmStat["PCR_PID"]  = pmt.PCR_PID;
 
             stat.nPid = nPid;
             if (m_demuxComp) {

@@ -2,8 +2,6 @@ package com.mcntech.udpplayer;
 import com.mcntech.udpplayer.VrRenderDb.VideoFeed;
 
 import java.nio.ByteBuffer;
-import java.util.Random;
-
 
 import android.app.Activity;
 import android.content.ClipData;
@@ -366,8 +364,6 @@ public boolean onDrag(View v, DragEvent event) {
 		if(audDecPipe != null) {
 			audDecPipe.getFreqData(data, spectWidth);
 		}
-		//Random rand = new Random();
-		//rand.nextBytes(data);
 		return 0;
 	}
 }

@@ -63,14 +63,14 @@ void RateControl(FileSrcCtx  *self, int crntSize)
 	}
 	//ts_rate = self->current_tsrate;
 	if(ts_rate == 0)
-		ts_rate = 19000000.0 / 8;
+		ts_rate = 40000000.0 / 8;
 
 	time_elapsed = (double) (current_ts - self->rate_control_prev_ts) / 1000000;
 	time_estimate = (double) crntSize / ts_rate;
 
 	if (time_estimate > time_elapsed){
 		clockDiff = (int64_t) ((time_estimate - time_elapsed) * 1000 * 1000);
-		usleep(clockDiff);
+		//usleep(clockDiff);
 	}
 	self->rate_control_prev_ts = current_ts;
 }

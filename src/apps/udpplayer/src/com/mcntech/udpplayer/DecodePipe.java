@@ -445,7 +445,7 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 							//buffer.put(mBuff, 0, sampleSize);
 							buffer.position(0);
 							buffer.limit(sampleSize);
-														
+							Log.d(LOG_TAG, "queueInputBuffer PID=" + mVidPid + " sampleSize=" + sampleSize + " pts=" + mPts);
 							try {
 								mDecoder.queueInputBuffer(inIndex, 0, sampleSize, mPts, 0);
 							} catch (IllegalStateException e) {
@@ -483,7 +483,9 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 					if(outIndex >= 0) {
 						int maxAvSycWait = 200;
 						Log.v(LOG_TAG, "PCR_PID=" + mPcrPid +  " presentationTime= " + (info.presentationTimeUs / 1000) + " mPts=" + mPts + " sysclk=" + sysclk / 1000 + " wait=" + (info.presentationTimeUs - sysclk) / 1000);
-						if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US) {
+						//if(info.presentationTimeUs > sysclk + MAX_VIDEO_SYNC_THRESHOLD_US)
+						if(true)
+						{
 							Log.d(LOG_TAG, "FreeRun strm=" + mVidPid + " pts=" + info.presentationTimeUs + " sysClk="+ sysclk);
 						} else {
 							while ((info.presentationTimeUs  > sysclk) && maxAvSycWait > 0 && !Thread.interrupted() && !mExitPlayerLoop) {

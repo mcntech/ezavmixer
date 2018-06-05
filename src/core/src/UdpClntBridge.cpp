@@ -21,6 +21,7 @@
 #include "h264parser.h"
 #include <time.h>
 #include <mpeg2parser.h>
+#include "h265parser.h"
 #include "json.hpp"
 #include "JdWebsocket.h"
 
@@ -152,10 +153,13 @@ void CUdpClntBridge::UpdateFormat(int nPid, int nCodecType, const char *pData, i
 
     if(nCodecType == 0x1B) {
 
-            std::string fmtString;
-            strmH264FmtJson(pData, len, fmtString);
-            m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
-
+		std::string fmtString;
+		strmH264FmtJson(pData, len, fmtString);
+		m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
+	}else if(nCodecType == 0x24) {
+		std::string fmtString;
+		strmH265FmtJson(pData, len, fmtString);
+        m_pCallback->NotifyFormatChange(m_szRemoteHost, nPid, fmtString.c_str());
     } else if(nCodecType == 0x03 || nCodecType == 0x04 || nCodecType == 0x0f || nCodecType == 0x81) {
             std::string fmtString;
             strmAudFmtJson(pData, len, fmtString);
@@ -180,6 +184,18 @@ void CUdpClntBridge::strmH264FmtJson(const char *pFmtData, int len, std::string 
     }
     psiString = jFmt.dump();
 	delete mH264Parser;
+}
+
+void CUdpClntBridge::strmH265FmtJson(const char *pFmtData, int len, std::string &psiString)
+{
+	json jFmt = {};
+	int width=0, height=0;
+    hevc_decode_nal_sps(pFmtData, len, &width, &height);
+	if(width != 0){
+		jFmt["width"] = width;
+		jFmt["height"] = height;
+	}
+	psiString = jFmt.dump();
 }
 
 void CUdpClntBridge::strmMP2VidFmtJson(const char *pFmtData, int len, std::string &psiString)
@@ -233,6 +249,9 @@ std::string StrmTypeToString(int strmType)
 	else if(strmType == 0x1b)  {
 		str = "H264";
 	}
+	else if(strmType == 0x24)  {
+		str = "H265";
+	}
 	else  {
 		str = "UNKNOWN";
 	}
@@ -253,7 +272,7 @@ void CUdpClntBridge::psiPmtJson(MPEG2_PMT_SECTION *pmt, std::string &psiString)
 				// TODO es info other attributes
 				jPmt["streams"][i] = jEs;
 #ifdef DEMUX_DUMP_OUTPUT
-				if(es->stream_type == 0x1b
+				if(es->stream_type == 0x1b || es->stream_type == 0x24
                     || es->stream_type == 0x1 || es->stream_type == 0x2 || es->stream_type == 0x80
                     || es->stream_type == 0x81 || es->stream_type == 0x6
                     || es->stream_type == 0x3  || es->stream_type == 0x4

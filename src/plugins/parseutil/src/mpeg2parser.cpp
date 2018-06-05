@@ -14,7 +14,7 @@
 
 int CMpeg2Parser::ParseSequenceHeader(uint8_t *Data, int Count, long *plWidth, long *plHeight)
 {
-    cBitReader br(Data + 1, Count - 1);
+    cBitReader br((const char *)Data + 1, Count - 1);
     *plWidth = (long)br.u(12);
     *plHeight = (long)br.u(12);
     return 0;

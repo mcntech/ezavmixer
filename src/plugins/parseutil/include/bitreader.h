@@ -15,11 +15,40 @@
 #define int32_t  int
 void Error(const char *pErr);
 
+
+static const uint8_t ff_log2_tab[256]={
+        0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+        6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+        6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
+};
+
+static int av_log2(unsigned int v)
+{
+    int n = 0;
+    if (v & 0xffff0000) {
+        v >>= 16;
+        n += 16;
+    }
+    if (v & 0xff00) {
+        v >>= 8;
+        n += 8;
+    }
+    n += ff_log2_tab[v];
+
+    return n;
+}
+
+
 class cBitReader {
 public:
     class cBookMark {
     private:
-        uint8_t *data;
+        const char *data;
         int count;
         uint32_t bits;
         uint32_t bitsAvail;
@@ -32,7 +61,7 @@ private:
     uint8_t NextByte(void);
     uint32_t ReadBits(uint32_t n);
 public:
-    cBitReader(uint8_t *Data, int Count);
+    cBitReader(const char *Data, int Count);
     uint32_t u(uint32_t n) { return ReadBits(n); } // read n bits as unsigned number
     uint32_t ue(void); // read Exp-Golomb coded unsigned number
     int32_t se(void); // read Exp-Golomb coded signed number
@@ -40,9 +69,11 @@ public:
     bool GetBytesAvail(void) { return (bm.count > 0); }
     const cBookMark BookMark(void) const { return bm; }
     void BookMark(const cBookMark &b) { bm = b; }
+    // Ram added for h265 parse
+    int get_bits_left() {return GetBitsAvail() + bm.count * 8;}
 };
 
-inline cBitReader::cBitReader(unsigned char *Data, int Count)
+inline cBitReader::cBitReader(const char *Data, int Count)
 {
     bm.data = Data;
     bm.count = Count;
@@ -99,7 +130,12 @@ inline uint32_t cBitReader::ReadBits(uint32_t n)
     }
     // return n most significant bits
     bm.bitsAvail -= n;
-    return (bm.bits >> bm.bitsAvail) & (((uint32_t)1 << n) - 1);
+    uint32_t val =  (bm.bits >> bm.bitsAvail);
+    if(n == 32)
+        val = val & 0xFFFFFFFF;
+    else
+        val = val &(((uint32_t)1 << n) - 1);
+    return val;
 }
 
 inline uint32_t cBitReader::ue(void)
@@ -140,5 +176,6 @@ inline int32_t cBitReader::se(void)
     int n = (r % 2) ? (r / 2) : -(r / 2);
     return n;
 }
+
 
 #endif //UDPPLAYER_BITREADER_H

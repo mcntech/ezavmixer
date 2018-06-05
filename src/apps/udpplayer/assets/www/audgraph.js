@@ -168,12 +168,12 @@ function updateData(resp)
 
 function doGetData()
 {
-    console.log("doGetData: ");
+    //console.log("doGetData: ");
 
     if("AudFreqData" in window) {
         try{
             var data = AudFreqData.getData();
-            console.log("doGetData: " + data);
+            //console.log("doGetData: " + data);
             var obj = JSON.parse(data);
             updateData(obj);
         } catch (err) {
@@ -209,7 +209,7 @@ function doGetInfo()
         }
 
         var data = AudFreqData.getInfo();
-        console.log("doGetInfo: data " + data);
+        //console.log("doGetInfo: data " + data);
         var obj = JSON.parse(data);
         updateInfo(obj);
     } else {

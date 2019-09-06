@@ -299,7 +299,8 @@ public class MainActivity extends Activity implements OnItemSelectedListener {
 					File storage = getExternalStorageDirectory();
 					if(storage != null) {
 						//String path = storage.getAbsolutePath() + "/" + displayName;
-						String path = "/mnt/sdcard/movies/" + displayName;
+						//String path = "/mnt/sdcard/movies/" + displayName;
+						String path = "/storage/emulated/0/Download/" + displayName;
 						return path;
 					}
 				} else

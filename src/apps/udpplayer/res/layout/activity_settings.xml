@@ -2,7 +2,7 @@
 	android:id="@+id/container"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:layout_margin="80dp"
+	android:layout_margin="40dp"
 	android:orientation="vertical">
 
 
@@ -16,8 +16,8 @@
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_gravity="center"
-			android:layout_marginBottom="20dp"
 			android:layout_marginTop="30dp"
+			android:layout_marginBottom="20dp"
 			android:background="#000000"
 			android:gravity="center"
 			android:text="@string/options"
@@ -26,101 +26,115 @@
 			android:textStyle="bold" />
 
 
-		<LinearLayout
+		<ScrollView
 			android:layout_width="match_parent"
-			android:layout_height="match_parent"
-			android:orientation="vertical">
+			android:layout_height="match_parent">
 
-			<CheckBox
-				android:id="@+id/enable_stats"
-				android:layout_width="fill_parent"
+			<LinearLayout
+				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:layout_gravity="right"
-				android:layout_weight="1"
-				android:checked="true"
-				android:padding="15dp"
-				android:paddingTop="25dp"
-				android:text="Bitrate Stats"
-				android:textColor="#FFFFFF"
-				android:textSize="20sp"
-				android:textStyle="bold" />
+				android:orientation="vertical">
 
-			<CheckBox
-				android:id="@+id/enable_audio_spectrum"
-				android:layout_width="fill_parent"
-				android:layout_height="wrap_content"
-				android:layout_weight="1"
-				android:checked="true"
-				android:padding="15dp"
-				android:paddingTop="25dp"
-				android:text="@string/enable_audio_spectrum"
-				android:textColor="#FFFFFF"
-				android:textSize="20sp"
-				android:textStyle="bold" />
-		</LinearLayout>
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"
+					android:orientation="vertical">
+
+					<CheckBox
+						android:id="@+id/enable_stats"
+						android:layout_width="fill_parent"
+						android:layout_height="wrap_content"
+						android:layout_gravity="right"
+						android:layout_weight="1"
+						android:checked="true"
+						android:padding="15dp"
+						android:paddingTop="25dp"
+						android:text="Bitrate Stats"
+						android:textColor="#FFFFFF"
+						android:textSize="20sp"
+						android:textStyle="bold" />
+
+					<CheckBox
+						android:id="@+id/enable_audio_spectrum"
+						android:layout_width="fill_parent"
+						android:layout_height="wrap_content"
+						android:layout_weight="1"
+						android:checked="true"
+						android:padding="15dp"
+						android:paddingTop="25dp"
+						android:text="@string/enable_audio_spectrum"
+						android:textColor="#FFFFFF"
+						android:textSize="20sp"
+						android:textStyle="bold" />
+
+				</LinearLayout>
+
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:orientation="horizontal">
+
+					<TextView
+						android:id="@+id/textUrl"
+						android:layout_width="0dp"
+						android:layout_height="wrap_content"
+						android:layout_weight="0.2"
+						android:paddingTop="25sp"
+						android:paddingBottom="5dp"
+						android:text="URL"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:textColor="#FFFFFF"
+						android:textStyle="bold" />
+
+					<EditText
+						android:id="@+id/editUrl"
+						android:layout_width="11dp"
+						android:layout_height="wrap_content"
+						android:layout_weight="0.8"
+						android:ems="20">
+
+						<requestFocus />
+					</EditText>
+
+				</LinearLayout>
+
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="30dp"
+					android:layout_weight="1"
+					android:orientation="horizontal">
+
+					<Button
+						android:id="@+id/select_file"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:layout_gravity="center_horizontal"
+						android:layout_marginTop="30dip"
+						android:layout_weight="1"
+						android:onClick="Browse"
+						android:text="Browse"
+						android:textColor="#000000"
+						android:textSize="20sp"
+						android:textStyle="bold" />
+
+					<Button
+						android:id="@+id/start"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:layout_gravity="center_horizontal"
+						android:layout_marginTop="30dip"
+						android:layout_weight="1"
+						android:onClick="Start"
+						android:text="Start"
+						android:textColor="#000000"
+						android:textSize="20sp"
+						android:textStyle="bold" />
+				</LinearLayout>
+
+			</LinearLayout>
+		</ScrollView>
 
 	</LinearLayout>
 
-	<LinearLayout
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:orientation="horizontal">
-
-		<TextView
-			android:id="@+id/textUrl"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="0.2"
-			android:paddingTop="25sp"
-			android:paddingBottom="5dp"
-			android:text="URL"
-			android:textAppearance="?android:attr/textAppearanceMedium"
-			android:textColor="#FFFFFF"
-			android:textStyle="bold" />
-
-		<EditText
-			android:id="@+id/editUrl"
-			android:layout_width="11dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="0.8"
-			android:ems="20">
-
-			<requestFocus />
-		</EditText>
-
-	</LinearLayout>
-
-	<LinearLayout
-		android:layout_width="match_parent"
-		android:layout_height="0dp"
-		android:layout_marginTop="30dp"
-		android:layout_weight="1"
-		android:orientation="horizontal">
-
-		<Button
-			android:id="@+id/select_file"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_gravity="center_horizontal"
-			android:layout_marginTop="30dip"
-			android:layout_weight="1"
-			android:onClick="Browse"
-			android:text="Browse"
-			android:textColor="#000000"
-			android:textSize="20sp"
-			android:textStyle="bold" />
-
-		<Button
-			android:id="@+id/start"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_gravity="center_horizontal"
-			android:layout_marginTop="30dip"
-			android:layout_weight="1"
-			android:onClick="Start"
-			android:text="Start"
-			android:textColor="#000000"
-			android:textSize="20sp"
-			android:textStyle="bold" />
-	</LinearLayout>
 </LinearLayout>

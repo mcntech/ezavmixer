@@ -75,6 +75,12 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
     LinearLayout                     mStatsLayout;
     boolean mfHevcSupported = false;
 	boolean mfMpeg2Supported = false;
+/*
+
+	int maxAvcSupported = 0;
+	int maxHevcSupported = 0;
+	int maxMpeg2Supported = 0;
+*/
 
 	Activity mActivity = null;
 	ProgramHandler mProgramHandler;
@@ -101,6 +107,11 @@ public class DecodePipe  implements DecPipeBase, ProgramHandler, UdpPlayerApi.Fo
 		mfAvcUHdSupported  = CodecInfo.isSupportedLevel(MIMETYPE_VIDEO_AVC, MediaCodecInfo.CodecProfileLevel.AVCLevel51 );
 		mfHevcSupported  = CodecInfo.isMimeTypeAvailable(MIMETYPE_VIDEO_HEVC);
 		mfMpeg2Supported  = CodecInfo.isMimeTypeAvailable(MIMETYPE_VIDEO_MPEG2);
+		/*
+		maxAvcSupported  = CodecInfo.getMaxSupportedInstances(MIMETYPE_VIDEO_AVC );
+		maxHevcSupported  = CodecInfo.getMaxSupportedInstances(MIMETYPE_VIDEO_HEVC );
+		maxMpeg2Supported  = CodecInfo.getMaxSupportedInstances(MIMETYPE_VIDEO_MPEG2 );
+		*/
 /*		if(mfAvcUHdSupported) {
 			mMaxVidWidth = 3840;
 			mMaxVidHeight = 2160;

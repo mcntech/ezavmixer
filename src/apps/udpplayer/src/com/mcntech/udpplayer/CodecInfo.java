@@ -48,4 +48,27 @@ public class CodecInfo
 		}
 		return false;
 	}
+
+	/*
+	public static int  getMaxSupportedInstances(String mimeType) {
+		MediaCodecInfo info = null;
+		CodecCapabilities capabilities = null;
+		for (int i = 0; i < MediaCodecList.getCodecCount() && info == null; i++) {
+			MediaCodecInfo curInfo = MediaCodecList.getCodecInfoAt(i);
+			if (curInfo.isEncoder())
+				continue;
+
+			String[] types = curInfo.getSupportedTypes();
+			for (int j = 0; j < types.length; j++) {
+				if (types[j].equals(mimeType)){
+					CodecCapabilities caps = info.getCapabilitiesForType(types[j]);
+					int max = caps.getMaxSupportedInstances();
+					return max;
+				}
+			}
+		}
+		return 0;
+	}
+	*/
+
 }
